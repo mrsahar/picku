@@ -1,10 +1,9 @@
-// controllers/signup_controller.dart (No GlobalKey approach)
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/core/global_variables.dart';
+import 'package:pick_u/models/signup_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
-import '../models/signup_model.dart';
-import '../routes/app_routes.dart';
+import 'package:pick_u/routes/app_routes.dart';
 
 class SignUpController extends GetxController {
   // Form controllers

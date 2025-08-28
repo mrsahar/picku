@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pick_u/authentication/login/login_screen.dart';
-import 'package:pick_u/authentication/signup/signup_screen.dart';
+import 'package:pick_u/authentication/login_screen.dart';
+import 'package:pick_u/authentication/signup_screen.dart';
 import 'package:pick_u/common/extension.dart';
 
 class WelcomeScreen extends StatelessWidget {

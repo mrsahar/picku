@@ -35,12 +35,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.LOGIN_SCREEN,
       page: () => const LoginScreen(),
-      binding: LoginBinding(), // Add login binding
+      binding: LoginBinding(),
     ),
     GetPage(
       name: AppRoutes.MainMap,
-      page: () => const MainMap(), // Make sure you have this screen
-      // Add reset password binding if needed
+      page: () => const MainMap(),
     ),
     GetPage(
       name: AppRoutes.FORGOT_PASSWORD_SCREEN,

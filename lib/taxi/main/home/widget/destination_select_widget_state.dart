@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
+import 'package:pick_u/controllers/ride_controller.dart';
 
-class DestinationSelectWidget extends StatefulWidget {
-  const DestinationSelectWidget({super.key});
+class EnhancedDestinationSelectWidget extends StatelessWidget {
+  final RideController rideController = Get.find<RideController>();
 
-  @override
-  State<DestinationSelectWidget> createState() => _DestinationSelectWidgetState();
-}
+  EnhancedDestinationSelectWidget({Key? key}) : super(key: key);
 
-class _DestinationSelectWidgetState extends State<DestinationSelectWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -22,7 +21,6 @@ class _DestinationSelectWidgetState extends State<DestinationSelectWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top bar indicator
           Center(
             child: Container(
               width: 30,
@@ -34,30 +32,27 @@ class _DestinationSelectWidgetState extends State<DestinationSelectWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          // Title
           Text(
             'Choose Ride Type',
             style: theme.textTheme.titleSmall,
           ),
           const SizedBox(height: 16),
-
-          // Scrollable row of two card-style buttons
           Container(
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.all(8),
-            child: Row(
+            child: Obx(() => Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildRideOptionCard(
                   context: context,
                   icon: LineAwesomeIcons.car_alt_solid,
                   title: 'One Stop Ride',
-                  isSelected: true,
+                  isSelected: !rideController.isMultiStopRide.value,
                   onTap: () {
-                    // TODO: Add your action
+                    rideController.setRideType('One Stop Ride');
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('One Stop Ride selected')),
                     );
@@ -67,17 +62,76 @@ class _DestinationSelectWidgetState extends State<DestinationSelectWidget> {
                   context: context,
                   icon: LineAwesomeIcons.route_solid,
                   title: 'Multi-Stop Ride',
-                  isSelected: false,
+                  isSelected: rideController.isMultiStopRide.value,
                   onTap: () {
-                    // TODO: Add your action
+                    rideController.setRideType('Multi-Stop Ride');
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Multi-Stop Ride selected')),
                     );
                   },
                 ),
               ],
-            ),
+            )),
           ),
+          const SizedBox(height: 16),
+          // Passenger count selector
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: inputBorderColor!),
+            ),
+            child: Obx(() => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Passengers:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: rideController.decrementPassengers,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    Text(
+                      '${rideController.passengerCount.value}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      onPressed: rideController.incrementPassengers,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                  ],
+                ),
+              ],
+            )),
+          ),
+          const SizedBox(height: 16),
+          // Book ride button
+          Obx(() => SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: rideController.isLoading.value
+                  ? null
+                  : () => rideController.bookRide(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: rideController.isLoading.value
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                'Book Ride',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          )),
         ],
       ),
     );
@@ -109,7 +163,6 @@ class _DestinationSelectWidgetState extends State<DestinationSelectWidget> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon with circular background
                 Container(
                   decoration: BoxDecoration(
                     color: isSelected

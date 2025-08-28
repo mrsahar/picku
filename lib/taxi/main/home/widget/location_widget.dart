@@ -1,37 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/common/extension.dart';
+import 'package:pick_u/controllers/ride_controller.dart';
 import 'package:pick_u/taxi/main/search/search_location.dart';
 
-class DestinationWidget extends StatefulWidget {
-  @override
-  _DestinationWidgetState createState() => _DestinationWidgetState();
-}
+class EnhancedDestinationWidget extends StatelessWidget {
+  final RideController rideController = Get.find<RideController>();
 
-class _DestinationWidgetState extends State<DestinationWidget> {
+  EnhancedDestinationWidget({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     var mediaQuery = MediaQuery.of(context);
     final brightness = mediaQuery.platformBrightness;
     final isDarkMode = brightness == Brightness.dark;
-
-    // Get theme data
     final theme = Theme.of(context);
+    final inputBorderColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
 
-    // Data for locations
+    // Data for locations with enhanced functionality
     final List<Map<String, dynamic>> locations = [
       {
         'icon': LineAwesomeIcons.map_marker_alt_solid,
         'title': 'Book a Ride',
-        'subtitle': 'Enter Destination'
+        'subtitle': 'Enter Destination',
+        'action': () => _showDestinationDialog(context),
       },
-      {'icon': LineAwesomeIcons.briefcase_solid, 'title': 'Office', 'subtitle': '35 Km Away'},
-      {'icon': LineAwesomeIcons.home_solid, 'title': 'Home', 'subtitle': '12 Km Away'},
-      {'icon': LineAwesomeIcons.tree_solid, 'title': 'Park', 'subtitle': '8 Km Away'},
     ];
-    final inputBorderColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
+
     return Container(
-      color: theme.colorScheme.surface, // Background color from theme
+      color: theme.colorScheme.surface,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,27 +53,24 @@ class _DestinationWidgetState extends State<DestinationWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  // Handle click action here
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Schedule clicked!'),
-                    ),
+                    const SnackBar(content: Text('Schedule clicked!')),
                   );
                 },
                 child: Row(
-                  mainAxisSize: MainAxisSize.min, // Adjusts to content size
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Icon(
-                      LineAwesomeIcons.history_solid, // Add your desired icon
-                      color: theme.colorScheme.primary, // Use primary color
-                      size: 20, // Icon size
+                      LineAwesomeIcons.history_solid,
+                      color: theme.colorScheme.primary,
+                      size: 20,
                     ),
-                    const SizedBox(width: 5), // Space between icon and text
+                    const SizedBox(width: 5),
                     Text(
                       'Schedule',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,  // Make it stand out
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ],
@@ -84,10 +79,9 @@ class _DestinationWidgetState extends State<DestinationWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          // Scrollable area
           Container(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface, // White scroller background
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.all(8),
@@ -104,12 +98,41 @@ class _DestinationWidgetState extends State<DestinationWidget> {
                       icon: location['icon'],
                       title: location['title'],
                       subtitle: location['subtitle'],
-                      isHighlighted: index == 0, // Highlight first item
+                      isHighlighted: index == 0,
+                      onTap: location['action'],
                     ),
                   );
                 }).toList(),
               ),
             ),
+          ),
+          // Current location display
+          Obx(() => rideController.currentAddress.value.isNotEmpty
+              ? Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.my_location, color: theme.colorScheme.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Current: ${rideController.currentAddress.value}',
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+              : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -122,43 +145,39 @@ class _DestinationWidgetState extends State<DestinationWidget> {
     required String title,
     required String subtitle,
     bool isHighlighted = false,
+    VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
 
     return Card(
       elevation: 1,
       color: isHighlighted
-          ? theme.colorScheme.primary // Highlight color for first item
-          : theme.colorScheme.surface, // Normal card color
+          ? theme.colorScheme.primary
+          : theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
-          context.push(const SearchLocation());
-        },
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon with rounded white background
               Container(
                 decoration: BoxDecoration(
                   color: isHighlighted
                       ? theme.colorScheme.onPrimary
-                      : theme
-                          .colorScheme.secondary, // White background for icon
-                  shape: BoxShape.circle, // Circular shape
+                      : theme.colorScheme.secondary,
+                  shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.all(12), // Padding around the icon
+                padding: const EdgeInsets.all(12),
                 child: Icon(
                   icon,
                   size: 24,
                   color: isHighlighted
-                      ? theme.colorScheme.primary // Icon color for highlighted
-                      : theme
-                          .colorScheme.onPrimary, // Icon color for normal state
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -185,6 +204,62 @@ class _DestinationWidgetState extends State<DestinationWidget> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showDestinationDialog(BuildContext context) {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter Destination'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: textController,
+              decoration: const InputDecoration(
+                hintText: 'Enter destination address',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Or tap on the map to select location',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (textController.text.isNotEmpty) {
+                // For demo, using offset from current location
+                if (rideController.currentPosition.value != null) {
+                  rideController.updateDestination(
+                    textController.text,
+                    rideController.currentPosition.value!.latitude + 0.01,
+                    rideController.currentPosition.value!.longitude + 0.01,
+                  );
+                }
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _selectPresetLocation(BuildContext context, String name, double lat, double lng) {
+    rideController.updateDestination(name, lat, lng);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$name selected as destination')),
     );
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/core/global_variables.dart';
+import 'package:pick_u/models/otp_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
-import '../models/otp_model.dart';
-import '../routes/app_routes.dart';
+import 'package:pick_u/routes/app_routes.dart';
 
 class OTPController extends GetxController {
   // Store the complete OTP

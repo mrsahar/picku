@@ -10,8 +10,8 @@ class OTPRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'email': email,
-      'otp': otp,
+      'email': email.trim(),
+      'otp': otp.toString().trim(),
     };
   }
 }

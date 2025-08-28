@@ -26,7 +26,7 @@ class _MainMapState extends State<MainMap> {
 
   List<Widget> pageList = [
     const HomeScreen(),
-    const DestinationSelectWidget(),
+    EnhancedDestinationSelectWidget(),
     const DriverScreen(),
     const WalletScreen(),
     const ProfileScreen(),

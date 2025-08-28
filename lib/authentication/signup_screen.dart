@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:pick_u/authentication/signup/widget/signup_footer_widget.dart';
-import 'package:pick_u/authentication/signup/widget/signup_form_widget.dart';
-import 'package:pick_u/authentication/signup/widget/signup_header_widget.dart';
+import 'package:pick_u/authentication/widget/signup_footer_widget.dart';
+import 'package:pick_u/authentication/widget/signup_form_widget.dart';
+import 'package:pick_u/authentication/widget/signup_header_widget.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
