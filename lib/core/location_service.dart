@@ -49,4 +49,13 @@ class LocationService extends GetxService {
     }
     return 'Unknown location';
   }
+
+  Future<List<Location>> searchPlaces(String query) async {
+    try {
+      return await locationFromAddress(query);
+    } catch (e) {
+      print('Error searching places: $e');
+      return [];
+    }
+  }
 }

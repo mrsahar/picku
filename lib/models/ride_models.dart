@@ -25,6 +25,7 @@ class RideStop {
   }
 }
 
+// 4. Ride Request Model
 class RideRequest {
   String userId;
   String rideType;

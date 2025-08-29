@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
 import 'package:pick_u/core/location_service.dart';
 import 'package:pick_u/providers/api_provider.dart';
@@ -23,6 +24,8 @@ void initializeServices() {
   Get.put(LocationService());
   Get.put(ApiProvider());
   Get.put(RideController());
+  Get.put(LocationService());
+  Get.put(RideBookingController());
 }
 
 class MyApp extends StatefulWidget {

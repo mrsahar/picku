@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
 import 'package:pick_u/common/extension.dart';
@@ -8,7 +8,6 @@ import 'package:pick_u/taxi/main/home/driver_screen.dart';
 import 'package:pick_u/taxi/main/home/home_screen.dart';
 import 'package:pick_u/taxi/main/payment/select_payment_page.dart';
 import 'package:pick_u/taxi/main/wallet/wallet_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
 
 import '../../utils/theme/mcolors.dart';
@@ -36,8 +35,8 @@ class _MainMapState extends State<MainMap> {
   Widget build(BuildContext context) {
     var isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFF9F2);
-    final textColor = isDark ? Colors.white : Colors.black;
-    final iconColor = isDark ? Colors.orange : Colors.black;
+    //final textColor = isDark ? Colors.white : Colors.black;
+   // final iconColor = isDark ? Colors.orange : Colors.black;
 
     return Scaffold(
       drawer: Drawer(

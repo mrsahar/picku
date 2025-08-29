@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
-import 'package:pick_u/common/extension.dart';
 
 class SearchLocation extends StatelessWidget {
   const SearchLocation({super.key});

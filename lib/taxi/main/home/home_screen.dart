@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/common/dark_map_theme.dart';
 import 'package:pick_u/common/light_map_theme.dart';
+import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
 import 'package:pick_u/taxi/main/home/widget/destination_select_widget_state.dart';
 import 'package:pick_u/taxi/main/home/widget/driver_info_widget.dart';
@@ -12,6 +13,7 @@ import 'package:pick_u/taxi/main/home/widget/location_widget.dart';
 import 'package:pick_u/taxi/main/home/widget/on_trip_widget.dart';
 import 'package:pick_u/taxi/main/home/widget/rating_widget.dart';
 import 'package:pick_u/taxi/main/home/widget/reached_destination.dart';
+import 'package:pick_u/taxi/ride_booking_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -64,23 +66,34 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: rideController.onMapTap,
         )),
         // Custom Bottom Sheet with AnimatedSwitcher
+        // Conditional Bottom Content
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (child, animation) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.0, 1.0),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              );
-            },
-            child: widgets[isWidget],
-          ),
+          child: Obx(() {
+            // Check if pickup location is set in RideBookingController
+            final bookingController = Get.find<RideBookingController>();
+            if (bookingController.pickupLocation.value != null &&
+                bookingController.dropoffLocation.value != null) {
+              return _buildRideActionButtons(context, bookingController);
+            }
+
+            // Otherwise show normal animated switcher
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              transitionBuilder: (child, animation) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 1.0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                );
+              },
+              child: widgets[isWidget],
+            );
+          }),
         ),
         // Toggle button
         Positioned(
@@ -94,7 +107,44 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
+  Widget _buildRideActionButtons(BuildContext context, RideBookingController controller) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: OutlinedButton(
+              onPressed: () => Get.to(() => RideBookingPage()),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.location_on_outlined, size: 18),
+                  SizedBox(width: 6),
+                  Text('Change'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: controller.startRide,
+              child: const Text('Start Ride'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   void toggleLocationWidget() {
     setState(() {
       isWidget = (isWidget + 1) % 6;

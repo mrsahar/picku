@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
-import 'package:pick_u/common/extension.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
-import 'package:pick_u/taxi/main/search/search_location.dart';
+import 'package:pick_u/taxi/ride_booking_page.dart';
 
 class EnhancedDestinationWidget extends StatelessWidget {
   final RideController rideController = Get.find<RideController>();
@@ -24,7 +23,7 @@ class EnhancedDestinationWidget extends StatelessWidget {
         'icon': LineAwesomeIcons.map_marker_alt_solid,
         'title': 'Book a Ride',
         'subtitle': 'Enter Destination',
-        'action': () => _showDestinationDialog(context),
+         'action': () => Get.to(() => RideBookingPage()),
       },
     ];
 
@@ -207,59 +206,4 @@ class EnhancedDestinationWidget extends StatelessWidget {
     );
   }
 
-  void _showDestinationDialog(BuildContext context) {
-    final textController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enter Destination'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: textController,
-              decoration: const InputDecoration(
-                hintText: 'Enter destination address',
-                prefixIcon: Icon(Icons.search),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Or tap on the map to select location',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (textController.text.isNotEmpty) {
-                // For demo, using offset from current location
-                if (rideController.currentPosition.value != null) {
-                  rideController.updateDestination(
-                    textController.text,
-                    rideController.currentPosition.value!.latitude + 0.01,
-                    rideController.currentPosition.value!.longitude + 0.01,
-                  );
-                }
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Set'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _selectPresetLocation(BuildContext context, String name, double lat, double lng) {
-    rideController.updateDestination(name, lat, lng);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name selected as destination')),
-    );
-  }
 }
