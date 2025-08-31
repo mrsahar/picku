@@ -4,7 +4,7 @@ import 'package:pick_u/common/extension.dart';
 import 'package:pick_u/taxi/main/search/search_location.dart';
 
 Widget buildTag(String label, BuildContext context, bool isDark) {
-  final bgColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFFFF9F2); // Background color
+  final bgColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]; // Background color
   final borderColor = isDark ? Colors.orangeAccent : Colors.amberAccent; // Border color
   final textColor = isDark ? Colors.white : Colors.black; // Text color
   final iconColor = isDark ? Colors.amberAccent : Colors.black; // Icon color

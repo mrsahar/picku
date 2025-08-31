@@ -33,7 +33,7 @@ class _MainMapState extends State<MainMap> {
   @override
   Widget build(BuildContext context) {
     var isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFF9F2);
+    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.grey[50];
     //final textColor = isDark ? Colors.white : Colors.black;
    // final iconColor = isDark ? Colors.orange : Colors.black;
 

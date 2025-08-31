@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
 import 'package:pick_u/taxi/ride_booking_page.dart';
 
 class EnhancedDestinationWidget extends StatelessWidget {
   final RideController rideController = Get.find<RideController>();
+  late final RideBookingController bookingController;
 
-  EnhancedDestinationWidget({Key? key}) : super(key: key);
+  EnhancedDestinationWidget({Key? key}) : super(key: key) {
+    try {
+      bookingController = Get.find<RideBookingController>();
+    } catch (e) {
+      bookingController = Get.put(RideBookingController());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,30 +55,36 @@ class EnhancedDestinationWidget extends StatelessWidget {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.schedule,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Schedule',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                    GestureDetector(
+                      onTap: () {
+                        bookingController.isScheduled.value = true;
+                        Get.to(() => RideBookingPage());
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule,
+                              size: 16,
                               color: Colors.grey[600],
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'Schedule',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -98,7 +112,10 @@ class EnhancedDestinationWidget extends StatelessWidget {
                     ],
                   ),
                   child: InkWell(
-                    onTap: () => Get.to(() => RideBookingPage()),
+                    onTap: () {
+                      bookingController.isScheduled.value = false;
+                      Get.to(() => RideBookingPage());
+                    },
                     borderRadius: BorderRadius.circular(16),
                     child: Column(
                       children: [

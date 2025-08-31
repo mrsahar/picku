@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/utils/theme/app_theme.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 
 class RideBookingPage extends StatelessWidget {
   late final RideBookingController controller;
@@ -44,6 +45,185 @@ class RideBookingPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Schedule Toggle Section
+          Obx(() => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: controller.isScheduled.value
+                  ? theme.colorScheme.primary.withOpacity(0.1)
+                  : Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: controller.isScheduled.value
+                    ? theme.colorScheme.primary.withOpacity(0.3)
+                    : Colors.grey[300]!,
+              ),
+            ),
+            child: Row(
+              children: [
+                Switch(
+                  value: controller.isScheduled.value,
+                  onChanged: (value) {
+                    controller.toggleScheduling();
+                  },
+                  activeColor: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Schedule Ride',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: controller.isScheduled.value
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        controller.isScheduled.value
+                            ? 'Book a ride for later'
+                            : 'Book a ride now',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
+
+          // Date and Time Fields (shown only when scheduled)
+          Obx(() {
+            if (controller.isScheduled.value) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+
+                  // Date Selection
+                  Text(
+                    'Select Date',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, color: theme.colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              controller.scheduledDate.value != null
+                                  ? DateFormat('EEEE, MMM dd, yyyy').format(controller.scheduledDate.value!)
+                                  : 'Select date',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: controller.scheduledDate.value != null
+                                    ? theme.colorScheme.onSurface
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Time Selection
+                  Text(
+                    'Select Time',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => _selectTime(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.access_time, color: theme.colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              controller.scheduledTime.value != null
+                                  ? controller.scheduledTime.value!.format(context)
+                                  : 'Select time',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: controller.scheduledTime.value != null
+                                    ? theme.colorScheme.onSurface
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Schedule Summary
+                  if (controller.scheduledDate.value != null && controller.scheduledTime.value != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            color: theme.colorScheme.primary,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Ride scheduled for ${DateFormat('MMM dd, yyyy').format(controller.scheduledDate.value!)} at ${controller.scheduledTime.value!.format(context)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+
+          const SizedBox(height: 16),
+
           // Pickup Location
           Text(
             'Pickup Location',
@@ -401,6 +581,72 @@ class RideBookingPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Date picker
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: controller.scheduledDate.value ?? DateTime.now().add(const Duration(hours: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      controller.setScheduledDate(picked);
+    }
+  }
+
+  // Time picker
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: controller.scheduledTime.value ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      // Validate that the selected time is not in the past
+      if (controller.scheduledDate.value != null) {
+        DateTime selectedDateTime = DateTime(
+          controller.scheduledDate.value!.year,
+          controller.scheduledDate.value!.month,
+          controller.scheduledDate.value!.day,
+          picked.hour,
+          picked.minute,
+        );
+
+        if (selectedDateTime.isBefore(DateTime.now())) {
+          Get.snackbar(
+            'Invalid Time',
+            'Please select a time in the future',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return;
+        }
+      }
+
+      controller.setScheduledTime(picked);
+    }
   }
 
   // Method to check GPS and enable it automatically

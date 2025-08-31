@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:pick_u/core/google_directions_service.dart';
 import 'package:pick_u/core/google_places_service.dart';
 import 'package:pick_u/core/location_service.dart';
 import 'package:pick_u/models/location_model.dart';
-import 'package:pick_u/models/ride_models.dart';
 import 'package:pick_u/providers/api_provider.dart';
-import 'package:pick_u/core/google_directions_service.dart';
-import 'package:pick_u/taxi/ride_booking_page.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class RideBookingController extends GetxController {
   final ApiProvider _apiProvider = Get.find<ApiProvider>();
@@ -36,6 +36,11 @@ class RideBookingController extends GetxController {
   var fareEstimate = 0.0.obs;
   var isMultiStopRide = false.obs;
 
+  // Scheduling variables
+  var isScheduled = false.obs;
+  var scheduledDate = Rx<DateTime?>(null);
+  var scheduledTime = Rx<TimeOfDay?>(null);
+
   // Map display variables
   var markers = <Marker>{}.obs;
   var polylines = <Polyline>{}.obs;
@@ -56,7 +61,7 @@ class RideBookingController extends GetxController {
   var driverPhone = ''.obs;
   var estimatedPrice = 0.0.obs;
   var vehicle = ''.obs;
-  var vehicleColor =''.obs;
+  var vehicleColor = ''.obs;
 
   @override
   void onInit() {
@@ -73,6 +78,39 @@ class RideBookingController extends GetxController {
       controller.dispose();
     }
     super.onClose();
+  }
+
+  // Toggle scheduling
+  void toggleScheduling() {
+    isScheduled.value = !isScheduled.value;
+    if (!isScheduled.value) {
+      scheduledDate.value = null;
+      scheduledTime.value = null;
+    }
+  }
+
+  // Set scheduled date
+  void setScheduledDate(DateTime date) {
+    scheduledDate.value = date;
+  }
+
+  // Set scheduled time
+  void setScheduledTime(TimeOfDay time) {
+    scheduledTime.value = time;
+  }
+
+  // Get combined scheduled datetime
+  DateTime? getScheduledDateTime() {
+    if (scheduledDate.value != null && scheduledTime.value != null) {
+      return DateTime(
+        scheduledDate.value!.year,
+        scheduledDate.value!.month,
+        scheduledDate.value!.day,
+        scheduledTime.value!.hour,
+        scheduledTime.value!.minute,
+      );
+    }
+    return null;
   }
 
   Future<void> getCurrentLocation() async {
@@ -135,17 +173,18 @@ class RideBookingController extends GetxController {
       }
 
       // Get autocomplete suggestions from Google Places API
-      List<AutocompletePrediction> predictions = await GooglePlacesService.getAutocompleteSuggestions(
+      List<AutocompletePrediction> predictions = await GooglePlacesService
+          .getAutocompleteSuggestions(
         input: query,
         location: currentLatLng,
         radius: 50000, // 50km radius around current location
       );
 
       searchSuggestions.value = predictions;
-
     } catch (e) {
       print(' MRSAHAr Error searching locations: $e');
-      Get.snackbar('Search Error', 'Failed to search locations. Please try again.');
+      Get.snackbar(
+          'Search Error', 'Failed to search locations. Please try again.');
       searchSuggestions.clear();
     } finally {
       isSearching.value = false;
@@ -158,7 +197,8 @@ class RideBookingController extends GetxController {
       searchSuggestions.clear();
 
       // Get detailed place information
-      PlaceDetails? placeDetails = await GooglePlacesService.getPlaceDetails(prediction.placeId);
+      PlaceDetails? placeDetails = await GooglePlacesService.getPlaceDetails(
+          prediction.placeId);
 
       if (placeDetails == null) {
         Get.snackbar('Error', 'Failed to get location details');
@@ -202,7 +242,6 @@ class RideBookingController extends GetxController {
       }
 
       activeSearchField.value = '';
-
     } catch (e) {
       print(' MRSAHAr Error selecting suggestion: $e');
       Get.snackbar('Error', 'Failed to select location');
@@ -249,6 +288,21 @@ class RideBookingController extends GetxController {
       return;
     }
 
+    // Validate scheduled ride requirements
+    if (isScheduled.value) {
+      if (scheduledDate.value == null || scheduledTime.value == null) {
+        Get.snackbar(
+            'Error', 'Please select both date and time for scheduled ride');
+        return;
+      }
+
+      DateTime scheduledDateTime = getScheduledDateTime()!;
+      if (scheduledDateTime.isBefore(DateTime.now())) {
+        Get.snackbar('Error', 'Scheduled time cannot be in the past');
+        return;
+      }
+    }
+
     try {
       isLoading.value = true;
 
@@ -259,15 +313,24 @@ class RideBookingController extends GetxController {
       isRideBooked.value = true;
       rideStatus.value = 'booked';
 
+      String scheduleInfo = '';
+      if (isScheduled.value && scheduledDate.value != null &&
+          scheduledTime.value != null) {
+        DateTime scheduledDateTime = getScheduledDateTime()!;
+        scheduleInfo =
+        '\nScheduled: ${DateFormat('MMM dd, yyyy hh:mm a').format(
+            scheduledDateTime)}';
+      }
+
       Get.snackbar(
         'Success',
-        'Route calculated!\nDistance: ${routeDistance.value}\nDuration: ${routeDuration.value}',
+        'Route calculated!\nDistance: ${routeDistance
+            .value}\nDuration: ${routeDuration.value}$scheduleInfo',
         duration: const Duration(seconds: 3),
       );
 
       // Go back to HomeScreen to show the route with buttons
       Get.back();
-
     } catch (e) {
       Get.snackbar('Error', 'Booking failed: $e');
       isRideBooked.value = false;
@@ -290,6 +353,20 @@ class RideBookingController extends GetxController {
       print('MRSAHAr Missing pickup or dropoff location');
       Get.snackbar('Error', 'Please set pickup and dropoff locations');
       return;
+    }
+
+    // Validate scheduled ride requirements
+    if (isScheduled.value) {
+      if (scheduledDate.value == null || scheduledTime.value == null) {
+        Get.snackbar('Incomplete Schedule', 'Please set both date and time');
+        return;
+      }
+
+      DateTime scheduledDateTime = getScheduledDateTime()!;
+      if (scheduledDateTime.isBefore(DateTime.now())) {
+        Get.snackbar('Invalid Schedule', 'Scheduled time cannot be in the past');
+        return;
+      }
     }
 
     try {
@@ -330,11 +407,15 @@ class RideBookingController extends GetxController {
       });
       print('MRSAHAr Added dropoff: ${dropoffLocation.value!.address}');
 
+      DateTime scheduledDateTime = isScheduled.value && getScheduledDateTime() != null
+          ? getScheduledDateTime()!
+          : DateTime.now();
+
       Map<String, dynamic> requestData = {
         "userId": "44f9ebba-b24d-4df1-8a60-bd7035b6097d",
         "rideType": rideType.value,
-        "isScheduled": false,
-        "scheduledTime": DateTime.now().toIso8601String(),
+        "isScheduled": isScheduled.value,
+        "scheduledTime": scheduledDateTime.toIso8601String(),
         "passengerCount": passengerCount.value,
         "fareEstimate": fareEstimate.value,
         "stops": allStops,
@@ -342,13 +423,27 @@ class RideBookingController extends GetxController {
 
       print('MRSAHAr Request payload: $requestData');
 
-      // Set status to waiting while API processes
-      rideStatus.value = 'waiting';
+      // Set appropriate status based on ride type
+      rideStatus.value = isScheduled.value ? 'scheduled' : 'waiting';
 
       Response response = await _apiProvider.postData('/api/Ride/book', requestData);
       print('MRSAHAr API response: ${response.body}');
 
       if (response.isOk) {
+        // Handle scheduled rides differently - no driver assignment needed
+        if (isScheduled.value) {
+          Get.snackbar(
+            'Ride Scheduled Successfully!',
+            'Your ride has been scheduled for ${DateFormat('MMM dd, yyyy hh:mm a').format(getScheduledDateTime()!)}',
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.green.withOpacity(0.9),
+            colorText: Colors.white,
+          );
+          clearBooking();
+          return; // Exit early for scheduled rides
+        }
+
+        // Handle immediate rides - process driver assignment
         var responseBody = response.body;
         print('MRSAHAr Response body: $responseBody');
 
@@ -359,7 +454,7 @@ class RideBookingController extends GetxController {
 
           if (rideData is Map<String, dynamic>) {
             // Driver found - extract driver information
-            currentRideId.value = rideData['rideId'] ?? '';;
+            currentRideId.value = rideData['rideId'] ?? '';
             driverId.value = rideData['driverId'] ?? '';
             driverName.value = rideData['driverName'] ?? '';
             driverPhone.value = rideData['driverPhone'] ?? '';
@@ -396,6 +491,7 @@ class RideBookingController extends GetxController {
     }
   }
 
+  // Rest of the methods remain unchanged...
   Future<void> _createMarkersAndPolylines() async {
     markers.clear();
     polylines.clear();
@@ -415,7 +511,8 @@ class RideBookingController extends GetxController {
         Marker(
           markerId: const MarkerId('pickup'),
           position: pickupLatLng,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen),
           infoWindow: InfoWindow(
             title: 'Pickup Location',
             snippet: pickupLocation.value!.address,
@@ -429,14 +526,16 @@ class RideBookingController extends GetxController {
     // Create additional stop markers and collect waypoints
     for (int i = 0; i < additionalStops.length; i++) {
       final stop = additionalStops[i];
-      if (stop.address.isNotEmpty && stop.latitude != 0 && stop.longitude != 0) {
+      if (stop.address.isNotEmpty && stop.latitude != 0 &&
+          stop.longitude != 0) {
         LatLng stopLatLng = LatLng(stop.latitude, stop.longitude);
 
         markers.add(
           Marker(
             markerId: MarkerId('stop_$i'),
             position: stopLatLng,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueYellow),
             infoWindow: InfoWindow(
               title: 'Stop ${i + 1}',
               snippet: stop.address,
@@ -478,7 +577,8 @@ class RideBookingController extends GetxController {
     isLoadingRoute.value = false;
   }
 
-  Future<void> _createRealRoutes(List<LatLng> routePoints, List<LatLng> waypoints, LatLng? dropoffLatLng) async {
+  Future<void> _createRealRoutes(List<LatLng> routePoints,
+      List<LatLng> waypoints, LatLng? dropoffLatLng) async {
     if (routePoints.length < 2 || dropoffLatLng == null) return;
 
     try {
@@ -486,14 +586,16 @@ class RideBookingController extends GetxController {
       LatLng destination = dropoffLatLng;
 
       // Get the optimized route using Google Directions API
-      List<LatLng> routeCoordinates = await GoogleDirectionsService.getRoutePoints(
+      List<LatLng> routeCoordinates = await GoogleDirectionsService
+          .getRoutePoints(
         origin: origin,
         destination: destination,
         waypoints: waypoints,
       );
 
       // Get route information
-      Map<String, dynamic> routeInfo = await GoogleDirectionsService.getRouteInfo(
+      Map<String, dynamic> routeInfo = await GoogleDirectionsService
+          .getRouteInfo(
         origin: origin,
         destination: destination,
         waypoints: waypoints,
@@ -515,12 +617,12 @@ class RideBookingController extends GetxController {
           ),
         );
 
-        print(' MRSAHAr Route created successfully: ${routeDistance.value}, ${routeDuration.value}');
+        print(' MRSAHAr Route created successfully: ${routeDistance
+            .value}, ${routeDuration.value}');
       } else {
         // Fallback to segment-by-segment routing if main route fails
         await _createSegmentRoutes(routePoints);
       }
-
     } catch (e) {
       print(' MRSAHAr Error creating real routes: $e');
       // Fallback to simple polylines
@@ -531,7 +633,8 @@ class RideBookingController extends GetxController {
   Future<void> _createSegmentRoutes(List<LatLng> routePoints) async {
     for (int i = 0; i < routePoints.length - 1; i++) {
       try {
-        List<LatLng> segmentPoints = await GoogleDirectionsService.getRoutePoints(
+        List<LatLng> segmentPoints = await GoogleDirectionsService
+            .getRoutePoints(
           origin: routePoints[i],
           destination: routePoints[i + 1],
         );
@@ -559,7 +662,6 @@ class RideBookingController extends GetxController {
             patterns: patterns,
           ),
         );
-
       } catch (e) {
         print(' MRSAHAr Error creating segment $i: $e');
         // Create fallback straight line for this segment
@@ -621,6 +723,9 @@ class RideBookingController extends GetxController {
     routeDuration.value = '';
     currentRideId.value = '';
     rideStatus.value = 'pending';
+    isScheduled.value = false;
+    scheduledDate.value = null;
+    scheduledTime.value = null;
   }
 
   void clearBooking() {
@@ -629,6 +734,9 @@ class RideBookingController extends GetxController {
     isRideBooked.value = false;
     resetForm();
   }
+
+  // Rest of the methods (startTrip, endTrip, _showPaymentPopup, etc.) remain unchanged...
+  // [Include all other existing methods here without changes]
 
   // Start trip functionality
   Future<void> startTrip() async {
@@ -640,7 +748,8 @@ class RideBookingController extends GetxController {
     try {
       isLoading.value = true;
 
-      Response response = await _apiProvider.postData('/api/Ride/${currentRideId.value}/start', {});
+      Response response = await _apiProvider.postData(
+          '/api/Ride/${currentRideId.value}/start', {});
 
       if (response.isOk) {
         rideStatus.value = 'trip_started';
@@ -664,13 +773,15 @@ class RideBookingController extends GetxController {
 
     try {
       isLoading.value = true;
-      Response response = await _apiProvider.postData('/api/Ride/${currentRideId.value}/end', {});
+      Response response = await _apiProvider.postData(
+          '/api/Ride/${currentRideId.value}/end', {});
 
       if (response.isOk) {
         var responseBody = response.body;
         print(' MRSAHAr End trip response: $responseBody');
 
-        if (responseBody is Map<String, dynamic> && responseBody.containsKey('message')) {
+        if (responseBody is Map<String, dynamic> &&
+            responseBody.containsKey('message')) {
           var messageData = responseBody['message'];
 
           if (messageData['status'] == 'Completed') {
@@ -692,7 +803,8 @@ class RideBookingController extends GetxController {
               rideEndTime: rideEndTime,
             );
           } else {
-            Get.snackbar('Error', 'Trip completion failed: ${messageData['status']}');
+            Get.snackbar(
+                'Error', 'Trip completion failed: ${messageData['status']}');
           }
         } else {
           Get.snackbar('Trip Completed', 'Your trip has ended successfully!');
@@ -728,17 +840,6 @@ class RideBookingController extends GetxController {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -856,7 +957,7 @@ class RideBookingController extends GetxController {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildSummaryItem('Distance', '${distance.toStringAsFixed(2)} km'),
-                       // _buildSummaryItem('Duration', _calculateDuration(rideStartTime, rideEndTime)),
+                        // _buildSummaryItem('Duration', _calculateDuration(rideStartTime, rideEndTime)),
                         _buildSummaryItem('Waiting', totalWaitingTime ?? '0 min'),
                       ],
                     ),
@@ -923,7 +1024,7 @@ class RideBookingController extends GetxController {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
+            color: MColor.primaryNavy,
           ),
         ),
         const SizedBox(height: 2),
@@ -931,23 +1032,21 @@ class RideBookingController extends GetxController {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: Colors.grey[600],
+            color: MColor.primaryNavy,
           ),
         ),
       ],
     );
   }
 
-
-
-
   void _showTipSelectionDialog(double finalFare) {
     final tipAmounts = [10.0, 15.0, 20.0];
 
     Get.dialog(
       Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
+          color: Colors.grey[50],
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -957,7 +1056,7 @@ class RideBookingController extends GetxController {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: MColor.primaryNavy,
                 ),
               ),
 
@@ -967,7 +1066,7 @@ class RideBookingController extends GetxController {
                 'Show your appreciation',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: MColor.primaryNavy,
                 ),
               ),
 
@@ -1002,7 +1101,7 @@ class RideBookingController extends GetxController {
                               '${tipPercent.toInt()}% tip',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey[700],
+                                color: MColor.primaryNavy,
                               ),
                             ),
                             Text(
@@ -1010,7 +1109,7 @@ class RideBookingController extends GetxController {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.grey[800],
+                                color: MColor.primaryNavy,
                               ),
                             ),
                           ],
@@ -1029,7 +1128,9 @@ class RideBookingController extends GetxController {
                 child: TextButton(
                   onPressed: () {
                     Get.back();
-                    Get.snackbar('Payment', 'Payment of ₹${finalFare.toStringAsFixed(2)} completed!');
+                    Get.snackbar('Payment',
+                        'Payment of ₹${finalFare.toStringAsFixed(
+                            2)} completed!');
                     clearBooking();
                   },
                   child: Text(
@@ -1049,7 +1150,8 @@ class RideBookingController extends GetxController {
     );
   }
 
-  Future<void> _submitTip(double tipAmount, double finalFare, double totalAmount) async {
+  Future<void> _submitTip(double tipAmount, double finalFare,
+      double totalAmount) async {
     print(' MRSAHAr 🟡 _submitTip() called');
     print(' MRSAHAr 💰 Tip Amount: ₹${tipAmount.toStringAsFixed(2)}');
     print(' MRSAHAr 🧾 Final Fare: ₹${finalFare.toStringAsFixed(2)}');
@@ -1075,7 +1177,8 @@ class RideBookingController extends GetxController {
         print(' MRSAHAr  MRSAHAr ✅ Tip submitted successfully');
         Get.snackbar(
           'Payment Successful',
-          'Payment of ₹${totalAmount.toStringAsFixed(2)} (including ₹${tipAmount.toStringAsFixed(2)} tip) completed!',
+          'Payment of ₹${totalAmount.toStringAsFixed(2)} (including ₹${tipAmount
+              .toStringAsFixed(2)} tip) completed!',
           duration: Duration(seconds: 3),
         );
         clearBooking();
@@ -1092,6 +1195,4 @@ class RideBookingController extends GetxController {
       print(' MRSAHAr ✅ isLoading set to false');
     }
   }
-
-
 }
