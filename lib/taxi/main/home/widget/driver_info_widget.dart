@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:pick_u/controllers/ride_booking_controller.dart';
 
 Widget driverInfoWidget(BuildContext context) {
   final theme = Theme.of(context);
   var brightness = MediaQuery.of(context).platformBrightness;
   final isDarkMode = brightness == Brightness.dark;
   final inputBorderColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
+  final controller = Get.find<RideBookingController>();
+
   return Column(
     mainAxisAlignment: MainAxisAlignment.end,
     children: [
@@ -38,14 +42,18 @@ Widget driverInfoWidget(BuildContext context) {
               ),
             ),
             const SizedBox(height: 16),
-            // Title
-            const Text(
-              "Your Ride is arriving in 3 mins",
-              style: TextStyle(
+            // Title - Dynamic arrival time
+            Obx(() => Text(
+              controller.rideStatus.value == 'trip_started'
+                  ? "Trip in Progress"
+                  : controller.rideStatus.value == 'driver_on_way'
+                  ? "Your Ride is arriving in 3 mins"
+                  : "Driver Assigned",
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16.0,
               ),
-            ),
+            )),
             const SizedBox(height: 8.0),
 
             // Divider
@@ -62,7 +70,7 @@ Widget driverInfoWidget(BuildContext context) {
                   color: theme.primaryColor,
                   isDarkMode: isDarkMode,
                   onPressed: () {
-                    // Handle message action
+                    Get.snackbar('Message', 'Messaging feature coming soon!');
                   },
                 ),
                 // Driver Info
@@ -72,11 +80,20 @@ Widget driverInfoWidget(BuildContext context) {
                     Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
-                        CircleAvatar(
+                        Obx(() => CircleAvatar(
                           radius: 36.0,
-                          backgroundImage: const AssetImage("assets/img/u2.png"),
-                          backgroundColor: theme.cardColor,
-                        ),
+                          backgroundColor: theme.primaryColor,
+                          child: Text(
+                            controller.driverName.value.isNotEmpty
+                                ? controller.driverName.value[0].toUpperCase()
+                                : 'D',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )),
                         Positioned(
                           bottom: -2,
                           child: Container(
@@ -106,27 +123,42 @@ Widget driverInfoWidget(BuildContext context) {
                     ),
                     const SizedBox(height: 8.0),
 
-                    // Driver Name
-                    Text(
-                      "Akshay Kumar",
+                    // Driver Name - Dynamic
+                    Obx(() => Text(
+                      controller.driverName.value.isNotEmpty
+                          ? controller.driverName.value
+                          : "Driver",
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16.0,
                       ),
-                    ),
+                    )),
                     const SizedBox(height: 4.0),
 
-                    // OTP and Vehicle Info
+                    // Phone and Vehicle Info
                     Column(
                       children: [
+                        // Driver Phone
+                        Obx(() => Text(
+                          controller.driverPhone.value.isNotEmpty
+                              ? controller.driverPhone.value
+                              : "Phone not available",
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.hintColor,
+                            fontSize: 12.0,
+                          ),
+                        )),
                         const SizedBox(height: 2.0),
-                        Text(
-                          "Swift Dezire   KA 05 EH 2567",
+                        // Vehicle Info (placeholder since not in API response)
+                        Obx(() => Text(
+                          controller.vehicle.value.isNotEmpty
+                              ? "${controller.vehicle.value} ${controller.vehicleColor.value}"
+                              : "No data about the car",
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.hintColor,
                             fontSize: 14.0,
                           ),
-                        ),
+                        )),
                       ],
                     ),
                   ],
@@ -137,54 +169,118 @@ Widget driverInfoWidget(BuildContext context) {
                   color: theme.primaryColor,
                   isDarkMode: isDarkMode,
                   onPressed: () {
-                    // Handle call action
+                    if (controller.driverPhone.value.isNotEmpty) {
+                      Get.snackbar(
+                        'Calling',
+                        'Calling ${controller.driverName.value}...',
+                        duration: const Duration(seconds: 2),
+                      );
+                      // Here you can add actual calling functionality
+                    } else {
+                      Get.snackbar('Error', 'Driver phone not available');
+                    }
                   },
                 ),
               ],
             ),
-            const SizedBox(height: 24.0),
-            // Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Share Button
-                Expanded(
-                  flex: 5,
-                  child: OutlinedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
-                    onPressed: () {
-                      // Handle share action
-                    },
-                    icon: const Icon(Icons.share),
-                    label: const Text("share"),
-                  ),
-                ),
-                const SizedBox(width: 10.0),
+            const SizedBox(height: 16.0),
 
-                // Cancel Ride Button
-                Expanded(
-                  flex: 8,
+            // Price Information
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Estimated Price',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
+                      Obx(() => Text(
+                        '₹${controller.estimatedPrice.value.toStringAsFixed(2)}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
+                        ),
+                      )),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Ride Type',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
+                      Obx(() => Text(
+                        controller.rideType.value,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16.0),
+            // Dynamic Button - Only Start Trip or End Trip
+            Obx(() {
+              if (controller.rideStatus.value == 'trip_started') {
+                // Show End Trip button when trip is started
+                return SizedBox(
+                  width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                     // backgroundColor: theme.errorColor.withOpacity(0.1),
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                       elevation: 0,
-                     // foregroundColor: theme.errorColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                     ),
-                    onPressed: () {
-                      // Handle cancel ride action
+                    onPressed: controller.isLoading.value ? null : () async {
+                      await controller.endTrip();
                     },
-                    child: const Text("Cancel Ride"),
+                    child: controller.isLoading.value
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("End Trip"),
                   ),
-                ),
-              ],
-            ),
+                );
+              } else {
+                // Show Start Trip button
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                    ),
+                    onPressed: controller.isLoading.value ? null : () async {
+                      await controller.startTrip();
+                    },
+                    child: controller.isLoading.value
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Start Trip"),
+                  ),
+                );
+              }
+            }),
           ],
         ),
       ),

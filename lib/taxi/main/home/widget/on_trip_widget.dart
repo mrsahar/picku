@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+// TODO remove
 Widget onTripWidget(context) {
   var brightness = MediaQuery.of(context).platformBrightness;
   final isDarkMode = brightness == Brightness.dark;

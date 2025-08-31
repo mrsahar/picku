@@ -27,7 +27,6 @@ class _LoginFormState extends State<LoginForm> {
             const SizedBox(
               height: 25,
             ),
-
             // Email Input Field
             TextFormField(
               controller: controller.emailController,
@@ -40,9 +39,7 @@ class _LoginFormState extends State<LoginForm> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 15),
-
             // Password Input Field
             Obx(() => TextFormField(
               controller: controller.passwordController,
@@ -63,10 +60,7 @@ class _LoginFormState extends State<LoginForm> {
                 ),
               ),
             )),
-
             const SizedBox(height: 30 - 20),
-
-            // Forgot Password Button (connected to controller)
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -75,7 +69,6 @@ class _LoginFormState extends State<LoginForm> {
                   },
                   child: const Text("Forgot Password?")),
             ),
-
             // Login Button (connected to controller with loading state)
             Obx(() => SizedBox(
               width: double.infinity,

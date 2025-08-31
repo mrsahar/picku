@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
-
-class EnhancedDestinationSelectWidget extends StatelessWidget {
+// TODO remove
+class DestinationSelectWidget extends StatelessWidget {
   final RideController rideController = Get.find<RideController>();
 
-  EnhancedDestinationSelectWidget({Key? key}) : super(key: key);
+  DestinationSelectWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

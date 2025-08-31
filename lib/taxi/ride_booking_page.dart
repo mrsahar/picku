@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
+import 'package:pick_u/utils/theme/app_theme.dart';
+import 'package:geolocator/geolocator.dart';
 
 class RideBookingPage extends StatelessWidget {
   late final RideBookingController controller;
 
-  RideBookingPage({Key? key}) : super(key: key) {
-    // Try to find existing controller or create new one
+  RideBookingPage({super.key}) {
     try {
       controller = Get.find<RideBookingController>();
     } catch (e) {
@@ -56,14 +57,14 @@ class RideBookingPage extends StatelessWidget {
                   controller: controller.pickupController,
                   hintText: 'Enter pickup location',
                   icon: Icons.my_location,
-                  iconColor: Colors.green,
+                  iconColor: MAppTheme.primaryNavyColor,
                   onChanged: (value) => controller.searchLocation(value, 'pickup'),
                 ),
               ),
               const SizedBox(width: 8),
               Obx(() => ElevatedButton(
                 onPressed: controller.isLoading.value ? null : () async {
-                  await controller.getCurrentLocation();
+                  await _getCurrentLocationWithGPSCheck();
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -92,7 +93,7 @@ class RideBookingPage extends StatelessWidget {
             controller: controller.dropoffController,
             hintText: 'Enter dropoff location',
             icon: Icons.location_on,
-            iconColor: Colors.red,
+            iconColor: MAppTheme.primaryNavyColor,
             onChanged: (value) => controller.searchLocation(value, 'dropoff'),
           ),
 
@@ -120,7 +121,7 @@ class RideBookingPage extends StatelessWidget {
                               controller: stopController,
                               hintText: 'Stop ${index + 1}',
                               icon: Icons.add_location,
-                              iconColor: Colors.orange,
+                              iconColor: MAppTheme.primaryNavyColor,
                               onChanged: (value) => controller.searchLocation(value, 'stop_$index'),
                             ),
                           ),
@@ -146,98 +147,102 @@ class RideBookingPage extends StatelessWidget {
           ),
 
           // Search Suggestions
-        Obx(() {
-          if (controller.searchSuggestions.isNotEmpty || controller.isSearching.value) {
-            return Container(
-              margin: const EdgeInsets.only(top: 8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              constraints: const BoxConstraints(maxHeight: 250),
-              child: Column(
-                children: [
-                  // Loading indicator
-                  if (controller.isSearching.value)
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Searching locations...'),
-                        ],
-                      ),
+          Obx(() {
+            if (controller.searchSuggestions.isNotEmpty || controller.isSearching.value) {
+              return Container(
+                margin: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
+                  ],
+                ),
+                constraints: const BoxConstraints(maxHeight: 250),
+                child: Column(
+                  children: [
+                    // Loading indicator
+                    if (controller.isSearching.value)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 12),
+                            Text('Searching locations...'),
+                          ],
+                        ),
+                      ),
 
-                  // Search results
-                  if (controller.searchSuggestions.isNotEmpty && !controller.isSearching.value)
-                    Expanded(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: controller.searchSuggestions.length,
-                        itemBuilder: (context, index) {
-                          final prediction = controller.searchSuggestions[index];
-                          return ListTile(
-                            dense: true,
-                            leading: Icon(
-                              _getIconForPlaceType(prediction.types),
-                              size: 20,
-                              color: Colors.blue,
-                            ),
-                            title: Text(
-                              prediction.description,
-                              style: const TextStyle(fontSize: 14),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
-                            subtitle: prediction.types.isNotEmpty
-                                ? Text(
-                              prediction.types.first.replaceAll('_', ' ').toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[600],
+                    // Search results
+                    if (controller.searchSuggestions.isNotEmpty && !controller.isSearching.value)
+                      Expanded(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: controller.searchSuggestions.length,
+                          itemBuilder: (context, index) {
+                            final prediction = controller.searchSuggestions[index];
+                            return ListTile(
+                              dense: true,
+                              leading: Icon(
+                                _getIconForPlaceType(prediction.types),
+                                size: 20,
+                                color: Colors.blue,
                               ),
-                            )
-                                : null,
-                            onTap: () => controller.selectSuggestion(prediction),
-                          );
-                        },
+                              title: Text(
+                                prediction.description,
+                                style: const TextStyle(fontSize: 14),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                              subtitle: prediction.types.isNotEmpty
+                                  ? Text(
+                                prediction.types.first.replaceAll('_', ' ').toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              )
+                                  : null,
+                              onTap: () async {
+                                await controller.selectSuggestion(prediction);
+                                // Auto-calculate when dropoff or stop is selected
+                                await _handleLocationSelectionAutoCalculate();
+                              },
+                            );
+                          },
+                        ),
                       ),
-                    ),
 
-                  // No results message
-                  if (controller.searchSuggestions.isEmpty &&
-                      !controller.isSearching.value &&
-                      controller.activeSearchField.value.isNotEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.search_off, color: Colors.grey),
-                          SizedBox(width: 12),
-                          Text('No locations found. Try a different search term.'),
-                        ],
+                    // No results message
+                    if (controller.searchSuggestions.isEmpty &&
+                        !controller.isSearching.value &&
+                        controller.activeSearchField.value.isNotEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.search_off, color: Colors.grey),
+                            SizedBox(width: 12),
+                            Text('No locations found. Try a different search term.'),
+                          ],
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            );
-          }
-          return const SizedBox.shrink();
-        }),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
 
           const SizedBox(height: 24),
 
@@ -373,19 +378,22 @@ class RideBookingPage extends StatelessWidget {
               onPressed: (controller.isLoading.value ||
                   controller.pickupLocation.value == null ||
                   controller.dropoffLocation.value == null)
-                  ? null
+                  ? () => Get.back()
                   : () async {
-                await controller.bookRide();
+                Get.back();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: controller.isLoading.value
-                  ? const CircularProgressIndicator(color: Colors.white)
+              child: controller.dropoffLocation.value == null
+                  ? const Text(
+                'Go Back',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              )
                   : const Text(
-                'Book Ride',
+                'Show Map',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             )),
@@ -393,6 +401,87 @@ class RideBookingPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Method to check GPS and enable it automatically
+  Future<void> _getCurrentLocationWithGPSCheck() async {
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        // Show dialog asking user to enable GPS
+        Get.dialog(
+          AlertDialog(
+            title: const Text('GPS Required'),
+            content: const Text('GPS is required for this feature. Would you like to enable it?'),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Get.back();
+                  // Try to open location settings
+                  bool opened = await Geolocator.openLocationSettings();
+                  if (opened) {
+                    // Wait a bit and check again
+                    await Future.delayed(const Duration(seconds: 2));
+                    bool isEnabled = await Geolocator.isLocationServiceEnabled();
+                    if (isEnabled) {
+                      await controller.getCurrentLocation();
+                    } else {
+                      Get.snackbar('Error', 'GPS is still disabled. Please enable it manually.');
+                    }
+                  } else {
+                    Get.snackbar('Error', 'Unable to open GPS settings. Please enable GPS manually.');
+                  }
+                },
+                child: const Text('Enable GPS'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Check for permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          Get.snackbar('Error', 'Location permissions are denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        Get.snackbar('Error', 'Location permissions are permanently denied');
+        return;
+      }
+
+      // Get current location
+      await controller.getCurrentLocation();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to get current location: ${e.toString()}');
+    }
+  }
+
+  // Method to handle auto-calculation when location is selected
+  Future<void> _handleLocationSelectionAutoCalculate() async {
+    // Small delay to ensure the location is properly set in the controller
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Check if both pickup and dropoff are set, then calculate
+    if (controller.pickupLocation.value != null &&
+        controller.dropoffLocation.value != null) {
+      try {
+        await controller.bookRide();
+      } catch (e) {
+        print('Error calculating route: $e');
+        // You might want to show a snackbar here if needed
+      }
+    }
   }
 
   Widget _buildLocationTextField({
@@ -417,6 +506,7 @@ class RideBookingPage extends StatelessWidget {
       ),
     );
   }
+
   IconData _getIconForPlaceType(List<String> types) {
     if (types.contains('establishment') || types.contains('point_of_interest')) {
       return Icons.place;

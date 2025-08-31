@@ -7,14 +7,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/common/dark_map_theme.dart';
 import 'package:pick_u/common/light_map_theme.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/controllers/ride_controller.dart';
-import 'package:pick_u/taxi/main/home/widget/destination_select_widget_state.dart';
+import 'package:pick_u/taxi/main/booking/no_drivers_available_widget.dart';
+import 'package:pick_u/taxi/main/booking/waiting_for_driver_widget.dart';
 import 'package:pick_u/taxi/main/home/widget/driver_info_widget.dart';
 import 'package:pick_u/taxi/main/home/widget/location_widget.dart';
-import 'package:pick_u/taxi/main/home/widget/on_trip_widget.dart';
-import 'package:pick_u/taxi/main/home/widget/rating_widget.dart';
-import 'package:pick_u/taxi/main/home/widget/reached_destination.dart';
 import 'package:pick_u/taxi/ride_booking_page.dart';
+import 'package:pick_u/utils/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,8 +22,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
-  final RideController rideController = Get.put(RideController());
+  final Completer<GoogleMapController> _controller =
+      Completer<GoogleMapController>();
+
+  //final RideController rideController = Get.put(RideController());
   late RideBookingController bookingController;
 
   static const CameraPosition _kGooglePlex = CameraPosition(
@@ -55,12 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDarkMode = brightness == Brightness.dark;
 
     final List<Widget> widgets = [
-      EnhancedDestinationWidget(), // Enhanced with functionality
-      EnhancedDestinationSelectWidget(), // Enhanced with functionality
-      onTripWidget(context),
-      driverInfoWidget(context),
-      destinationReachedWidget(context),
-      ratingWidget(context),
+      EnhancedDestinationWidget(),
+      //driverInfoWidget(context),
+      //ratingWidget(context),
     ];
 
     return Stack(
@@ -69,7 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
         Obx(() {
           // Combine markers from both controllers
           Set<Marker> allMarkers = {};
-          allMarkers.addAll(rideController.markers);
           allMarkers.addAll(bookingController.markers);
 
           return GoogleMap(
@@ -81,24 +77,29 @@ class _HomeScreenState extends State<HomeScreen> {
             polylines: bookingController.polylines.toSet(),
             onMapCreated: (GoogleMapController controller) {
               _controller.complete(controller);
-              rideController.setMapController(controller);
               // Fit map when ride is booked
               if (bookingController.isRideBooked.value) {
                 _fitMapToShowAllMarkers(controller);
               }
             },
-            onTap: rideController.onMapTap,
           );
         }),
 
-        // Conditional Bottom Content
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
           child: Obx(() {
-            // Check if ride is booked in RideBookingController
-            if (bookingController.isRideBooked.value) {
+            // Check ride status to show appropriate widget
+            if (bookingController.rideStatus.value == 'waiting') {
+              return const WaitingForDriverWidget();
+            } else if (bookingController.rideStatus.value == 'driver_assigned' ||
+                bookingController.rideStatus.value == 'driver_on_way' ||
+                bookingController.rideStatus.value == 'trip_started') { // Add this line
+              return driverInfoWidget(context);
+            } else if (bookingController.rideStatus.value == 'no_driver') {
+              return const NoDriversAvailableWidget();
+            } else if (bookingController.isRideBooked.value) {
               return _buildRideActionButtons(context, bookingController);
             }
 
@@ -119,29 +120,33 @@ class _HomeScreenState extends State<HomeScreen> {
           }),
         ),
 
-        // Toggle button
-        Positioned(
-          top: 30,
-          right: 0,
-          child: IconButton(
-            icon: const Icon(Icons.swap_horiz),
-            onPressed: toggleLocationWidget,
-          ),
-        ),
-
         // Clear booking button (when ride is booked)
         Positioned(
-          top: 80,
-          right: 0,
+          top: 40,
+          right: 16,
           child: Obx(() {
             if (bookingController.isRideBooked.value) {
-              return IconButton(
-                icon: const Icon(Icons.clear, color: Colors.red),
-                onPressed: () {
-                  bookingController.clearBooking();
-                  Get.snackbar('Cleared', 'Ride booking cleared');
-                },
-                tooltip: 'Clear Route',
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.clear, color: Colors.red, size: 22),
+                  onPressed: () {
+                    bookingController.clearBooking();
+                    Get.snackbar('Cleared', 'Ride booking cleared');
+                  },
+                  tooltip: 'Clear Route',
+                  padding: const EdgeInsets.all(8),
+                ),
               );
             }
             return const SizedBox.shrink();
@@ -151,7 +156,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRideActionButtons(BuildContext context, RideBookingController controller) {
+  Widget _buildRideActionButtons(
+    BuildContext context,
+    RideBookingController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -182,12 +190,19 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.green, size: 16),
+                    Icon(
+                      Icons.location_on,
+                      color: MAppTheme.primaryNavyColor,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         controller.pickupController.text,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -196,12 +211,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.flag, color: Colors.red, size: 16),
+                    Icon(
+                      Icons.flag,
+                      color: MAppTheme.primaryNavyColor,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         controller.dropoffController.text,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -273,10 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // If only one marker, center on it
       await controller.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: markerPositions.first,
-            zoom: 15,
-          ),
+          CameraPosition(target: markerPositions.first, zoom: 15),
         ),
       );
       return;
@@ -300,9 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
       northeast: LatLng(maxLat, maxLng),
     );
 
-    await controller.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 100.0),
-    );
+    await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100.0));
   }
 
   void toggleLocationWidget() {
@@ -311,5 +328,3 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 }
-
-

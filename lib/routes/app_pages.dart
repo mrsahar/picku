@@ -16,7 +16,7 @@ import 'app_routes.dart';
 class AppPages {
   AppPages._();
 
-  static const INITIAL = AppRoutes.SIGNUP_SCREEN;
+  static const INITIAL = AppRoutes.LOGIN_SCREEN;
 
   // Observer instance
   static final MyRouteObserver routeObserver = MyRouteObserver();
