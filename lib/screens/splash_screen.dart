@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:pick_u/common/extension.dart';
 import 'package:pick_u/screens/welcome_screen.dart';
 
@@ -52,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     } else {
       print("Onboarding Completed");
-      context.push(const WelcomeScreen());
+      Get.to(() => const WelcomeScreen());
     }
   }
 

@@ -18,6 +18,10 @@ class ApiProvider extends GetConnect {
 
     // Add request interceptor
     httpClient.addRequestModifier<dynamic>((request) {
+      print('MRSAHAr: Request URL = ${request.url}');
+      print('MRSAHAr: Request Headers = ${request.headers}');
+      print('MRSAHAr: Request Method = ${request.method}');
+
       request.headers['Content-Type'] = 'application/json';
       if (_globalVars.userToken.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer ${_globalVars.userToken}';
@@ -27,7 +31,9 @@ class ApiProvider extends GetConnect {
 
     // Add response interceptor
     httpClient.addResponseModifier<dynamic>((request, response) {
-      print('API Response: ${response.statusCode} - ${response.bodyString}');
+      print('MRSAHAr: Response URL = ${request.url}');
+      print('MRSAHAr: Response Status = ${response.statusCode}');
+      print('MRSAHAr: Response Body = ${response.bodyString}');
       return response;
     });
   }
@@ -36,11 +42,14 @@ class ApiProvider extends GetConnect {
   Future<Response> getData(String endpoint) async {
     try {
       _globalVars.setLoading(true);
+      print('MRSAHAr: GET $endpoint');
       final response = await get(endpoint);
+      print('MRSAHAr: GET Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
+      print('MRSAHAr: Exception during GET request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -52,11 +61,15 @@ class ApiProvider extends GetConnect {
   Future<Response> postData(String endpoint, Map<String, dynamic> data) async {
     try {
       _globalVars.setLoading(true);
+      print('MRSAHAr: POST $endpoint');
+      print('MRSAHAr: POST Body = $data');
       final response = await post(endpoint, data);
+      print('MRSAHAr: POST Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
+      print('MRSAHAr: Exception during POST request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -68,11 +81,15 @@ class ApiProvider extends GetConnect {
   Future<Response> putData(String endpoint, Map<String, dynamic> data) async {
     try {
       _globalVars.setLoading(true);
+      print('MRSAHAr: PUT $endpoint');
+      print('MRSAHAr: PUT Body = $data');
       final response = await put(endpoint, data);
+      print('MRSAHAr: PUT Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
+      print('MRSAHAr: Exception during PUT request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',

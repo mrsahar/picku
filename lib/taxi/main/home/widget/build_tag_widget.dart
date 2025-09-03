@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/common/extension.dart';
 import 'package:pick_u/taxi/main/search/search_location.dart';
@@ -20,7 +21,7 @@ Widget buildTag(String label, BuildContext context, bool isDark) {
       ),
       child: InkWell(
         onTap: () {
-          context.push(const SearchLocation()); // Ensure SearchLocation is defined
+          Get.to(() => const SearchLocation());// Ensure SearchLocation is defined
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,

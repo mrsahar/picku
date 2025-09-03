@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:pick_u/authentication/login_screen.dart';
 import 'package:pick_u/authentication/signup_screen.dart';
 import 'package:pick_u/common/extension.dart';
@@ -39,7 +40,7 @@ class WelcomeScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                          context.push(const LoginScreen()) ;
+                          Get.to(() => const LoginScreen());
                     },
                     child: Text("login".toUpperCase()),
                   ),
@@ -48,7 +49,7 @@ class WelcomeScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      context.push(const SignupScreen());
+                      Get.to(() => const SignupScreen());
                     },
                     child: Text("Signup".toUpperCase()),
                   ),

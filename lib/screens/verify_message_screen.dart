@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:line_awesome_flutter/line_awesome_flutter.dart'; 
-import 'package:pick_u/common/extension.dart';
+import 'package:get/get.dart';
+import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/taxi/main/main_map.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
@@ -48,7 +48,7 @@ class _VerifyMessageScreenState extends State<VerifyMessageScreen> {
               const Spacer(),
               OutlinedButton(
                 onPressed: () {
-                   context.push(const MainMap());
+                   Get.to(() => const MainMap());
                 },
                 child: const Icon(LineAwesomeIcons.arrow_right_solid),
               ),

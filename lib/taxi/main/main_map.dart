@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
-import 'package:pick_u/common/extension.dart';
+import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/taxi/main/car/select_car_screen.dart';
-import 'package:pick_u/taxi/main/history/history_screen.dart';
 import 'package:pick_u/taxi/main/home/driver_screen.dart';
 import 'package:pick_u/taxi/main/home/home_screen.dart';
 import 'package:pick_u/taxi/main/payment/select_payment_page.dart';
@@ -11,7 +11,6 @@ import 'package:pick_u/taxi/main/wallet/wallet_screen.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
 
 import '../../utils/theme/mcolors.dart';
-import 'home/widget/destination_select_widget_state.dart';
 
 class MainMap extends StatefulWidget {
   const MainMap({super.key});
@@ -82,13 +81,13 @@ class _MainMapState extends State<MainMap> {
                   title: "Profile",
                   icon: LineAwesomeIcons.user_solid,
                   onPress: () {
-                    context.push(const ProfileScreen());
+                    Get.to(() => const ProfileScreen());
                   }),
               ProfileMenuWidget(
                   title: "History",
                   icon: LineAwesomeIcons.history_solid,
                   onPress: () {
-                    context.push(const HistoryScreen());
+                    Get.toNamed(AppRoutes.rideHistory);
                   }),
               ProfileMenuWidget(
                   title: "Wallet",
@@ -98,13 +97,13 @@ class _MainMapState extends State<MainMap> {
                   title: "Settings",
                   icon: LineAwesomeIcons.tools_solid,
                   onPress: () {
-                    context.push(const SelectCarPage());
+                    Get.to(() => const SelectCarPage());
                   }),
               ProfileMenuWidget(
                   title: "Feedback",
                   icon: LineAwesomeIcons.comment,
                   onPress: () {
-                    context.push(const PaymentMethodsPage());
+                    Get.to(() => const PaymentMethodsPage());
                   }),
               Container(height: 8),
               const Divider(
@@ -115,7 +114,8 @@ class _MainMapState extends State<MainMap> {
                   textColor: Colors.red,
                   icon: LineAwesomeIcons.sign_out_alt_solid,
                   onPress: () {
-                    context.push(const DriverScreen());
+                    Get.to(() => const DriverScreen());
+
                   }),
             ],
           ),

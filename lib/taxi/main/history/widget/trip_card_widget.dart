@@ -1,24 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:pick_u/models/ride_history_model.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class TripHistoryCard extends StatelessWidget {
   const TripHistoryCard({
     super.key,
-    required this.date,
-    required this.timeStart,
-    required this.startLocation,
-    required this.timeEnd,
-    required this.endLocation,
-    required this.status,
-    required this.statusColor,
+    required this.ride,
   });
 
-  final String date;
-  final String timeStart;
-  final String startLocation;
-  final String timeEnd;
-  final String endLocation;
-  final String status;
-  final Color statusColor;
+  final RideItem ride;
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +17,9 @@ class TripHistoryCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
@@ -40,15 +30,15 @@ class TripHistoryCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    date,
+                    ride.formattedDate,
                     style: theme.textTheme.labelMedium!.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   Text(
-                    status.toUpperCase(),
+                    ride.status.toUpperCase(),
                     style: theme.textTheme.labelSmall!.copyWith(
-                      color: statusColor,
+                      color: MColor.primaryNavy,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -62,7 +52,7 @@ class TripHistoryCard extends StatelessWidget {
                   Expanded(
                     flex: 1,
                     child: Text(
-                      timeStart,
+                      ride.formattedStartTime,
                       style: theme.textTheme.labelMedium!.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
@@ -90,7 +80,7 @@ class TripHistoryCard extends StatelessWidget {
                   Expanded(
                     flex: 5,
                     child: Text(
-                      startLocation,
+                      ride.shortPickupLocation,
                       style: theme.textTheme.bodySmall!.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
@@ -105,7 +95,7 @@ class TripHistoryCard extends StatelessWidget {
                   Expanded(
                     flex: 1,
                     child: Text(
-                      timeEnd,
+                      ride.formattedEndTime,
                       style: theme.textTheme.labelMedium!.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
@@ -128,10 +118,24 @@ class TripHistoryCard extends StatelessWidget {
                   Expanded(
                     flex: 5,
                     child: Text(
-                      endLocation,
+                      ride.shortDropoffLocation,
                       style: theme.textTheme.bodySmall!.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
+                    ),
+                  ),
+                ],
+              ),
+              // Fare
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${ride.fareFinal.toStringAsFixed(2)}',
+                    style: theme.textTheme.titleMedium!.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],

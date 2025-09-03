@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:pick_u/bindings/ride_history_binding.dart';
 import 'package:pick_u/routes/app_route_observer.dart';
 import 'package:pick_u/authentication/forget_password_screen.dart';
 import 'package:pick_u/authentication/login_screen.dart';
@@ -10,6 +11,7 @@ import 'package:pick_u/bindings/login_binding.dart';
 import 'package:pick_u/bindings/otp_binding.dart';
 import 'package:pick_u/bindings/reset_password_binding.dart';
 import 'package:pick_u/bindings/signup_binding.dart';
+import 'package:pick_u/taxi/main/history/history_screen.dart';
 import 'package:pick_u/taxi/main/main_map.dart';
 import 'app_routes.dart';
 
@@ -51,6 +53,10 @@ class AppPages {
       page: () => const ResetPasswordScreen(),
       binding: ResetPasswordBinding(),
     ),
-
+    GetPage(
+      name: AppRoutes.rideHistory,
+      page: () => const RideHistoryPage(),
+      binding: RideHistoryBinding(),
+    ),
   ];
 }

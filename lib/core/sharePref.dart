@@ -91,9 +91,11 @@ class SharedPrefsService {
   static Future<String?> getUserId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_keyUserId);
+      final userId = prefs.getString(_keyUserId);
+      print(' MRSAHAr 📱 Retrieved user ID: $userId'); // Debug log
+      return userId;
     } catch (e) {
-      print('💥 Error getting user ID: $e');
+      print('MRSAHAr 💥 Error getting user ID: $e');
       return null;
     }
   }

@@ -22,8 +22,8 @@ class SummaryWidget extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Column(
@@ -41,9 +41,9 @@ class SummaryWidget extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   title,
-                    style: theme.textTheme.labelMedium!.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
+                  style: theme.textTheme.labelMedium!.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
               ],
             ),
