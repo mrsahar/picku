@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/ride_history_controller.dart';
-import 'package:pick_u/taxi/main/history/widget/trip_card_widget.dart';
-import 'package:pick_u/taxi/main/history/widget/trip_summary_widget.dart';
+import 'package:pick_u/taxi/history/widget/trip_card_widget.dart';
+import 'package:pick_u/taxi/history/widget/trip_summary_widget.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
 class RideHistoryPage extends GetView<RideHistoryController> {

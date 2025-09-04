@@ -1,4 +1,3 @@
-// lib/app/routes/app_routes.dart
 abstract class AppRoutes {
   static const HOME = '/home';
   static const SIGNUP_SCREEN = '/signup';
@@ -7,5 +6,6 @@ abstract class AppRoutes {
   static const MainMap = '/mainMap';
   static const FORGOT_PASSWORD_SCREEN = '/forgotPassword';
   static const Reset_Password = '/resetPassword';
-  static const String rideHistory = '/rideHistory';
+  static const rideHistory = '/rideHistory';
+  static const scheduledRideHistory = '/scheduledRideHistory';
 }

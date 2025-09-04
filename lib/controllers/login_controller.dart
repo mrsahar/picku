@@ -137,7 +137,7 @@ class LoginController extends GetxController {
         // Handle API error response
         Get.snackbar(
           'Error',
-          response.message ?? 'Login failed. Please try again.',
+          response.message,
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,

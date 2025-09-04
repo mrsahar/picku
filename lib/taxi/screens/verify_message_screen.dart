@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
-import 'package:pick_u/taxi/main/main_map.dart';
+import 'package:pick_u/taxi/main_map.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
 class VerifyMessageScreen extends StatefulWidget {

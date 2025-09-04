@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
-import 'package:pick_u/common/extension.dart';
-import 'package:pick_u/taxi/main/search/search_location.dart';
+import 'package:pick_u/taxi/search/search_location.dart';
 
 Widget buildTag(String label, BuildContext context, bool isDark) {
   final bgColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]; // Background color

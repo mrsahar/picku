@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/authentication/login_screen.dart';
 import 'package:pick_u/authentication/signup_screen.dart';
-import 'package:pick_u/common/extension.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -15,7 +14,6 @@ class WelcomeScreen extends StatelessWidget {
     final isDarkMode = brightness == Brightness.dark;
 
     return Scaffold(
-      //backgroundColor: isDarkMode ? TColor.secondary : TColor.chatTextBG2,
       body: Container(
         padding: const EdgeInsets.all(20),
         child: Column(

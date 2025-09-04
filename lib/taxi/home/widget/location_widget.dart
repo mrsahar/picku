@@ -18,9 +18,6 @@ class EnhancedDestinationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var mediaQuery = MediaQuery.of(context);
-    final brightness = mediaQuery.platformBrightness;
-    final isDarkMode = brightness == Brightness.dark;
     final theme = Theme.of(context);
 
     return Container(

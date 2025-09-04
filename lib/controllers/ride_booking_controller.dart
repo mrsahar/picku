@@ -400,7 +400,7 @@ class RideBookingController extends GetxController {
 
       // Dropoff
       allStops.add({
-        "stopOrder": allStops.length,
+        "stopOrder": isScheduled.value ? allStops.length + 1 : allStops.length,
         "location": dropoffLocation.value!.address,
         "latitude": dropoffLocation.value!.latitude,
         "longitude": dropoffLocation.value!.longitude,

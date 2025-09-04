@@ -32,11 +32,9 @@ class MAppTheme {
       primary: MColor.primaryNavy,
       secondary: MColor.trackingOrange,
       surface: MColor.white,
-      background: MColor.white,
       onPrimary: MColor.white,
       onSecondary: MColor.white,
       onSurface: MColor.primaryNavy,
-      onBackground: MColor.primaryNavy,
     ),
     scaffoldBackgroundColor: MColor.mainBg,
     appBarTheme: AppBarTheme(
@@ -147,11 +145,9 @@ class MAppTheme {
       primary: MColor.primaryNavy,
       secondary: MColor.trackingOrange,
       surface: MColor.darkGrey,
-      background: MColor.darkBg,
       onPrimary: MColor.white,
       onSecondary: MColor.white,
       onSurface: MColor.white,
-      onBackground: MColor.white,
     ),
     scaffoldBackgroundColor: MColor.darkBg,
     appBarTheme: AppBarTheme(

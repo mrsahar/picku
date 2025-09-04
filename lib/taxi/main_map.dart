@@ -3,14 +3,14 @@ import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
 import 'package:pick_u/routes/app_routes.dart';
-import 'package:pick_u/taxi/main/car/select_car_screen.dart';
-import 'package:pick_u/taxi/main/home/driver_screen.dart';
-import 'package:pick_u/taxi/main/home/home_screen.dart';
-import 'package:pick_u/taxi/main/payment/select_payment_page.dart';
-import 'package:pick_u/taxi/main/wallet/wallet_screen.dart';
+import 'package:pick_u/taxi/car/select_car_screen.dart';
+import 'package:pick_u/taxi/home/driver_screen.dart';
+import 'package:pick_u/taxi/home/home_screen.dart';
+import 'package:pick_u/taxi/payment/select_payment_page.dart';
+import 'package:pick_u/taxi/wallet/wallet_screen.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
 
-import '../../utils/theme/mcolors.dart';
+import '../utils/theme/mcolors.dart';
 
 class MainMap extends StatefulWidget {
   const MainMap({super.key});
@@ -89,6 +89,12 @@ class _MainMapState extends State<MainMap> {
                   onPress: () {
                     Get.toNamed(AppRoutes.rideHistory);
                   }),
+              Container(height: 8),ProfileMenuWidget(
+                  title: "Scheduled Ride",
+                  icon: LineAwesomeIcons.comment,
+                  onPress: () {
+                    Get.toNamed(AppRoutes.scheduledRideHistory);
+                  }),
               ProfileMenuWidget(
                   title: "Wallet",
                   icon: LineAwesomeIcons.wallet_solid,
@@ -105,6 +111,7 @@ class _MainMapState extends State<MainMap> {
                   onPress: () {
                     Get.to(() => const PaymentMethodsPage());
                   }),
+
               Container(height: 8),
               const Divider(
                 height: 1,
