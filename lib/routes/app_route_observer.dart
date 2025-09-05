@@ -5,7 +5,7 @@ class MyRouteObserver extends RouteObserver<PageRoute<dynamic>> {
 
   void _sendScreenView(PageRoute<dynamic> route) {
     final screenName = route.settings.name ?? route.runtimeType.toString();
-    debugPrint('MRSAHAr 🧭 Current screen: $screenName');
+    print('MRSAHAr 🧭 Current screen: $screenName');
   }
 
   @override

@@ -50,6 +50,8 @@ dependencies:
   google_polyline_algorithm: ^3.1.0
   shared_preferences: ^2.5.3
   intl: ^0.20.2
+  image_picker: ^1.2.0
+  image: ^4.5.4
 
 dev_dependencies:
   flutter_test:

@@ -182,7 +182,7 @@ class RideBookingController extends GetxController {
 
       searchSuggestions.value = predictions;
     } catch (e) {
-      print(' MRSAHAr Error searching locations: $e');
+      print('MRSAHAr Error searching locations: $e');
       Get.snackbar(
           'Search Error', 'Failed to search locations. Please try again.');
       searchSuggestions.clear();
@@ -243,7 +243,7 @@ class RideBookingController extends GetxController {
 
       activeSearchField.value = '';
     } catch (e) {
-      print(' MRSAHAr Error selecting suggestion: $e');
+      print('MRSAHAr Error selecting suggestion: $e');
       Get.snackbar('Error', 'Failed to select location');
     } finally {
       isLoading.value = false;
@@ -482,12 +482,12 @@ class RideBookingController extends GetxController {
         Get.snackbar('Error', 'Failed to start ride: ${response.statusText}');
       }
     } catch (e) {
-      print('MRSAHAr Exception caught: $e');
+      print('MRSAHAr MRSAHAr Exception caught: $e');
       rideStatus.value = 'error';
       Get.snackbar('Error', 'Failed to start ride: $e');
     } finally {
       isLoading.value = false;
-      print('MRSAHAr Ride booking process completed');
+      print('MRSAHAr MRSAHAr Ride booking process completed');
     }
   }
 
@@ -617,14 +617,14 @@ class RideBookingController extends GetxController {
           ),
         );
 
-        print(' MRSAHAr Route created successfully: ${routeDistance
+        print('MRSAHAr Route created successfully: ${routeDistance
             .value}, ${routeDuration.value}');
       } else {
         // Fallback to segment-by-segment routing if main route fails
         await _createSegmentRoutes(routePoints);
       }
     } catch (e) {
-      print(' MRSAHAr Error creating real routes: $e');
+      print('MRSAHAr Error creating real routes: $e');
       // Fallback to simple polylines
       await _createFallbackPolylines(routePoints);
     }
@@ -663,7 +663,7 @@ class RideBookingController extends GetxController {
           ),
         );
       } catch (e) {
-        print(' MRSAHAr Error creating segment $i: $e');
+        print('MRSAHAr Error creating segment $i: $e');
         // Create fallback straight line for this segment
         _createFallbackSegment(routePoints[i], routePoints[i + 1], i);
       }
@@ -778,7 +778,7 @@ class RideBookingController extends GetxController {
 
       if (response.isOk) {
         var responseBody = response.body;
-        print(' MRSAHAr End trip response: $responseBody');
+        print('MRSAHAr End trip response: $responseBody');
 
         if (responseBody is Map<String, dynamic> &&
             responseBody.containsKey('message')) {
@@ -1152,14 +1152,14 @@ class RideBookingController extends GetxController {
 
   Future<void> _submitTip(double tipAmount, double finalFare,
       double totalAmount) async {
-    print(' MRSAHAr 🟡 _submitTip() called');
-    print(' MRSAHAr 💰 Tip Amount: ₹${tipAmount.toStringAsFixed(2)}');
-    print(' MRSAHAr 🧾 Final Fare: ₹${finalFare.toStringAsFixed(2)}');
-    print(' MRSAHAr 📊 Total Amount: ₹${totalAmount.toStringAsFixed(2)}');
+    print('MRSAHAr 🟡 _submitTip() called');
+    print('MRSAHAr 💰 Tip Amount: ₹${tipAmount.toStringAsFixed(2)}');
+    print('MRSAHAr 🧾 Final Fare: ₹${finalFare.toStringAsFixed(2)}');
+    print('MRSAHAr 📊 Total Amount: ₹${totalAmount.toStringAsFixed(2)}');
 
     try {
       isLoading.value = true;
-      print(' MRSAHAr ⏳ isLoading set to true');
+      print('MRSAHAr ⏳ isLoading set to true');
 
       Map<String, dynamic> tipData = {
         "rideId": currentRideId.value,
@@ -1168,13 +1168,13 @@ class RideBookingController extends GetxController {
         "createdAt": DateTime.now().toIso8601String(),
       };
 
-      print(' MRSAHAr 📦 Tip Payload: $tipData');
+      print('MRSAHAr 📦 Tip Payload: $tipData');
 
       Response response = await _apiProvider.postData('/api/Tip', tipData);
-      print(' MRSAHAr 📥 API Response: ${response.body}');
+      print('MRSAHAr 📥 API Response: ${response.body}');
 
       if (response.isOk) {
-        print(' MRSAHAr  MRSAHAr ✅ Tip submitted successfully');
+        print('MRSAHAr ✅ Tip submitted successfully');
         Get.snackbar(
           'Payment Successful',
           'Payment of ₹${totalAmount.toStringAsFixed(2)} (including ₹${tipAmount
@@ -1182,17 +1182,17 @@ class RideBookingController extends GetxController {
           duration: Duration(seconds: 3),
         );
         clearBooking();
-        print(' MRSAHAr  MRSAHAr 🧹 Booking cleared');
+        print('MRSAHAr 🧹 Booking cleared');
       } else {
-        print(' MRSAHAr ❌ Tip submission failed: ${response.statusText}');
+        print('MRSAHAr ❌ Tip submission failed: ${response.statusText}');
         Get.snackbar('Error', 'Failed to process tip: ${response.statusText}');
       }
     } catch (e) {
-      print(' MRSAHAr 🔥 Exception during tip submission: $e');
+      print('MRSAHAr 🔥 Exception during tip submission: $e');
       Get.snackbar('Error', 'Failed to process tip: $e');
     } finally {
       isLoading.value = false;
-      print(' MRSAHAr ✅ isLoading set to false');
+      print('MRSAHAr ✅ isLoading set to false');
     }
   }
 }

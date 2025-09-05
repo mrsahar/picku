@@ -31,14 +31,14 @@ class GoogleDirectionsService {
         url += '&waypoints=$waypointsStr';
       }
 
-      print(' MRSAHAr🚗 Directions API URL: $url');
+      print('MRSAHAr 🚗 Directions API URL: $url');
 
       final response = await http.get(Uri.parse(url));
-      print(' MRSAHAr🔍 Response Status Code: ${response.statusCode}');
+      print('MRSAHAr 🔍 Response Status Code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print(' MRSAHAr📍 API Response Status: ${data['status']}');
+        print('MRSAHAr 📍 API Response Status: ${data['status']}');
 
         if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
@@ -50,20 +50,20 @@ class GoogleDirectionsService {
 
           // Decode the polyline points
           List<List<num>> decodedPoints = decodePolyline(polylinePoints);
-          print(' MRSAHAr📊 Decoded ${decodedPoints.length} route points');
+          print('MRSAHAr 📊 Decoded ${decodedPoints.length} route points');
 
           List<LatLng> routeCoordinates = decodedPoints
               .map((point) => LatLng(point[0].toDouble(), point[1].toDouble()))
               .toList();
 
-          print(' MRSAHAr🗺️ First point: ${routeCoordinates.first}');
-          print(' MRSAHAr🏁 Last point: ${routeCoordinates.last}');
+          print('MRSAHAr 🗺️ First point: ${routeCoordinates.first}');
+          print('MRSAHAr 🏁 Last point: ${routeCoordinates.last}');
 
           return routeCoordinates;
         } else {
-          print(' MRSAHAr❌ Directions API Error: ${data['status']}');
+          print('MRSAHAr ❌ Directions API Error: ${data['status']}');
           if (data['error_message'] != null) {
-            print(' MRSAHAr❌ Error message: ${data['error_message']}');
+            print('MRSAHAr ❌ Error message: ${data['error_message']}');
           }
 
           // Print available alternatives if any
@@ -74,15 +74,15 @@ class GoogleDirectionsService {
           }
         }
       } else {
-        print(' MRSAHAr❌ HTTP Error: ${response.statusCode}');
-        print(' MRSAHAr❌ Response body: ${response.body}');
+        print('MRSAHAr ❌ HTTP Error: ${response.statusCode}');
+        print('MRSAHAr ❌ Response body: ${response.body}');
       }
 
-      print(' MRSAHAr⚠️ Falling back to straight line');
+      print('MRSAHAr ⚠️ Falling back to straight line');
       // Fallback to straight line if API fails
       return _createStraightLine(origin, destination);
     } catch (e) {
-      print(' MRSAHAr💥 Exception in getRoutePoints: $e');
+      print('MRSAHAr 💥 Exception in getRoutePoints: $e');
       // Fallback to straight line
       return _createStraightLine(origin, destination);
     }
@@ -143,7 +143,7 @@ class GoogleDirectionsService {
         'status': 'ERROR',
       };
     } catch (e) {
-      print(' MRSAHArError getting route info: $e');
+      print('MRSAHAr Error getting route info: $e');
       return {
         'distance': 'Unknown',
         'duration': 'Unknown',
@@ -156,7 +156,7 @@ class GoogleDirectionsService {
 
   /// Create a simple straight line between two points as fallback
   static List<LatLng> _createStraightLine(LatLng start, LatLng end) {
-    print(' MRSAHAr📐 Creating straight line fallback');
+    print('MRSAHAr 📐 Creating straight line fallback');
     List<LatLng> points = [];
 
     // Add intermediate points for a smooth line

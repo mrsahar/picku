@@ -1,4 +1,8 @@
 import 'package:get/get.dart';
+import 'package:pick_u/authentication/edit_profile_screen.dart';
+import 'package:pick_u/authentication/profile_screen.dart';
+import 'package:pick_u/bindings/edit_profile_binding.dart';
+import 'package:pick_u/bindings/profile_binding.dart';
 import 'package:pick_u/bindings/ride_history_binding.dart';
 import 'package:pick_u/bindings/scheduled_ride_history_binding.dart';
 import 'package:pick_u/routes/app_route_observer.dart';
@@ -30,6 +34,16 @@ class AppPages {
       name: AppRoutes.SIGNUP_SCREEN,
       page: () => const SignupScreen(),
       binding: SignUpBinding(),
+    ),
+    GetPage(
+    name: AppRoutes.profileScreen,
+    page: () => const ProfileScreen(),
+    binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.editProfile,
+      page: () => const EditProfileScreen(),
+      binding: EditProfileBinding(),
     ),
     GetPage(
       name: AppRoutes.OTP_SCREEN,

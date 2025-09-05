@@ -724,7 +724,7 @@ class RideBookingPage extends StatelessWidget {
       try {
         await controller.bookRide();
       } catch (e) {
-        print('Error calculating route: $e');
+        print('MRSAHAr Error calculating route: $e');
         // You might want to show a snackbar here if needed
       }
     }

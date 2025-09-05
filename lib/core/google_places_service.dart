@@ -34,15 +34,15 @@ class GooglePlacesService {
 
           return places;
         } else {
-          print('Places API Error: ${data['status']}');
+          print('MRSAHAr Places API Error: ${data['status']}');
           return [];
         }
       } else {
-        print('HTTP Error: ${response.statusCode}');
+        print('MRSAHAr HTTP Error: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('Error searching places: $e');
+      print('MRSAHAr Error searching places: $e');
       return [];
     }
   }
@@ -75,15 +75,15 @@ class GooglePlacesService {
 
           return predictions;
         } else {
-          print('Autocomplete API Error: ${data['status']}');
+          print('MRSAHAr Autocomplete API Error: ${data['status']}');
           return [];
         }
       } else {
-        print('HTTP Error: ${response.statusCode}');
+        print('MRSAHAr HTTP Error: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('Error getting autocomplete suggestions: $e');
+      print('MRSAHAr Error getting autocomplete suggestions: $e');
       return [];
     }
   }
@@ -101,15 +101,15 @@ class GooglePlacesService {
         if (data['status'] == 'OK') {
           return PlaceDetails.fromJson(data['result']);
         } else {
-          print('Place Details API Error: ${data['status']}');
+          print('MRSAHAr Place Details API Error: ${data['status']}');
           return null;
         }
       } else {
-        print('HTTP Error: ${response.statusCode}');
+        print('MRSAHAr HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error getting place details: $e');
+      print('MRSAHAr Error getting place details: $e');
       return null;
     }
   }

@@ -45,7 +45,7 @@ class LocationService extends GetxService {
         return '${place.street}, ${place.locality}, ${place.administrativeArea}';
       }
     } catch (e) {
-      print('Error getting address: $e');
+      print('MRSAHAr Error getting address: $e');
     }
     return 'Unknown location';
   }
@@ -54,7 +54,7 @@ class LocationService extends GetxService {
     try {
       return await locationFromAddress(query);
     } catch (e) {
-      print('Error searching places: $e');
+      print('MRSAHAr Error searching places: $e');
       return [];
     }
   }

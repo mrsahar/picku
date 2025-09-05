@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
+import 'package:pick_u/core/sharePref.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/taxi/car/select_car_screen.dart';
 import 'package:pick_u/taxi/home/driver_screen.dart';
@@ -62,9 +63,21 @@ class _MainMapState extends State<MainMap> {
                         children: [
                           Icon(LineAwesomeIcons.at_solid, size: 18.0,color: MColor.trackingOrange,),
                           SizedBox(width: 2.0),
-                          Text(
-                            "Sherjeel",
-                            style: TextStyle(fontSize: 14.0),
+                          FutureBuilder<String?>(
+                            future: SharedPrefsService.getUserFullName(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const SizedBox(
+                                  height: 14.0,
+                                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                                );
+                              }
+
+                              return Text(
+                                snapshot.data ?? 'Guest',
+                                style: const TextStyle(fontSize: 14.0),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -81,13 +94,13 @@ class _MainMapState extends State<MainMap> {
                   title: "Profile",
                   icon: LineAwesomeIcons.user_solid,
                   onPress: () {
-                    Get.to(() => const ProfileScreen());
+                    Get.toNamed('/profileScreen');
                   }),
               ProfileMenuWidget(
                   title: "History",
                   icon: LineAwesomeIcons.history_solid,
                   onPress: () {
-                    Get.toNamed(AppRoutes.rideHistory);
+                    Get.toNamed(AppRoutes.profileScreen);
                   }),
               Container(height: 8),ProfileMenuWidget(
                   title: "Scheduled Ride",

@@ -8,4 +8,7 @@ abstract class AppRoutes {
   static const Reset_Password = '/resetPassword';
   static const rideHistory = '/rideHistory';
   static const scheduledRideHistory = '/scheduledRideHistory';
+  static const String profileScreen = '/profileScreen';
+  static const editProfile = '/editProfile';
+
 }
