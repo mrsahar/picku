@@ -1,19 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pick_u/core/sharePref.dart';
-import 'package:pick_u/models/edit_profile_model.dart';
 import 'package:pick_u/models/user_profile_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
-
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class EditProfileController extends GetxController {
 
@@ -127,18 +124,6 @@ class EditProfileController extends GetxController {
     }
   }
 
-  // Convert image to base64
-  Future<String?> convertImageToBase64(File imageFile) async {
-    try {
-      List<int> imageBytes = await imageFile.readAsBytes();
-      String base64Image = base64Encode(imageBytes);
-      return 'data:image/jpeg;base64,$base64Image'; // Return plain base64 without data URL prefix
-    } catch (e) {
-      print('MRSAHAr Error converting image to base64: $e');
-      return null;
-    }
-  }
-
   // Show image picker options
   void showImagePickerOptions() {
     Get.bottomSheet(
@@ -156,7 +141,7 @@ class EditProfileController extends GetxController {
           children: [
             const Text(
               'Select Profile Picture',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Row(
@@ -167,9 +152,9 @@ class EditProfileController extends GetxController {
                     Get.back();
                     pickImage(fromCamera: true);
                   },
-                  child: const Column(
+                  child: Column(
                     children: [
-                      Icon(Icons.camera_alt, size: 50, color: Colors.blue),
+                      Icon(Icons.camera_alt, size: 25, color: MColor.primaryNavy),
                       Text('Camera'),
                     ],
                   ),
@@ -179,9 +164,9 @@ class EditProfileController extends GetxController {
                     Get.back();
                     pickImage(fromCamera: false);
                   },
-                  child: const Column(
+                  child: Column(
                     children: [
-                      Icon(Icons.photo_library, size: 50, color: Colors.green),
+                      Icon(Icons.photo_library, size: 25, color: MColor.primaryNavy),
                       Text('Gallery'),
                     ],
                   ),
@@ -228,33 +213,48 @@ class EditProfileController extends GetxController {
 
   // Update user profile
   Future<void> updateProfile() async {
-    if (!validateForm()) return;
-
     try {
       isLoading.value = true;
+      final userId = user.value?.userId ?? '';
+      final fullName = txtUserName.text.trim();
+      final phoneNumber = txtMobile.text.trim();
+      final imagePath = selectedImagePath.value;
+      // Create FormData manually
+      final formData = FormData({});
 
-      // Prepare data for API
-      Map<String, dynamic> updateData = {
-        'UserId': user.value?.userId ?? '',
-        'Name': txtUserName.text.trim(),
-        'PhoneNumber': txtMobile.text.trim(),
-      };
+      formData.fields.addAll([
+        MapEntry('UserId', userId),
+        MapEntry('FullName', fullName),
+        MapEntry('PhoneNumber', phoneNumber),
+      ]);
 
-      // Add profile image as base64 if a new one was selected
-      if (selectedImagePath.value.isNotEmpty) {
-        File imageFile = File(selectedImagePath.value);
-        String? base64Image = await convertImageToBase64(imageFile);
-        if (base64Image != null) {
-          updateData['ProfileImage'] = base64Image;
-        }
-      }
+      formData.files.add(
+        MapEntry(
+          'ProfileImage',
+          MultipartFile(
+            File(imagePath),
+            filename: 'profile.jpg',
+          ),
+        ),
+      );
 
-      print('MRSAHAr Updating profile with data: $updateData');
+      // 🔍 SAHAr Debug: Print FormData contents
+      print('SAHAr ⚠️ FormData Fields:');
+      formData.fields.forEach((f) => print('SAHAr 🔹 ${f.key} = ${f.value}'));
 
-      // Make API call with regular postData (sending JSON with base64)
-      final response = await _apiProvider.postData('/api/User/update-user', updateData);
+      print('SAHAr 📷 FormData Files:');
+      formData.files.forEach((f) {
+        print('SAHAr 📷 ${f.key} = ${f.value.filename}');
+      });
 
-      if (response.isOk || response.statusCode == 200) {
+      // Send multipart request using your updated ApiProvider
+      final response = await _apiProvider.postData2('/api/User/update-user', formData);
+
+      // 🔍 SAHAr Debug: Response
+      print('SAHAr ✅ Response Status: ${response.statusCode}');
+      print('SAHAr ✅ Response Body: ${response.bodyString}');
+
+      if (response.statusCode == 200 || response.isOk) {
         Get.snackbar(
           'Success',
           'Profile updated successfully',
@@ -262,16 +262,11 @@ class EditProfileController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-
-        // Navigate back with success result
-        Get.back(result: true);
-
       } else {
         throw Exception(response.statusText ?? 'Failed to update profile');
       }
-
     } catch (e) {
-      print('MRSAHAr Error updating profile: $e');
+      print('SAHAr ❌ Error updating profile: $e');
       Get.snackbar(
         'Error',
         'Failed to update profile: $e',
@@ -283,6 +278,9 @@ class EditProfileController extends GetxController {
       isLoading.value = false;
     }
   }
+
+
+
 
   // Delete account
   Future<void> deleteAccount() async {

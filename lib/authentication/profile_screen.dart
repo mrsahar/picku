@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
-import 'edit_profile_screen.dart';
+
 import '../controllers/profile_controller.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -27,12 +27,12 @@ class ProfileScreen extends StatelessWidget {
                 : Colors.white,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(context.isDarkMode ? LineAwesomeIcons.sun : LineAwesomeIcons.moon),
-          )
-        ],
+        // actions: [
+        //   IconButton(
+        //     onPressed: () {},
+        //     icon: Icon(context.isDarkMode ? LineAwesomeIcons.sun : LineAwesomeIcons.moon),
+        //   )
+        // ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -124,52 +124,49 @@ class ProfileScreen extends StatelessWidget {
 
                 /// -- MENU
                 ProfileMenuWidget(
-                  title: 'Your profile',
-                  icon: LineAwesomeIcons.user_solid,
-                  onPress: () {},
-                ),
-                ProfileMenuWidget(
                   title: 'Notification',
                   icon: LineAwesomeIcons.bell_solid,
-                  onPress: () {},
+                  onPress: () {
+                    Get.toNamed(AppRoutes.notificationScreen);
+                  },
                 ),
                 ProfileMenuWidget(
                   title: 'Your Rides',
                   icon: LineAwesomeIcons.car_side_solid,
-                  onPress: () {},
+                  onPress: () {
+                    Get.toNamed(AppRoutes.rideHistory);
+                  },
                 ),
                 ProfileMenuWidget(
                   title: 'Pre-Booked Rides',
                   icon: LineAwesomeIcons.address_book_solid,
-                  onPress: () {},
+                  onPress: () {
+                    Get.toNamed(AppRoutes.scheduledRideHistory);
+                  },
                 ),
                 ProfileMenuWidget(
                   title: 'Settings',
                   icon: LineAwesomeIcons.cog_solid,
-                  onPress: () {},
-                ),
-                ProfileMenuWidget(
-                  title: 'Cars',
-                  icon: LineAwesomeIcons.car_solid,
-                  onPress: () {},
+                  onPress: () {
+                    Get.toNamed(AppRoutes.settingsScreen);
+                  },
                 ),
                 ProfileMenuWidget(
                   title: 'Help Center',
                   icon: LineAwesomeIcons.broadcast_tower_solid,
-                  onPress: () {},
+                  onPress: () {
+                    Get.toNamed(AppRoutes.helpCenterScreen);
+                  },
                 ),
                 ProfileMenuWidget(
                   title: 'Privacy Policy',
                   icon: LineAwesomeIcons.question_circle_solid,
-                  onPress: () {},
+                  onPress: () {
+                    Get.toNamed(AppRoutes.privacyPolicy);
+                  },
                 ),
                 const Divider(color: Colors.black12),
                 const SizedBox(height: 10),
-                ProfileMenuWidget(
-                  title: "Information",
-                  icon: LineAwesomeIcons.info_solid,
-                  onPress: () {},
-                ),
                 ProfileMenuWidget(
                   title: "Logout",
                   icon: LineAwesomeIcons.sign_out_alt_solid,

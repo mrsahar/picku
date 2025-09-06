@@ -7,7 +7,6 @@ import 'package:pick_u/models/login_model.dart';
 import 'package:pick_u/models/otp_model.dart';
 import 'package:pick_u/models/reset_password_model.dart';
 import 'package:pick_u/models/signup_model.dart';
-import 'package:image/image.dart' as img;
 
 class ApiProvider extends GetConnect {
   final GlobalVariables _globalVars = GlobalVariables.instance;
@@ -24,14 +23,12 @@ class ApiProvider extends GetConnect {
       print('MRSAHAr MRSAHAr: Request URL = ${request.url}');
       print('MRSAHAr MRSAHAr: Request Headers = ${request.headers}');
       print('MRSAHAr MRSAHAr: Request Method = ${request.method}');
-
-      request.headers['Content-Type'] = 'application/json';
+      // Only add Authorization header
       if (_globalVars.userToken.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer ${_globalVars.userToken}';
       }
       return request;
     });
-
     // Add response interceptor
     httpClient.addResponseModifier<dynamic>((request, response) {
       print('MRSAHAr MRSAHAr: Response URL = ${request.url}');
@@ -59,20 +56,108 @@ class ApiProvider extends GetConnect {
       );
     }
   }
-
-  // POST Request
-  Future<Response> postData(String endpoint, Map<String, dynamic> data) async {
+// POST Request - handles both JSON and FormData
+  Future<Response> postData2(String endpoint, dynamic data) async {
     try {
       _globalVars.setLoading(true);
       print('MRSAHAr MRSAHAr: POST $endpoint');
-      print('MRSAHAr MRSAHAr: POST Body = $data');
-      final response = await post(endpoint, data);
+
+      Response response;
+      if (data is FormData) {
+        // For FormData, don't use the interceptor - send directly
+        final headers = <String, String>{};
+        if (_globalVars.userToken.isNotEmpty) {
+          headers['Authorization'] = 'Bearer ${_globalVars.userToken}';
+        }
+        // Don't set Content-Type - let it be set automatically for multipart
+
+        response = await httpClient.post(
+          endpoint,
+          body: data,
+          headers: headers,
+        );
+      } else {
+        // Use regular post for JSON data
+        response = await post(endpoint, data);
+      }
+
       print('MRSAHAr MRSAHAr: POST Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
       print('MRSAHAr MRSAHAr: Exception during POST request: $e');
+      return Response(
+        statusCode: 500,
+        statusText: 'Network Error: $e',
+      );
+    }
+  }
+  // POST Request - handles both JSON and FormData
+  Future<Response> postData(String endpoint, dynamic data) async {
+    try {
+      _globalVars.setLoading(true);
+      print('MRSAHAr MRSAHAr: POST $endpoint');
+      print('MRSAHAr MRSAHAr: POST Body = $data');
+
+      Response response;
+      if (data is FormData) {
+        // Use postFormData for FormData
+        response = await postFormData(endpoint, data);
+      } else {
+        // Use regular post for JSON data
+        response = await post(endpoint, data);
+      }
+
+      print('MRSAHAr MRSAHAr: POST Response = ${response.bodyString}');
+      _globalVars.setLoading(false);
+      return response;
+    } catch (e) {
+      _globalVars.setLoading(false);
+      print('MRSAHAr MRSAHAr: Exception during POST request: $e');
+      return Response(
+        statusCode: 500,
+        statusText: 'Network Error: $e',
+      );
+    }
+  }
+
+  // Specific method for FormData POST requests
+  Future<Response> postFormData(String endpoint, FormData formData) async {
+    try {
+      _globalVars.setLoading(true);
+      print('MRSAHAr MRSAHAr: POST FormData $endpoint');
+
+      // Debug FormData contents
+      print('MRSAHAr FormData Fields:');
+      formData.fields.forEach((field) {
+        print('MRSAHAr ${field.key} = ${field.value}');
+      });
+
+      print('MRSAHAr FormData Files:');
+      formData.files.forEach((file) {
+        print('MRSAHAr ${file.key} = ${file.value.filename}');
+      });
+
+      // Create custom headers for FormData
+      final headers = <String, String>{};
+      if (_globalVars.userToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer ${_globalVars.userToken}';
+      }
+      // Don't set Content-Type - let dio handle it automatically for FormData
+
+      final response = await httpClient.post(
+        endpoint,
+        body: formData,
+        headers: headers,
+      );
+
+      print('MRSAHAr MRSAHAr: FormData Response = ${response.bodyString}');
+      _globalVars.setLoading(false);
+      return response;
+    } catch (e) {
+      _globalVars.setLoading(false);
+      print('MRSAHAr MRSAHAr: Exception during FormData POST request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -99,7 +184,6 @@ class ApiProvider extends GetConnect {
       );
     }
   }
-
 
   // DELETE Request
   Future<Response> deleteData(String endpoint) async {

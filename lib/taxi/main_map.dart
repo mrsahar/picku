@@ -94,13 +94,13 @@ class _MainMapState extends State<MainMap> {
                   title: "Profile",
                   icon: LineAwesomeIcons.user_solid,
                   onPress: () {
-                    Get.toNamed('/profileScreen');
+                    Get.toNamed(AppRoutes.profileScreen);
                   }),
               ProfileMenuWidget(
                   title: "History",
                   icon: LineAwesomeIcons.history_solid,
                   onPress: () {
-                    Get.toNamed(AppRoutes.profileScreen);
+                    Get.toNamed(AppRoutes.rideHistory);
                   }),
               Container(height: 8),ProfileMenuWidget(
                   title: "Scheduled Ride",
@@ -135,7 +135,6 @@ class _MainMapState extends State<MainMap> {
                   icon: LineAwesomeIcons.sign_out_alt_solid,
                   onPress: () {
                     Get.to(() => const DriverScreen());
-
                   }),
             ],
           ),

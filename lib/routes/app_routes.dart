@@ -11,4 +11,10 @@ abstract class AppRoutes {
   static const String profileScreen = '/profileScreen';
   static const editProfile = '/editProfile';
 
+  //Extra
+  static const notificationScreen = '/notification';
+  static const settingsScreen = '/settingsScreen';
+  static const helpCenterScreen = '/helpCenter';
+  static const String privacyPolicy = '/privacyPolicy';
+
 }

@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
-  //final RideController rideController = Get.put(RideController());
+  //final RideController rideController = Get.lazyPut(() =>RideController());
   late RideBookingController bookingController;
 
   static const CameraPosition _kGooglePlex = CameraPosition(

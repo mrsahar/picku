@@ -15,17 +15,17 @@ void main() {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   // Initialize global variables
-  Get.put(GlobalVariables());
+  Get.lazyPut(() =>GlobalVariables());
   runApp(const MyApp());
   initializeServices();
 }
 
 void initializeServices() {
-  Get.put(LocationService());
-  Get.put(ApiProvider());
-  Get.put(RideController());
-  Get.put(LocationService());
-  Get.put(RideBookingController());
+  Get.lazyPut(() =>LocationService());
+  Get.lazyPut(() =>ApiProvider());
+  Get.lazyPut(() =>RideController());
+  Get.lazyPut(() =>LocationService());
+  Get.lazyPut(() =>RideBookingController());
 }
 
 class MyApp extends StatefulWidget {
