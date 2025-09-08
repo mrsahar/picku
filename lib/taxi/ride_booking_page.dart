@@ -466,61 +466,40 @@ class RideBookingPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text('✓ Pickup and dropoff locations set'),
+                    const Text('✓ Pickup & Drop-off selected'),
                     if (controller.additionalStops.isNotEmpty)
                       Text('✓ ${controller.additionalStops.length} additional stop(s) added'),
+                    Obx(() {
+                      if (_mapService.routeDistance.value.isNotEmpty && _mapService.routeDuration.value.isNotEmpty) {
+                        return Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('✓ Distance: ${_mapService.routeDistance.value}'),
+                                    Text('✓ Duration: ${_mapService.routeDuration.value}'),
+                                  ],
+                                ),
+                              ),
+                              if (_mapService.isLoadingRoute.value)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                            ],
+                          );
+                      }
+                      return const SizedBox.shrink();
+                    })
                   ],
                 ),
               );
             }
             return const SizedBox.shrink();
           }),
-
-          const SizedBox(height: 16),
-          Obx(() {
-            if (_mapService.routeDistance.value.isNotEmpty && _mapService.routeDuration.value.isNotEmpty) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info, color: Colors.green),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Route Information',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('Distance: ${_mapService.routeDistance.value}'),
-                          Text('Duration: ${_mapService.routeDuration.value}'),
-                        ],
-                      ),
-                    ),
-                    if (_mapService.isLoadingRoute.value)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                  ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-
+          const SizedBox(height: 20),
           // Passenger Count
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 8),

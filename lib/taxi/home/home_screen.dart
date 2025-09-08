@@ -8,16 +8,12 @@ import 'package:pick_u/core/location_service.dart';
 import 'package:pick_u/core/map_service.dart';
 import 'package:pick_u/taxi/booking/no_drivers_available_widget.dart';
 import 'package:pick_u/taxi/booking/waiting_for_driver_widget.dart';
-import 'package:pick_u/taxi/home/widget/build_tag_widget.dart';
-import 'package:pick_u/taxi/home/widget/destination_select_widget_state.dart';
 import 'package:pick_u/taxi/home/widget/driver_info_widget.dart';
 import 'package:pick_u/taxi/home/widget/location_widget.dart';
-import 'package:pick_u/taxi/home/widget/on_trip_widget.dart';
-import 'package:pick_u/taxi/home/widget/rating_widget.dart';
-import 'package:pick_u/taxi/home/widget/reached_destination.dart';
 import 'package:pick_u/taxi/ride_booking_page.dart';
 import 'package:pick_u/utils/map_theme/dark_map_theme.dart';
 import 'package:pick_u/utils/map_theme/light_map_theme.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 import 'package:pick_u/widget/driver_tracking_widget.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,7 +24,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _controller =
+      Completer<GoogleMapController>();
 
   // Inject services
   late RideBookingController bookingController;
@@ -102,7 +99,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Also check if location is already available (in case listener misses initial update)
     if (locationService.currentLatLng.value != null) {
-      print(' SAHAr Location already available: ${locationService.currentLatLng.value}');
+      print(
+        ' SAHAr Location already available: ${locationService.currentLatLng.value}',
+      );
       mapService.updateUserLocationMarker(
         locationService.currentLatLng.value!.latitude,
         locationService.currentLatLng.value!.longitude,
@@ -123,22 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDarkMode = brightness == Brightness.dark;
 
     final List<Widget> widgets = [
-      EnhancedDestinationWidget(
-        onCenterMap: _centerMapToLocation,
-      ),
+      EnhancedDestinationWidget(onCenterMap: _centerMapToLocation),
+
       // buildTag("hello",context,isDarkMode),
-       //DestinationSelectWidget(),
+      //DestinationSelectWidget(),
       // destinationReachedWidget(context),
       // ratingWidget(context),
       // driverInfoWidget(context),
       // onTripWidget(context),
-
     ];
 
     return Stack(
       children: [
         Obx(() {
-          print(' SAHAr Rebuilding map with ${mapService.markers.length} markers');
+          print(
+            ' SAHAr Rebuilding map with ${mapService.markers.length} markers',
+          );
           return Padding(
             padding: const EdgeInsets.only(bottom: 180.0),
             child: GoogleMap(
@@ -147,11 +146,15 @@ class _HomeScreenState extends State<HomeScreen> {
               initialCameraPosition: _kGooglePlex,
               myLocationButtonEnabled: false,
               myLocationEnabled: false,
-              markers: mapService.markers.toSet(), // Use MapService markers
-              polylines: mapService.polylines.toSet(), // Use MapService polylines
+              markers: mapService.markers.toSet(),
+              // Use MapService markers
+              polylines: mapService.polylines.toSet(),
+              // Use MapService polylines
               onMapCreated: (GoogleMapController controller) {
                 _controller.complete(controller);
-                mapService.setMapController(controller); // Set controller in MapService
+                mapService.setMapController(
+                  controller,
+                ); // Set controller in MapService
 
                 // Fit map when ride is booked
                 if (bookingController.isRideBooked.value) {
@@ -168,7 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
           left: 0,
           right: 0,
           child: Obx(() {
-            print('SAHAr Current ride status: ${bookingController.rideStatus.value}');
+            print(
+              'SAHAr Current ride status: ${bookingController.rideStatus.value}',
+            );
 
             switch (bookingController.rideStatus.value) {
               case RideStatus.waiting:
@@ -210,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               case RideStatus.pending:
               default:
-              // Default fallback - show initial destination widget (like new app started)
+                // Default fallback - show initial destination widget (like new app started)
                 return AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   transitionBuilder: (child, animation) {
@@ -341,10 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 12),
                     Text(
                       'Getting your location...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -362,7 +364,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Enhanced method using MapService
-  Future<void> _centerMapToLocation(LatLng location, {double zoom = 16.0}) async {
+  Future<void> _centerMapToLocation(
+    LatLng location, {
+    double zoom = 16.0,
+  }) async {
     await mapService.animateToLocation(location, zoom: zoom);
     print(' SAHAr Map centered to: $location with zoom: $zoom');
   }
@@ -379,72 +384,96 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRideActionButtons(
-      BuildContext context,
-      RideBookingController controller,
-      ) {
+    BuildContext context,
+    RideBookingController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+            color: MColor.primaryNavy.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -8),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Route summary
+          // Route summary with navy theme
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                colors: [
+                  MColor.primaryNavy.withOpacity(0.08),
+                  MColor.primaryNavy.withOpacity(0.12),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: MColor.primaryNavy.withOpacity(0.2),
+                width: 1,
+              ),
             ),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.location_on,
-                      color: Colors.blue,
-                      size: 16,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: MColor.primaryNavy.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.location_on,
+                        color: MColor.primaryNavy,
+                        size: 16,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         controller.pickupController.text,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: MColor.primaryNavy.withOpacity(0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.flag,
-                      color: Colors.blue,
-                      size: 16,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: MColor.primaryNavy.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.flag,
+                        color: MColor.primaryNavy,
+                        size: 16,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         controller.dropoffController.text,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: MColor.primaryNavy.withOpacity(0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -452,31 +481,83 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 if (controller.additionalStops.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${controller.additionalStops.where((stop) => stop.address.isNotEmpty).length} additional stop(s)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.secondary,
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: MColor.primaryNavy.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${controller.additionalStops.where((stop) => stop.address.isNotEmpty).length} additional stop(s)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: MColor.primaryNavy.withOpacity(0.8),
+                      ),
                     ),
                   ),
                 ],
 
-                // Show route info from MapService
+                // Route info with enhanced styling
                 Obx(() {
                   if (mapService.routeDistance.value.isNotEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                    return Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: MColor.primaryNavy.withOpacity(0.1),
+                        ),
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Text(
-                            '📍 ${mapService.routeDistance.value}',
-                            style: const TextStyle(fontSize: 11),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.straighten,
+                                size: 14,
+                                color: MColor.primaryNavy.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                mapService.routeDistance.value,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: MColor.primaryNavy,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '⏱️ ${mapService.routeDuration.value}',
-                            style: const TextStyle(fontSize: 11),
+                          Container(
+                            width: 1,
+                            height: 16,
+                            color: MColor.primaryNavy.withOpacity(0.2),
+                          ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 14,
+                                color: MColor.primaryNavy.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                mapService.routeDuration.value,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: MColor.primaryNavy,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -490,7 +571,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 12),
 
-          // Action buttons
           Row(
             children: [
               Expanded(
@@ -516,16 +596,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
-                  child: Obx(() => controller.isLoading.value
-                      ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                      : Text(controller.isScheduled.value ? 'Schedule It' : 'Start Ride')
+                  child: Obx(
+                    () => controller.isLoading.value
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            controller.isScheduled.value
+                                ? 'Schedule It'
+                                : 'Start Ride',
+                          ),
                   ),
                 ),
               ),
