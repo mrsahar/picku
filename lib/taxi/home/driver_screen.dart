@@ -9,6 +9,7 @@ class DriverScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+
       appBar: AppBar(
         leading: IconButton(
             onPressed: () {},

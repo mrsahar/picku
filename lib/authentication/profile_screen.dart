@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
+import 'package:pick_u/widget/picku_appbar.dart';
 
 import '../controllers/profile_controller.dart';
 
@@ -14,26 +15,12 @@ class ProfileScreen extends StatelessWidget {
     final ProfileController controller = Get.find<ProfileController>();
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(LineAwesomeIcons.angle_left_solid),
+        appBar: PickUAppBar(
+          title: "Profile",
+          onBackPressed: () {
+            Get.back();
+          },
         ),
-        title: Text(
-          "Profile",
-          style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.black
-                : Colors.white,
-          ),
-        ),
-        // actions: [
-        //   IconButton(
-        //     onPressed: () {},
-        //     icon: Icon(context.isDarkMode ? LineAwesomeIcons.sun : LineAwesomeIcons.moon),
-        //   )
-        // ],
-      ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(

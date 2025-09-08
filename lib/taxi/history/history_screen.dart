@@ -5,6 +5,7 @@ import 'package:pick_u/controllers/ride_history_controller.dart';
 import 'package:pick_u/taxi/history/widget/trip_card_widget.dart';
 import 'package:pick_u/taxi/history/widget/trip_summary_widget.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:pick_u/widget/picku_appbar.dart';
 
 class RideHistoryPage extends GetView<RideHistoryController> {
   const RideHistoryPage({Key? key}) : super(key: key);
@@ -12,19 +13,12 @@ class RideHistoryPage extends GetView<RideHistoryController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(LineAwesomeIcons.angle_left_solid),
+        appBar: PickUAppBar(
+          title: "Trip History",
+          onBackPressed: () {
+            Get.back();
+          },
         ),
-        title: const Text(
-          "Trip History",
-          style: TextStyle(fontSize: 16),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      ),
       body: Obx(() {
         if (controller.isLoading && controller.rideHistory == null) {
           return const Center(

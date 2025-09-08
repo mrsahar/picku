@@ -5,6 +5,7 @@ import 'package:pick_u/controllers/scheduled_ride_history_controller.dart';
 import 'package:pick_u/taxi/history/widget/trip_summary_widget.dart';
 import 'package:pick_u/taxi/scheduled/scheduled_trip_history_card.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:pick_u/widget/picku_appbar.dart';
 
 class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
   const ScheduledRideHistoryPage({Key? key}) : super(key: key);
@@ -12,16 +13,12 @@ class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(LineAwesomeIcons.angle_left_solid),
+        appBar: PickUAppBar(
+          title: "Scheduled Rides",
+          onBackPressed: () {
+            Get.back();
+          },
         ),
-        title: const Text(
-          "Scheduled Rides",
-          style: TextStyle(fontSize: 16),
-        ),
-      ),
       body: Obx(() {
         if (controller.isLoading && controller.scheduledRideHistory == null) {
           return const Center(

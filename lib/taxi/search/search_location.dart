@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
+import 'package:pick_u/widget/picku_appbar.dart';
 
 class SearchLocation extends StatelessWidget {
   const SearchLocation({super.key});
@@ -10,12 +12,13 @@ class SearchLocation extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(onPressed: (){} ,
-              icon: const Icon(LineAwesomeIcons.angle_left_solid)),
-          title: Text("Search Location",  style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onPrimary,),
-        )),
+      appBar: PickUAppBar(
+        title: "Search Location",
+        onBackPressed: () {
+          // Your custom back logic
+          Get.back();
+        },
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Column(

@@ -29,7 +29,6 @@ class EnhancedDestinationWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Container(
       color: theme.colorScheme.surface,
       child: Column(
@@ -37,16 +36,16 @@ class EnhancedDestinationWidget extends StatelessWidget {
           // Drag handle
           Container(
             margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
+            width: 30,
+            height: 3,
             decoration: BoxDecoration(
               color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(10.0),
             ),
           ),
 
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -56,11 +55,7 @@ class EnhancedDestinationWidget extends StatelessWidget {
                   children: [
                     Text(
                       'Where to?',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                        style: theme.textTheme.titleSmall,
                     ),
                     GestureDetector(
                       onTap: () {

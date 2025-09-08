@@ -8,6 +8,8 @@ import 'package:pick_u/core/google_places_service.dart';
 import 'package:pick_u/models/location_model.dart';
 import 'package:pick_u/utils/theme/app_theme.dart';
 import 'package:intl/intl.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:pick_u/widget/picku_appbar.dart';
 
 class RideBookingPage extends StatelessWidget {
   late final RideBookingController controller;
@@ -28,19 +30,11 @@ class RideBookingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book a Ride'),
-        elevation: 0,
-        actions: [
-          // Clear all button
-          TextButton(
-            onPressed: () {
-              controller.clearBooking();
-              Get.snackbar('Cleared', 'All locations cleared');
-            },
-            child: const Text('Clear All'),
-          ),
-        ],
+      appBar: PickUAppBar(
+        title: "Book a Ride",
+        onBackPressed: () {
+          Get.back();
+        },
       ),
       body: _buildLocationInputView(context),
     );
@@ -56,7 +50,7 @@ class RideBookingPage extends StatelessWidget {
         children: [
           // Schedule Toggle Section
           Obx(() => Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: controller.isScheduled.value
                   ? theme.colorScheme.primary.withValues(alpha: 0.1)
@@ -70,12 +64,15 @@ class RideBookingPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Switch(
-                  value: controller.isScheduled.value,
-                  onChanged: (value) {
-                    controller.toggleScheduling();
-                  },
-                  activeColor: theme.colorScheme.primary,
+                Transform.scale(
+                  scale: 0.8, // Adjust scale (0.8 = 80% of original size)
+                  child: Switch(
+                    value: controller.isScheduled.value,
+                    onChanged: (value) {
+                      controller.toggleScheduling();
+                    },
+                    activeColor: theme.colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -85,7 +82,7 @@ class RideBookingPage extends StatelessWidget {
                       Text(
                         'Schedule Ride',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: controller.isScheduled.value
                               ? theme.colorScheme.primary
@@ -119,7 +116,7 @@ class RideBookingPage extends StatelessWidget {
                   // Date Selection
                   Text(
                     'Select Date',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleSmall?.copyWith(color:MColor.primaryNavy ,fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   InkWell(
@@ -158,7 +155,7 @@ class RideBookingPage extends StatelessWidget {
                   // Time Selection
                   Text(
                     'Select Time',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleSmall?.copyWith(color:MColor.primaryNavy ,fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   InkWell(
@@ -236,7 +233,7 @@ class RideBookingPage extends StatelessWidget {
           // Pickup Location
           Text(
             'Pickup Location',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleSmall?.copyWith(color:MColor.primaryNavy ,fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Row(
@@ -276,7 +273,7 @@ class RideBookingPage extends StatelessWidget {
           // Dropoff Location
           Text(
             'Dropoff Location',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleSmall?.copyWith(color:MColor.primaryNavy ,fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           _buildLocationTextField(
@@ -526,7 +523,7 @@ class RideBookingPage extends StatelessWidget {
 
           // Passenger Count
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 8),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey[300]!),
               borderRadius: BorderRadius.circular(8),

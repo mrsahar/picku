@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
-import '../../../../utils/theme/mcolors.dart';
 // TODO remove
 Widget destinationReachedWidget(BuildContext context) {
   final theme = Theme.of(context);

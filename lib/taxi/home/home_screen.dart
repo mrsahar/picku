@@ -8,8 +8,13 @@ import 'package:pick_u/core/location_service.dart';
 import 'package:pick_u/core/map_service.dart';
 import 'package:pick_u/taxi/booking/no_drivers_available_widget.dart';
 import 'package:pick_u/taxi/booking/waiting_for_driver_widget.dart';
+import 'package:pick_u/taxi/home/widget/build_tag_widget.dart';
+import 'package:pick_u/taxi/home/widget/destination_select_widget_state.dart';
 import 'package:pick_u/taxi/home/widget/driver_info_widget.dart';
 import 'package:pick_u/taxi/home/widget/location_widget.dart';
+import 'package:pick_u/taxi/home/widget/on_trip_widget.dart';
+import 'package:pick_u/taxi/home/widget/rating_widget.dart';
+import 'package:pick_u/taxi/home/widget/reached_destination.dart';
 import 'package:pick_u/taxi/ride_booking_page.dart';
 import 'package:pick_u/utils/map_theme/dark_map_theme.dart';
 import 'package:pick_u/utils/map_theme/light_map_theme.dart';
@@ -33,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasInitialLocationBeenSet = false;
 
   static const CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(31.8329711, 70.9028416),
+    target: LatLng(12.9352, 77.6245),
     zoom: 14,
   );
 
@@ -121,6 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
       EnhancedDestinationWidget(
         onCenterMap: _centerMapToLocation,
       ),
+      // buildTag("hello",context,isDarkMode),
+       //DestinationSelectWidget(),
+      // destinationReachedWidget(context),
+      // ratingWidget(context),
+      // driverInfoWidget(context),
+      // onTripWidget(context),
+
     ];
 
     return Stack(

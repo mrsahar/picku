@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/edit_profile_controller.dart';
+import 'package:pick_u/widget/picku_appbar.dart';
 
 class EditProfileScreen extends StatelessWidget {
   const EditProfileScreen({super.key});
@@ -11,16 +12,12 @@ class EditProfileScreen extends StatelessWidget {
     final controller = Get.find<EditProfileController>();
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(LineAwesomeIcons.angle_left_solid),
+        appBar: PickUAppBar(
+          title: "Edit Profile",
+          onBackPressed: () {
+            Get.back();
+          },
         ),
-        title: const Text(
-          "Edit Profile",
-          style: TextStyle(fontSize: 16),
-        ),
-      ),
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.all(20),
