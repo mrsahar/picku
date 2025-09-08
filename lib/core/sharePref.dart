@@ -27,9 +27,9 @@ class SharedPrefsService {
       await prefs.setString(_keyUserFullName, fullName);
       await prefs.setBool(_keyIsLoggedIn, true);
 
-      print('MRSAHAr 💾 All user data saved to SharedPreferences successfully');
+      print('SAHAr 💾 All user data saved to SharedPreferences successfully');
     } catch (e) {
-      print('MRSAHAr 💥 Error saving to SharedPreferences: $e');
+      print('SAHAr 💥 Error saving to SharedPreferences: $e');
     }
   }
 
@@ -59,9 +59,9 @@ class SharedPrefsService {
       }
 
       await prefs.setBool(_keyIsLoggedIn, true);
-      print('MRSAHAr 💾 User data saved from API response');
+      print('SAHAr 💾 User data saved from API response');
     } catch (e) {
-      print('MRSAHAr 💥 Error saving API response to SharedPreferences: $e');
+      print('SAHAr 💥 Error saving API response to SharedPreferences: $e');
     }
   }
 
@@ -71,7 +71,7 @@ class SharedPrefsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_keyUserToken);
     } catch (e) {
-      print('MRSAHAr 💥 Error getting token: $e');
+      print('SAHAr 💥 Error getting token: $e');
       return null;
     }
   }
@@ -82,7 +82,7 @@ class SharedPrefsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_keyTokenExpires);
     } catch (e) {
-      print('MRSAHAr 💥 Error getting token expiry: $e');
+      print('SAHAr 💥 Error getting token expiry: $e');
       return null;
     }
   }
@@ -92,10 +92,10 @@ class SharedPrefsService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(_keyUserId);
-      print('MRSAHAr 📱 Retrieved user ID: $userId'); // Debug log
+      print('SAHAr 📱 Retrieved user ID: $userId'); // Debug log
       return userId;
     } catch (e) {
-      print('MRSAHAr 💥 Error getting user ID: $e');
+      print('SAHAr 💥 Error getting user ID: $e');
       return null;
     }
   }
@@ -106,7 +106,7 @@ class SharedPrefsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_keyUserEmail);
     } catch (e) {
-      print('MRSAHAr 💥 Error getting user email: $e');
+      print('SAHAr 💥 Error getting user email: $e');
       return null;
     }
   }
@@ -117,7 +117,7 @@ class SharedPrefsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_keyUserFullName);
     } catch (e) {
-      print('MRSAHAr 💥 Error getting user full name: $e');
+      print('SAHAr 💥 Error getting user full name: $e');
       return null;
     }
   }
@@ -136,7 +136,7 @@ class SharedPrefsService {
         'isLoggedIn': prefs.getBool(_keyIsLoggedIn)?.toString(),
       };
     } catch (e) {
-      print('MRSAHAr 💥 Error retrieving user data: $e');
+      print('SAHAr 💥 Error retrieving user data: $e');
       return {};
     }
   }
@@ -149,7 +149,7 @@ class SharedPrefsService {
         'userId': prefs.getString(_keyUserId),
       };
     } catch (e) {
-      print('MRSAHAr 💥 Error retrieving user data: $e');
+      print('SAHAr 💥 Error retrieving user data: $e');
       return {};
     }
   }
@@ -160,7 +160,7 @@ class SharedPrefsService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_keyIsLoggedIn) ?? false;
     } catch (e) {
-      print('MRSAHAr 💥 Error checking login status: $e');
+      print('SAHAr 💥 Error checking login status: $e');
       return false;
     }
   }
@@ -178,7 +178,7 @@ class SharedPrefsService {
 
       return now.isAfter(expiryDate);
     } catch (e) {
-      print('MRSAHAr 💥 Error checking token expiry: $e');
+      print('SAHAr 💥 Error checking token expiry: $e');
       return true; // Assume expired if there's an error
     }
   }
@@ -195,9 +195,9 @@ class SharedPrefsService {
       await prefs.remove(_keyUserFullName);
       await prefs.setBool(_keyIsLoggedIn, false);
 
-      print('MRSAHAr 💾 User data cleared from SharedPreferences');
+      print('SAHAr 💾 User data cleared from SharedPreferences');
     } catch (e) {
-      print('MRSAHAr 💥 Error clearing SharedPreferences: $e');
+      print('SAHAr 💥 Error clearing SharedPreferences: $e');
     }
   }
 }

@@ -1,9 +1,6 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -59,14 +56,14 @@ class EditProfileController extends GetxController {
         if (userData.hasProfilePicture) {
           currentProfileImage.value = userData.getImageBytes();
         }
-        print('MRSAHAr User data loaded: ${userData.name}');
+        print('SAHAr User data loaded: ${userData.name}');
       }
     } catch (e) {
-      print('MRSAHAr Error loading user data: $e');
+      print('SAHAr Error loading user data: $e');
       Get.snackbar(
         'Error',
         'Failed to load user data',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -111,13 +108,13 @@ class EditProfileController extends GetxController {
 
       if (pickedFile != null) {
         selectedImagePath.value = pickedFile.path;
-        print('MRSAHAr Image selected: ${pickedFile.path}');
+        print('SAHAr Image selected: ${pickedFile.path}');
       }
     } catch (e) {
       Get.snackbar(
         'Error',
         'Failed to pick image: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -190,7 +187,7 @@ class EditProfileController extends GetxController {
       Get.snackbar(
         'Validation Error',
         'Please enter username',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.orange,
         colorText: Colors.white,
       );
@@ -201,7 +198,7 @@ class EditProfileController extends GetxController {
       Get.snackbar(
         'Validation Error',
         'Please enter phone number',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.orange,
         colorText: Colors.white,
       );
@@ -258,7 +255,7 @@ class EditProfileController extends GetxController {
         Get.snackbar(
           'Success',
           'Profile updated successfully',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
@@ -270,7 +267,7 @@ class EditProfileController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to update profile: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -317,7 +314,7 @@ class EditProfileController extends GetxController {
           Get.snackbar(
             'Success',
             'Account deleted successfully',
-            snackPosition: SnackPosition.BOTTOM,
+            snackPosition: SnackPosition.TOP,
             backgroundColor: Colors.green,
             colorText: Colors.white,
           );
@@ -331,7 +328,7 @@ class EditProfileController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to delete account: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );

@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
+import 'package:pick_u/core/location_service.dart';
+import 'package:pick_u/core/search_location_service.dart';
+import 'package:pick_u/core/map_service.dart';
+import 'package:pick_u/core/google_places_service.dart';
+import 'package:pick_u/models/location_model.dart';
 import 'package:pick_u/utils/theme/app_theme.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 
 class RideBookingPage extends StatelessWidget {
   late final RideBookingController controller;
+
+  // Inject services directly
+  final LocationService _locationService = Get.find<LocationService>();
+  final SearchService _searchService = Get.find<SearchService>();
+  final MapService _mapService = Get.find<MapService>();
 
   RideBookingPage({super.key}) {
     try {
@@ -50,12 +59,12 @@ class RideBookingPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: controller.isScheduled.value
-                  ? theme.colorScheme.primary.withOpacity(0.1)
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
                   : Colors.grey[50],
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: controller.isScheduled.value
-                    ? theme.colorScheme.primary.withOpacity(0.3)
+                    ? theme.colorScheme.primary.withValues(alpha: 0.3)
                     : Colors.grey[300]!,
               ),
             ),
@@ -189,10 +198,10 @@ class RideBookingPage extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -238,19 +247,20 @@ class RideBookingPage extends StatelessWidget {
                   hintText: 'Enter pickup location',
                   icon: Icons.my_location,
                   iconColor: MAppTheme.primaryNavyColor,
-                  onChanged: (value) => controller.searchLocation(value, 'pickup'),
+                  onChanged: (value) => _searchService.searchLocation(value, 'pickup'),
                 ),
               ),
               const SizedBox(width: 8),
               Obx(() => ElevatedButton(
-                onPressed: controller.isLoading.value ? null : () async {
-                  await _getCurrentLocationWithGPSCheck();
+                onPressed: _locationService.isLocationLoading.value ? null : () async {
+                  await _setPickupToCurrentLocation();
+                  _handleLocationSelectionAutoCalculate();
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   backgroundColor: theme.colorScheme.primary,
                 ),
-                child: controller.isLoading.value
+                child: _locationService.isLocationLoading.value
                     ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -274,7 +284,7 @@ class RideBookingPage extends StatelessWidget {
             hintText: 'Enter dropoff location',
             icon: Icons.location_on,
             iconColor: MAppTheme.primaryNavyColor,
-            onChanged: (value) => controller.searchLocation(value, 'dropoff'),
+            onChanged: (value) => _searchService.searchLocation(value, 'dropoff'),
           ),
 
           // Additional Stops
@@ -302,7 +312,7 @@ class RideBookingPage extends StatelessWidget {
                               hintText: 'Stop ${index + 1}',
                               icon: Icons.add_location,
                               iconColor: MAppTheme.primaryNavyColor,
-                              onChanged: (value) => controller.searchLocation(value, 'stop_$index'),
+                              onChanged: (value) => _searchService.searchLocation(value, 'stop_$index'),
                             ),
                           ),
                           IconButton(
@@ -326,9 +336,9 @@ class RideBookingPage extends StatelessWidget {
             label: const Text('Add Stop'),
           ),
 
-          // Search Suggestions
+          // Search Suggestions - Updated to use SearchService directly
           Obx(() {
-            if (controller.searchSuggestions.isNotEmpty || controller.isSearching.value) {
+            if (_searchService.searchSuggestions.isNotEmpty || _searchService.isSearching.value) {
               return Container(
                 margin: const EdgeInsets.only(top: 8),
                 decoration: BoxDecoration(
@@ -337,7 +347,7 @@ class RideBookingPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -347,7 +357,7 @@ class RideBookingPage extends StatelessWidget {
                 child: Column(
                   children: [
                     // Loading indicator
-                    if (controller.isSearching.value)
+                    if (_searchService.isSearching.value)
                       const Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Row(
@@ -364,13 +374,13 @@ class RideBookingPage extends StatelessWidget {
                       ),
 
                     // Search results
-                    if (controller.searchSuggestions.isNotEmpty && !controller.isSearching.value)
+                    if (_searchService.searchSuggestions.isNotEmpty && !_searchService.isSearching.value)
                       Expanded(
                         child: ListView.builder(
                           shrinkWrap: true,
-                          itemCount: controller.searchSuggestions.length,
+                          itemCount: _searchService.searchSuggestions.length,
                           itemBuilder: (context, index) {
-                            final prediction = controller.searchSuggestions[index];
+                            final prediction = _searchService.searchSuggestions[index];
                             return ListTile(
                               dense: true,
                               leading: Icon(
@@ -394,7 +404,7 @@ class RideBookingPage extends StatelessWidget {
                               )
                                   : null,
                               onTap: () async {
-                                await controller.selectSuggestion(prediction);
+                                await _selectSuggestion(prediction);
                                 // Auto-calculate when dropoff or stop is selected
                                 await _handleLocationSelectionAutoCalculate();
                               },
@@ -404,9 +414,9 @@ class RideBookingPage extends StatelessWidget {
                       ),
 
                     // No results message
-                    if (controller.searchSuggestions.isEmpty &&
-                        !controller.isSearching.value &&
-                        controller.activeSearchField.value.isNotEmpty)
+                    if (_searchService.searchSuggestions.isEmpty &&
+                        !_searchService.isSearching.value &&
+                        _searchService.activeSearchField.value.isNotEmpty)
                       const Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Row(
@@ -426,16 +436,21 @@ class RideBookingPage extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Route Preview (if locations are set)
+          // Route Preview (if locations are set and ride not started)
           Obx(() {
             if (controller.pickupLocation.value != null &&
-                controller.dropoffLocation.value != null) {
+                controller.dropoffLocation.value != null &&
+                controller.isRideBooked.value &&
+                controller.rideStatus.value != 'driver_assigned' &&
+                controller.rideStatus.value != 'driver_on_way' &&
+                controller.rideStatus.value != 'trip_started' &&
+                controller.rideStatus.value != 'completed') {
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                  border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,14 +481,14 @@ class RideBookingPage extends StatelessWidget {
 
           const SizedBox(height: 16),
           Obx(() {
-            if (controller.routeDistance.value.isNotEmpty && controller.routeDuration.value.isNotEmpty) {
+            if (_mapService.routeDistance.value.isNotEmpty && _mapService.routeDuration.value.isNotEmpty) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -491,12 +506,12 @@ class RideBookingPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text('Distance: ${controller.routeDistance.value}'),
-                          Text('Duration: ${controller.routeDuration.value}'),
+                          Text('Distance: ${_mapService.routeDistance.value}'),
+                          Text('Duration: ${_mapService.routeDuration.value}'),
                         ],
                       ),
                     ),
-                    if (controller.isLoadingRoute.value)
+                    if (_mapService.isLoadingRoute.value)
                       const SizedBox(
                         width: 20,
                         height: 20,
@@ -508,7 +523,6 @@ class RideBookingPage extends StatelessWidget {
             }
             return const SizedBox.shrink();
           }),
-          const SizedBox(height: 16),
 
           // Passenger Count
           Container(
@@ -561,6 +575,13 @@ class RideBookingPage extends StatelessWidget {
                   ? () => Get.back()
                   : () async {
                 Get.back();
+                Future.delayed(const Duration(milliseconds: 300), () async {
+                  try {
+                    await controller.showPickupLocationWithZoom();
+                  } catch (e) {
+                    print('Error showing pickup location: $e');
+                  }
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
@@ -639,7 +660,7 @@ class RideBookingPage extends StatelessWidget {
           Get.snackbar(
             'Invalid Time',
             'Please select a time in the future',
-            snackPosition: SnackPosition.BOTTOM,
+            snackPosition: SnackPosition.TOP,
           );
           return;
         }
@@ -649,67 +670,75 @@ class RideBookingPage extends StatelessWidget {
     }
   }
 
-  // Method to check GPS and enable it automatically
-  Future<void> _getCurrentLocationWithGPSCheck() async {
+  // Method to set pickup location using LocationService
+  Future<void> _setPickupToCurrentLocation() async {
     try {
-      // Check if location services are enabled
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        // Show dialog asking user to enable GPS
-        Get.dialog(
-          AlertDialog(
-            title: const Text('GPS Required'),
-            content: const Text('GPS is required for this feature. Would you like to enable it?'),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Get.back();
-                  // Try to open location settings
-                  bool opened = await Geolocator.openLocationSettings();
-                  if (opened) {
-                    // Wait a bit and check again
-                    await Future.delayed(const Duration(seconds: 2));
-                    bool isEnabled = await Geolocator.isLocationServiceEnabled();
-                    if (isEnabled) {
-                      await controller.getCurrentLocation();
-                    } else {
-                      Get.snackbar('Error', 'GPS is still disabled. Please enable it manually.');
-                    }
-                  } else {
-                    Get.snackbar('Error', 'Unable to open GPS settings. Please enable GPS manually.');
-                  }
-                },
-                child: const Text('Enable GPS'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+      await _locationService.getCurrentLocation();
 
-      // Check for permissions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          Get.snackbar('Error', 'Location permissions are denied');
-          return;
+      var currentLocationData = _locationService.getCurrentLocationData();
+      if (currentLocationData != null) {
+        controller.pickupController.text = currentLocationData.address;
+        controller.pickupLocation.value = currentLocationData;
+      } else {
+        Get.snackbar('Error', 'Could not get current location');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to get current location: $e');
+    }
+  }
+
+  // Method to handle search suggestion selection using SearchService
+  Future<void> _selectSuggestion(AutocompletePrediction prediction) async {
+    try {
+      controller.isLoading.value = true;
+      _searchService.searchSuggestions.clear();
+
+      PlaceDetails? placeDetails = await _searchService.getPlaceDetails(prediction.placeId);
+      if (placeDetails == null) return;
+
+      String activeField = _searchService.activeSearchField.value;
+
+      if (activeField == 'pickup') {
+        controller.pickupController.text = placeDetails.formattedAddress;
+        controller.pickupLocation.value = LocationData(
+          address: placeDetails.formattedAddress,
+          latitude: placeDetails.location.latitude,
+          longitude: placeDetails.location.longitude,
+          stopOrder: 0,
+        );
+      } else if (activeField == 'dropoff') {
+        controller.dropoffController.text = placeDetails.formattedAddress;
+        controller.dropoffLocation.value = LocationData(
+          address: placeDetails.formattedAddress,
+          latitude: placeDetails.location.latitude,
+          longitude: placeDetails.location.longitude,
+          stopOrder: 1,
+        );
+      } else if (activeField.startsWith('stop_')) {
+        int stopIndex = int.parse(activeField.split('_')[1]);
+        if (stopIndex < controller.stopControllers.length) {
+          controller.stopControllers[stopIndex].text = placeDetails.formattedAddress;
+
+          LocationData stopData = LocationData(
+            address: placeDetails.formattedAddress,
+            latitude: placeDetails.location.latitude,
+            longitude: placeDetails.location.longitude,
+            stopOrder: stopIndex + 2,
+          );
+
+          if (stopIndex < controller.additionalStops.length) {
+            controller.additionalStops[stopIndex] = stopData;
+          } else {
+            controller.additionalStops.add(stopData);
+          }
         }
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        Get.snackbar('Error', 'Location permissions are permanently denied');
-        return;
-      }
-
-      // Get current location
-      await controller.getCurrentLocation();
+      _searchService.activeSearchField.value = '';
     } catch (e) {
-      Get.snackbar('Error', 'Failed to get current location: ${e.toString()}');
+      Get.snackbar('Error', 'Failed to select location');
+    } finally {
+      controller.isLoading.value = false;
     }
   }
 
@@ -724,7 +753,7 @@ class RideBookingPage extends StatelessWidget {
       try {
         await controller.bookRide();
       } catch (e) {
-        print('MRSAHAr Error calculating route: $e');
+        print('Error calculating route: $e');
         // You might want to show a snackbar here if needed
       }
     }

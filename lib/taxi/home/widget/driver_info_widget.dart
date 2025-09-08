@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
+import 'package:pick_u/controllers/chat_controller.dart';
+import 'package:pick_u/core/signalr_service.dart';
+import 'package:pick_u/routes/app_routes.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 Widget driverInfoWidget(BuildContext context) {
   final theme = Theme.of(context);
@@ -8,6 +13,7 @@ Widget driverInfoWidget(BuildContext context) {
   final isDarkMode = brightness == Brightness.dark;
   final inputBorderColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
   final controller = Get.find<RideBookingController>();
+  final signalRService = Get.find<SignalRService>();
 
   return Column(
     mainAxisAlignment: MainAxisAlignment.end,
@@ -42,20 +48,22 @@ Widget driverInfoWidget(BuildContext context) {
               ),
             ),
             const SizedBox(height: 16),
-            // Title - Dynamic arrival time
+            // Title - Dynamic arrival time with SignalR integration
             Obx(() => Text(
-              controller.rideStatus.value == 'trip_started'
+              controller.rideStatus.value == RideStatus.tripStarted
                   ? "Trip in Progress"
-                  : controller.rideStatus.value == 'driver_on_way'
+                  : controller.rideStatus.value == RideStatus.driverAssigned
                   ? "Your Ride is arriving in 3 mins"
+                  : controller.rideStatus.value == RideStatus.tripCompleted
+                  ? "Trip Completed"
                   : "Driver Assigned",
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16.0,
               ),
             )),
-            const SizedBox(height: 8.0),
 
+            const SizedBox(height: 8.0),
             // Divider
             Divider(color: theme.dividerColor, thickness: 0.4),
             const SizedBox(height: 16.0),
@@ -64,14 +72,12 @@ Widget driverInfoWidget(BuildContext context) {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // Message Icon
+                // Message Icon - Enhanced chat functionality
                 _buildCircularButton(
                   icon: Icons.message,
                   color: theme.primaryColor,
                   isDarkMode: isDarkMode,
-                  onPressed: () {
-                    Get.snackbar('Message', 'Messaging feature coming soon!');
-                  },
+                  onPressed: () => _handleChatNavigation(controller),
                 ),
                 // Driver Info
                 Column(
@@ -149,7 +155,7 @@ Widget driverInfoWidget(BuildContext context) {
                           ),
                         )),
                         const SizedBox(height: 2.0),
-                        // Vehicle Info (placeholder since not in API response)
+                        // Vehicle Info
                         Obx(() => Text(
                           controller.vehicle.value.isNotEmpty
                               ? "${controller.vehicle.value} ${controller.vehicleColor.value}"
@@ -163,34 +169,25 @@ Widget driverInfoWidget(BuildContext context) {
                     ),
                   ],
                 ),
-                // Call Icon
+                // Call Icon - Enhanced with actual calling functionality
                 _buildCircularButton(
                   icon: Icons.call,
                   color: theme.primaryColor,
                   isDarkMode: isDarkMode,
-                  onPressed: () {
-                    if (controller.driverPhone.value.isNotEmpty) {
-                      Get.snackbar(
-                        'Calling',
-                        'Calling ${controller.driverName.value}...',
-                        duration: const Duration(seconds: 2),
-                      );
-                      // Here you can add actual calling functionality
-                    } else {
-                      Get.snackbar('Error', 'Driver phone not available');
-                    }
-                  },
+                  onPressed: () => _makePhoneCall(controller.driverPhone.value, controller.driverName.value),
                 ),
               ],
             ),
             const SizedBox(height: 16.0),
 
-            // Price Information
+            // Price Information - Enhanced with real-time updates
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: MColor.primaryNavy.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: MColor.primaryNavy.withOpacity(0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -199,7 +196,9 @@ Widget driverInfoWidget(BuildContext context) {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Estimated Price',
+                        controller.rideStatus.value == RideStatus.tripCompleted
+                            ? 'Final Price'
+                            : 'Estimated Price',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.hintColor,
                         ),
@@ -208,7 +207,9 @@ Widget driverInfoWidget(BuildContext context) {
                         '₹${controller.estimatedPrice.value.toStringAsFixed(2)}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
+                          color: controller.rideStatus.value == RideStatus.tripCompleted
+                              ? Colors.green
+                              : theme.primaryColor,
                         ),
                       )),
                     ],
@@ -235,57 +236,276 @@ Widget driverInfoWidget(BuildContext context) {
             ),
 
             const SizedBox(height: 16.0),
-            // Dynamic Button - Only Start Trip or End Trip
-            Obx(() {
-              if (controller.rideStatus.value == 'trip_started') {
-                // Show End Trip button when trip is started
-                return SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
-                    onPressed: controller.isLoading.value ? null : () async {
-                      await controller.endTrip();
-                    },
-                    child: controller.isLoading.value
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("End Trip"),
-                  ),
-                );
-              } else {
-                // Show Start Trip button
-                return SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
-                    onPressed: controller.isLoading.value ? null : () async {
-                      await controller.startTrip();
-                    },
-                    child: controller.isLoading.value
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Start Trip"),
-                  ),
-                );
-              }
-            }),
+            // Dynamic Button - Enhanced with pricing display
+            Obx(() => _buildRideActionButton(controller, theme)),
           ],
         ),
       ),
     ],
   );
+}
+
+// Enhanced chat navigation with proper service integration
+void _handleChatNavigation(RideBookingController controller) {
+  // Check if ChatController already exists
+  ChatController? existingChatController;
+  try {
+    existingChatController = Get.find<ChatController>();
+  } catch (e) {
+    existingChatController = null;
+  }
+
+  if (existingChatController != null) {
+    // Update existing ChatController and navigate back to existing ChatScreen
+    existingChatController.updateRideInfo(
+      rideId: controller.currentRideId.value,
+      driverId: controller.driverId.value,
+      driverName: controller.driverName.value,
+    );
+
+    // Check if we're already on ChatScreen, if not navigate to it
+    if (Get.currentRoute != AppRoutes.chatScreen) {
+      Get.toNamed(AppRoutes.chatScreen);
+    }
+  } else {
+    // First time opening chat, create new ChatScreen with arguments
+    Get.toNamed(AppRoutes.chatScreen, arguments: {
+      'rideId': controller.currentRideId.value,
+      'driverId': controller.driverId.value,
+      'driverName': controller.driverName.value,
+    });
+  }
+}
+
+// Enhanced phone call functionality
+Future<void> _makePhoneCall(String phoneNumber, String driverName) async {
+  if (phoneNumber.isEmpty) {
+    Get.snackbar(
+      'Error',
+      'Driver phone number not available',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: MColor.primaryNavy.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+    return;
+  }
+
+  // Clean phone number (remove spaces, dashes, etc.)
+  String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+  final Uri phoneUri = Uri.parse('tel:$cleanedNumber');
+
+  try {
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+
+      Get.snackbar(
+        'Calling',
+        'Calling $driverName...',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    } else {
+      throw 'Could not launch phone dialer';
+    }
+  } catch (e) {
+    Get.snackbar(
+      'Error',
+      'Unable to make call. Please try again.',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: MColor.primaryNavy.withOpacity(0.8),
+      colorText: Colors.white,
+    );
+  }
+}
+
+// Enhanced ride action button with pricing information
+Widget _buildRideActionButton(RideBookingController controller, ThemeData theme) {
+  print('SAHAr Current ride status: ${controller.rideStatus.value}'); // Debug log
+
+  switch (controller.rideStatus.value) {
+    case RideStatus.tripStarted:
+    // Show End Trip button with estimated final price
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MColor.primaryNavy,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+              ),
+              onPressed: controller.isLoading.value ? null : () async {
+                // Show confirmation dialog with price
+                bool confirm = await Get.dialog<bool>(
+                  AlertDialog(
+                    title: const Text('End Trip'),
+                    content: Text(
+                        'Are you sure you want to end this trip?\n\nEstimated final price: ₹${controller.estimatedPrice.value.toStringAsFixed(2)}'
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Get.back(result: false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Get.back(result: true),
+                        style: ElevatedButton.styleFrom(backgroundColor: MColor.primaryNavy),
+                        child: const Text('End Trip', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ) ?? false;
+
+                if (confirm) {
+                  await controller.endTrip();
+                }
+              },
+              child: controller.isLoading.value
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("End Trip"),
+            ),
+          ),
+        ],
+      );
+
+    case RideStatus.tripCompleted:
+    // Show completion status with final price
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.check_circle, color: MColor.primaryNavy, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              'Trip Completed!',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: MColor.primaryNavy,
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+        ),
+      );
+
+    case RideStatus.driverAssigned:
+    // Show Start Trip button when driver is assigned
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: MColor.primaryNavy,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+          ),
+          onPressed: controller.isLoading.value ? null : () async {
+            await controller.startTrip();
+          },
+          child: controller.isLoading.value
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text("Start Trip"),
+        ),
+      );
+
+    case RideStatus.waiting:
+    // Show waiting status
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+              color: theme.primaryColor,
+              strokeWidth: 2,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Looking for drivers...',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: theme.primaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+
+    case RideStatus.cancelled:
+    // Show cancelled status
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: MColor.primaryNavy.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MColor.primaryNavy.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.cancel, color: MColor.primaryNavy, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              'Ride Cancelled',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: MColor.primaryNavy,
+              ),
+            ),
+          ],
+        ),
+      );
+
+    default:
+    // For debugging - show current status
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+              color: theme.primaryColor,
+              strokeWidth: 2,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Current Status: ${controller.rideStatus.value.name}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: theme.primaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+  }
 }
 
 // Helper method to build circular buttons

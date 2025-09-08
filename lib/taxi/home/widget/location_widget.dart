@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
+import 'package:pick_u/core/location_service.dart';
 import 'package:pick_u/taxi/ride_booking_page.dart';
 
 class EnhancedDestinationWidget extends StatelessWidget {
   final RideController rideController = Get.find<RideController>();
   late final RideBookingController bookingController;
+  late final LocationService locationService;
 
-  EnhancedDestinationWidget({Key? key}) : super(key: key) {
+  final Future<void> Function(LatLng)? onCenterMap;
+
+  EnhancedDestinationWidget({
+    Key? key,
+    this.onCenterMap,
+  }) : super(key: key) {
     try {
       bookingController = Get.find<RideBookingController>();
+      locationService = Get.find<LocationService>();
     } catch (e) {
       bookingController = Get.put(RideBookingController());
+      locationService = Get.find<LocationService>();
     }
   }
 
@@ -54,7 +64,7 @@ class EnhancedDestinationWidget extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        bookingController.isScheduled.value = true;
+                        bookingController.toggleScheduling();
                         Get.to(() => RideBookingPage());
                       },
                       child: Container(
@@ -153,40 +163,64 @@ class EnhancedDestinationWidget extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                // Current location display
-                Obx(() => rideController.currentAddress.value.isNotEmpty
-                    ? Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.my_location,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Current: ${rideController.currentAddress.value}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                // Current location display - now using LocationService
+                Obx(() {
+                  final address = locationService.currentAddress.value;
+                  final currentLatLng = locationService.currentLatLng.value;
+
+                  if (address.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: GestureDetector(
+                      onTap: () async {
+                        // Use the callback passed from HomeScreen
+                        if (currentLatLng != null && onCenterMap != null) {
+                          await onCenterMap!(currentLatLng);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey[300]!,
+                            width: 1,
                           ),
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.my_location,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                address,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(
+                              Icons.center_focus_strong,
+                              size: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                )
-                    : const SizedBox.shrink()),
+                  );
+                }),
 
                 const SizedBox(height: 8),
               ],

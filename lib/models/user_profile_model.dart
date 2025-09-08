@@ -51,7 +51,7 @@ class UserProfileModel {
 
       return base64Decode(base64String);
     } catch (e) {
-      print('MRSAHAr Error decoding base64 image: $e');
+      print('SAHAr Error decoding base64 image: $e');
       return null;
     }
   }

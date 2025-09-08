@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:get/get.dart';
 import 'package:pick_u/core/global_variables.dart';
 import 'package:pick_u/models/forgot_password_model.dart';
@@ -20,9 +18,9 @@ class ApiProvider extends GetConnect {
 
     // Add request interceptor
     httpClient.addRequestModifier<dynamic>((request) {
-      print('MRSAHAr MRSAHAr: Request URL = ${request.url}');
-      print('MRSAHAr MRSAHAr: Request Headers = ${request.headers}');
-      print('MRSAHAr MRSAHAr: Request Method = ${request.method}');
+      print('SAHAr MRSAHAr: Request URL = ${request.url}');
+      print('SAHAr MRSAHAr: Request Headers = ${request.headers}');
+      print('SAHAr MRSAHAr: Request Method = ${request.method}');
       // Only add Authorization header
       if (_globalVars.userToken.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer ${_globalVars.userToken}';
@@ -31,9 +29,9 @@ class ApiProvider extends GetConnect {
     });
     // Add response interceptor
     httpClient.addResponseModifier<dynamic>((request, response) {
-      print('MRSAHAr MRSAHAr: Response URL = ${request.url}');
-      print('MRSAHAr MRSAHAr: Response Status = ${response.statusCode}');
-      print('MRSAHAr MRSAHAr: Response Body = ${response.bodyString}');
+      print('SAHAr MRSAHAr: Response URL = ${request.url}');
+      print('SAHAr MRSAHAr: Response Status = ${response.statusCode}');
+      print('SAHAr MRSAHAr: Response Body = ${response.bodyString}');
       return response;
     });
   }
@@ -42,14 +40,14 @@ class ApiProvider extends GetConnect {
   Future<Response> getData(String endpoint) async {
     try {
       _globalVars.setLoading(true);
-      print('MRSAHAr MRSAHAr: GET $endpoint');
+      print('SAHAr MRSAHAr: GET $endpoint');
       final response = await get(endpoint);
-      print('MRSAHAr MRSAHAr: GET Response = ${response.bodyString}');
+      print('SAHAr MRSAHAr: GET Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
-      print('MRSAHAr MRSAHAr: Exception during GET request: $e');
+      print('SAHAr MRSAHAr: Exception during GET request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -60,7 +58,7 @@ class ApiProvider extends GetConnect {
   Future<Response> postData2(String endpoint, dynamic data) async {
     try {
       _globalVars.setLoading(true);
-      print('MRSAHAr MRSAHAr: POST $endpoint');
+      print('SAHAr MRSAHAr: POST $endpoint');
 
       Response response;
       if (data is FormData) {
@@ -81,12 +79,12 @@ class ApiProvider extends GetConnect {
         response = await post(endpoint, data);
       }
 
-      print('MRSAHAr MRSAHAr: POST Response = ${response.bodyString}');
+      print('SAHAr MRSAHAr: POST Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
-      print('MRSAHAr MRSAHAr: Exception during POST request: $e');
+      print('SAHAr MRSAHAr: Exception during POST request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -97,8 +95,8 @@ class ApiProvider extends GetConnect {
   Future<Response> postData(String endpoint, dynamic data) async {
     try {
       _globalVars.setLoading(true);
-      print('MRSAHAr MRSAHAr: POST $endpoint');
-      print('MRSAHAr MRSAHAr: POST Body = $data');
+      print('SAHAr MRSAHAr: POST $endpoint');
+      print('SAHAr MRSAHAr: POST Body = $data');
 
       Response response;
       if (data is FormData) {
@@ -109,12 +107,12 @@ class ApiProvider extends GetConnect {
         response = await post(endpoint, data);
       }
 
-      print('MRSAHAr MRSAHAr: POST Response = ${response.bodyString}');
+      print('SAHAr MRSAHAr: POST Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
-      print('MRSAHAr MRSAHAr: Exception during POST request: $e');
+      print('SAHAr MRSAHAr: Exception during POST request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -126,17 +124,17 @@ class ApiProvider extends GetConnect {
   Future<Response> postFormData(String endpoint, FormData formData) async {
     try {
       _globalVars.setLoading(true);
-      print('MRSAHAr MRSAHAr: POST FormData $endpoint');
+      print('SAHAr MRSAHAr: POST FormData $endpoint');
 
       // Debug FormData contents
-      print('MRSAHAr FormData Fields:');
+      print('SAHAr FormData Fields:');
       formData.fields.forEach((field) {
-        print('MRSAHAr ${field.key} = ${field.value}');
+        print('SAHAr ${field.key} = ${field.value}');
       });
 
-      print('MRSAHAr FormData Files:');
+      print('SAHAr FormData Files:');
       formData.files.forEach((file) {
-        print('MRSAHAr ${file.key} = ${file.value.filename}');
+        print('SAHAr ${file.key} = ${file.value.filename}');
       });
 
       // Create custom headers for FormData
@@ -152,12 +150,12 @@ class ApiProvider extends GetConnect {
         headers: headers,
       );
 
-      print('MRSAHAr MRSAHAr: FormData Response = ${response.bodyString}');
+      print('SAHAr MRSAHAr: FormData Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
-      print('MRSAHAr MRSAHAr: Exception during FormData POST request: $e');
+      print('SAHAr MRSAHAr: Exception during FormData POST request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -169,15 +167,15 @@ class ApiProvider extends GetConnect {
   Future<Response> putData(String endpoint, Map<String, dynamic> data) async {
     try {
       _globalVars.setLoading(true);
-      print('MRSAHAr MRSAHAr: PUT $endpoint');
-      print('MRSAHAr MRSAHAr: PUT Body = $data');
+      print('SAHAr MRSAHAr: PUT $endpoint');
+      print('SAHAr MRSAHAr: PUT Body = $data');
       final response = await put(endpoint, data);
-      print('MRSAHAr MRSAHAr: PUT Response = ${response.bodyString}');
+      print('SAHAr MRSAHAr: PUT Response = ${response.bodyString}');
       _globalVars.setLoading(false);
       return response;
     } catch (e) {
       _globalVars.setLoading(false);
-      print('MRSAHAr MRSAHAr: Exception during PUT request: $e');
+      print('SAHAr MRSAHAr: Exception during PUT request: $e');
       return Response(
         statusCode: 500,
         statusText: 'Network Error: $e',
@@ -204,18 +202,18 @@ class ApiProvider extends GetConnect {
   // Replace your signUp method with this robust version
   Future<SignUpResponse> signUp(SignUpRequest request) async {
     try {
-      print('MRSAHAr 🚀MRSAHAr ApiProvider: Starting signUp request');
-      print('MRSAHAr 📦MRSAHAr ApiProvider: Request data: ${request.toJson()}');
+      print('SAHAr 🚀MRSAHAr ApiProvider: Starting signUp request');
+      print('SAHAr 📦MRSAHAr ApiProvider: Request data: ${request.toJson()}');
 
       final response = await postData('/api/User/register', request.toJson());
 
-      print('MRSAHAr 📨MRSAHAr ApiProvider: Response received');
-      print('MRSAHAr 📊MRSAHAr ApiProvider: Status Code: ${response.statusCode}');
-      print('MRSAHAr 📄MRSAHAr ApiProvider: Response Body: ${response.body}');
-      print('MRSAHAr 📝MRSAHAr ApiProvider: Response Type: ${response.body.runtimeType}');
+      print('SAHAr 📨MRSAHAr ApiProvider: Response received');
+      print('SAHAr 📊MRSAHAr ApiProvider: Status Code: ${response.statusCode}');
+      print('SAHAr 📄MRSAHAr ApiProvider: Response Body: ${response.body}');
+      print('SAHAr 📝MRSAHAr ApiProvider: Response Type: ${response.body.runtimeType}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MRSAHAr ✅MRSAHAr ApiProvider: Success status code');
+        print('SAHAr ✅MRSAHAr ApiProvider: Success status code');
 
         String message = 'Registration successful';
         dynamic data = response.body;
@@ -226,19 +224,19 @@ class ApiProvider extends GetConnect {
             // JSON response
             final Map<String, dynamic> bodyMap = response.body;
             message = bodyMap['message']?.toString() ?? message;
-            print('MRSAHAr 📝MRSAHAr ApiProvider: Extracted message from Map: $message');
+            print('SAHAr 📝MRSAHAr ApiProvider: Extracted message from Map: $message');
           } else if (response.body is String) {
             // String response
             message = response.body;
-            print('MRSAHAr 📝MRSAHAr ApiProvider: Using String response: $message');
+            print('SAHAr 📝MRSAHAr ApiProvider: Using String response: $message');
           } else if (response.body is List) {
             // Array response
             message = 'Registration successful';
-            print('MRSAHAr 📝MRSAHAr ApiProvider: Array response received');
+            print('SAHAr 📝MRSAHAr ApiProvider: Array response received');
           } else {
             // Other types
             message = 'Registration successful';
-            print('MRSAHAr 📝MRSAHAr ApiProvider: Unknown response type: ${response.body.runtimeType}');
+            print('SAHAr 📝MRSAHAr ApiProvider: Unknown response type: ${response.body.runtimeType}');
           }
         }
 
@@ -249,7 +247,7 @@ class ApiProvider extends GetConnect {
         );
 
       } else {
-        print('MRSAHAr ❌MRSAHAr ApiProvider: Error status code: ${response.statusCode}');
+        print('SAHAr ❌MRSAHAr ApiProvider: Error status code: ${response.statusCode}');
 
         String errorMessage = 'Registration failed';
 
@@ -267,7 +265,7 @@ class ApiProvider extends GetConnect {
           }
         }
 
-        print('MRSAHAr 📝MRSAHAr ApiProvider: Error message: $errorMessage');
+        print('SAHAr 📝MRSAHAr ApiProvider: Error message: $errorMessage');
 
         return SignUpResponse(
           success: false,
@@ -276,8 +274,8 @@ class ApiProvider extends GetConnect {
       }
 
     } catch (e, stackTrace) {
-      print('MRSAHAr 💥MRSAHAr ApiProvider: Exception in signUp: $e');
-      print('MRSAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
+      print('SAHAr 💥MRSAHAr ApiProvider: Exception in signUp: $e');
+      print('SAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
 
       String errorMessage = 'Network error. Please check your connection.';
 
@@ -301,17 +299,17 @@ class ApiProvider extends GetConnect {
 
   Future<OTPResponse> verifyOTP(OTPRequest request) async {
     try {
-      print('MRSAHAr 🚀MRSAHAr ApiProvider: Starting OTP verification for: ${_globalVars.baseUrl}/api/User/verify');
-      print('MRSAHAr 📦MRSAHAr ApiProvider: OTP Request data: ${request.toJson()}');
+      print('SAHAr 🚀MRSAHAr ApiProvider: Starting OTP verification for: ${_globalVars.baseUrl}/api/User/verify');
+      print('SAHAr 📦MRSAHAr ApiProvider: OTP Request data: ${request.toJson()}');
 
       final response = await postData('/api/User/verify', request.toJson());
 
-      print('MRSAHAr 📋MRSAHAr ApiProvider: OTP response received');
-      print('MRSAHAr 📊MRSAHAr ApiProvider: Response status code: ${response.statusCode}');
-      print('MRSAHAr 📄MRSAHAr ApiProvider: Response body: ${response.body}');
+      print('SAHAr 📋MRSAHAr ApiProvider: OTP response received');
+      print('SAHAr 📊MRSAHAr ApiProvider: Response status code: ${response.statusCode}');
+      print('SAHAr 📄MRSAHAr ApiProvider: Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MRSAHAr ✅MRSAHAr ApiProvider: OTP verification successful');
+        print('SAHAr ✅MRSAHAr ApiProvider: OTP verification successful');
 
         String message = 'OTP verified successfully';
         dynamic data = response.body;
@@ -326,7 +324,7 @@ class ApiProvider extends GetConnect {
           data: data,
         );
       } else {
-        print('MRSAHAr ❌MRSAHAr ApiProvider: OTP verification failed with status: ${response.statusCode}');
+        print('SAHAr ❌MRSAHAr ApiProvider: OTP verification failed with status: ${response.statusCode}');
 
         String errorMessage = 'OTP verification failed';
         if (response.body != null) {
@@ -343,8 +341,8 @@ class ApiProvider extends GetConnect {
         );
       }
     } catch (e, stackTrace) {
-      print('MRSAHAr 💥MRSAHAr ApiProvider: OTP verification exception: $e');
-      print('MRSAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
+      print('SAHAr 💥MRSAHAr ApiProvider: OTP verification exception: $e');
+      print('SAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
 
       return OTPResponse(
         success: false,
@@ -355,17 +353,17 @@ class ApiProvider extends GetConnect {
 
   Future<LoginResponse> login(LoginRequest request) async {
     try {
-      print('MRSAHAr 🚀MRSAHAr ApiProvider: Starting login for: ${_globalVars.baseUrl}/api/User/login');
-      print('MRSAHAr 📦MRSAHAr ApiProvider: Login Request data: ${request.toJson()}');
+      print('SAHAr 🚀MRSAHAr ApiProvider: Starting login for: ${_globalVars.baseUrl}/api/User/login');
+      print('SAHAr 📦MRSAHAr ApiProvider: Login Request data: ${request.toJson()}');
 
       final response = await postData('/api/User/login', request.toJson());
 
-      print('MRSAHAr 📋MRSAHAr ApiProvider: Login response received');
-      print('MRSAHAr 📊MRSAHAr ApiProvider: Response status code: ${response.statusCode}');
-      print('MRSAHAr 📄MRSAHAr ApiProvider: Response body: ${response.body}');
+      print('SAHAr 📋MRSAHAr ApiProvider: Login response received');
+      print('SAHAr 📊MRSAHAr ApiProvider: Response status code: ${response.statusCode}');
+      print('SAHAr 📄MRSAHAr ApiProvider: Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MRSAHAr ✅MRSAHAr ApiProvider: Login successful');
+        print('SAHAr ✅MRSAHAr ApiProvider: Login successful');
 
         String message = 'Login successful';
         dynamic data = response.body;
@@ -380,7 +378,7 @@ class ApiProvider extends GetConnect {
           data: data,
         );
       } else {
-        print('MRSAHAr ❌MRSAHAr ApiProvider: Login failed with status: ${response.statusCode}');
+        print('SAHAr ❌MRSAHAr ApiProvider: Login failed with status: ${response.statusCode}');
 
         String errorMessage = 'Login failed';
         if (response.body != null) {
@@ -397,8 +395,8 @@ class ApiProvider extends GetConnect {
         );
       }
     } catch (e, stackTrace) {
-      print('MRSAHAr 💥MRSAHAr ApiProvider: Login exception: $e');
-      print('MRSAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
+      print('SAHAr 💥MRSAHAr ApiProvider: Login exception: $e');
+      print('SAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
 
       return LoginResponse(
         success: false,
@@ -409,18 +407,18 @@ class ApiProvider extends GetConnect {
 
   Future<ForgotPasswordResponse> forgotPassword(ForgotPasswordRequest request) async {
     try {
-      print('MRSAHAr 🚀MRSAHAr ApiProvider: Starting forgot password for: ${_globalVars.baseUrl}/api/User/forgot-password');
-      print('MRSAHAr 📦MRSAHAr ApiProvider: ForgotPassword Request data: ${request.toJson()}');
+      print('SAHAr 🚀MRSAHAr ApiProvider: Starting forgot password for: ${_globalVars.baseUrl}/api/User/forgot-password');
+      print('SAHAr 📦MRSAHAr ApiProvider: ForgotPassword Request data: ${request.toJson()}');
 
       final response = await postData('/api/User/forgot-password', request.toJson());
 
-      print('MRSAHAr 📋MRSAHAr ApiProvider: ForgotPassword response received');
-      print('MRSAHAr 📊MRSAHAr ApiProvider: Response status code: ${response.statusCode}');
-      print('MRSAHAr 📄MRSAHAr ApiProvider: Response body: ${response.body}');
-      print('MRSAHAr 📝MRSAHAr ApiProvider: Response body type: ${response.body.runtimeType}');
+      print('SAHAr 📋MRSAHAr ApiProvider: ForgotPassword response received');
+      print('SAHAr 📊MRSAHAr ApiProvider: Response status code: ${response.statusCode}');
+      print('SAHAr 📄MRSAHAr ApiProvider: Response body: ${response.body}');
+      print('SAHAr 📝MRSAHAr ApiProvider: Response body type: ${response.body.runtimeType}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MRSAHAr ✅MRSAHAr ApiProvider: ForgotPassword successful');
+        print('SAHAr ✅MRSAHAr ApiProvider: ForgotPassword successful');
 
         String message = 'Reset email sent successfully';
         dynamic data = response.body;
@@ -432,14 +430,14 @@ class ApiProvider extends GetConnect {
             final Map<String, dynamic> bodyMap = response.body;
             message = bodyMap['message'] ?? message;
             data = bodyMap;
-            print('MRSAHAr 📝MRSAHAr ApiProvider: JSON response received');
+            print('SAHAr 📝MRSAHAr ApiProvider: JSON response received');
           } else if (response.body is String && response.body.isNotEmpty) {
             // String response
             message = response.body;
-            print('MRSAHAr 📝MRSAHAr ApiProvider: String response received');
+            print('SAHAr 📝MRSAHAr ApiProvider: String response received');
           } else {
             message = 'Reset email sent successfully';
-            print('MRSAHAr 📝MRSAHAr ApiProvider: Default message used');
+            print('SAHAr 📝MRSAHAr ApiProvider: Default message used');
           }
         }
 
@@ -449,7 +447,7 @@ class ApiProvider extends GetConnect {
           data: data,
         );
       } else {
-        print('MRSAHAr ❌MRSAHAr ApiProvider: ForgotPassword failed with status: ${response.statusCode}');
+        print('SAHAr ❌MRSAHAr ApiProvider: ForgotPassword failed with status: ${response.statusCode}');
 
         String errorMessage = 'Failed to send reset email';
         if (response.body != null) {
@@ -466,8 +464,8 @@ class ApiProvider extends GetConnect {
         );
       }
     } catch (e, stackTrace) {
-      print('MRSAHAr 💥MRSAHAr ApiProvider: ForgotPassword exception: $e');
-      print('MRSAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
+      print('SAHAr 💥MRSAHAr ApiProvider: ForgotPassword exception: $e');
+      print('SAHAr 📍MRSAHAr ApiProvider: Stack trace: $stackTrace');
 
       return ForgotPasswordResponse(
         success: false,
@@ -478,18 +476,18 @@ class ApiProvider extends GetConnect {
 
   Future<ResetPasswordResponse> resetPassword(ResetPasswordRequest request) async {
     try {
-      print('MRSAHAr 🚀 ApiProvider: Starting reset password for: ${_globalVars.baseUrl}/api/User/reset-password');
-      print('MRSAHAr 📦 ApiProvider: ResetPassword Request data: ${request.toJson()}');
+      print('SAHAr 🚀 ApiProvider: Starting reset password for: ${_globalVars.baseUrl}/api/User/reset-password');
+      print('SAHAr 📦 ApiProvider: ResetPassword Request data: ${request.toJson()}');
 
       final response = await postData('/api/User/reset-password', request.toJson());
 
-      print('MRSAHAr 📋 ApiProvider: ResetPassword response received');
-      print('MRSAHAr 📊 ApiProvider: Response status code: ${response.statusCode}');
-      print('MRSAHAr 📄 ApiProvider: Response body: ${response.body}');
-      print('MRSAHAr 📝 ApiProvider: Response body type: ${response.body.runtimeType}');
+      print('SAHAr 📋 ApiProvider: ResetPassword response received');
+      print('SAHAr 📊 ApiProvider: Response status code: ${response.statusCode}');
+      print('SAHAr 📄 ApiProvider: Response body: ${response.body}');
+      print('SAHAr 📝 ApiProvider: Response body type: ${response.body.runtimeType}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MRSAHAr ✅ ApiProvider: ResetPassword successful');
+        print('SAHAr ✅ ApiProvider: ResetPassword successful');
 
         String message = 'Password reset successfully';
         dynamic data = response.body;
@@ -501,14 +499,14 @@ class ApiProvider extends GetConnect {
             final Map<String, dynamic> bodyMap = response.body;
             message = bodyMap['message'] ?? message;
             data = bodyMap;
-            print('MRSAHAr 📝 ApiProvider: JSON response received');
+            print('SAHAr 📝 ApiProvider: JSON response received');
           } else if (response.body is String && response.body.isNotEmpty) {
             // String response
             message = response.body;
-            print('MRSAHAr 📝 ApiProvider: String response received');
+            print('SAHAr 📝 ApiProvider: String response received');
           } else {
             message = 'Password reset successfully';
-            print('MRSAHAr 📝 ApiProvider: Default message used');
+            print('SAHAr 📝 ApiProvider: Default message used');
           }
         }
 
@@ -518,7 +516,7 @@ class ApiProvider extends GetConnect {
           data: data,
         );
       } else {
-        print('MRSAHAr ❌ ApiProvider: ResetPassword failed with status: ${response.statusCode}');
+        print('SAHAr ❌ ApiProvider: ResetPassword failed with status: ${response.statusCode}');
 
         String errorMessage = 'Failed to reset password';
         if (response.body != null) {
@@ -535,8 +533,8 @@ class ApiProvider extends GetConnect {
         );
       }
     } catch (e, stackTrace) {
-      print('MRSAHAr 💥 ApiProvider: ResetPassword exception: $e');
-      print('MRSAHAr 📍 ApiProvider: Stack trace: $stackTrace');
+      print('SAHAr 💥 ApiProvider: ResetPassword exception: $e');
+      print('SAHAr 📍 ApiProvider: Stack trace: $stackTrace');
 
       return ResetPasswordResponse(
         success: false,

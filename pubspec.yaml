@@ -52,6 +52,8 @@ dependencies:
   intl: ^0.20.2
   image_picker: ^1.2.0
   image: ^4.5.4
+  signalr_core: ^1.1.2
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

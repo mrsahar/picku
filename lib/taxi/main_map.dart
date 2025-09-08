@@ -24,7 +24,7 @@ class _MainMapState extends State<MainMap> {
   final _currentIndex = 0;
 
   List<Widget> pageList = [
-    const HomeScreen(),
+     HomeScreen(),
     const DriverScreen(),
     const WalletScreen(),
     const ProfileScreen(),

@@ -46,7 +46,7 @@ class ScheduledRideHistoryController extends GetxController {
 
       // Get user ID from SharedPreferences
       final userId = await SharedPrefsService.getUserId();
-      print('MRSAHAr ScheduledRides: userId = $userId');
+      print('SAHAr ScheduledRides: userId = $userId');
 
       if (userId == null || userId.isEmpty) {
         _errorMessage.value = 'User ID not found. Please login again.';
@@ -54,28 +54,28 @@ class ScheduledRideHistoryController extends GetxController {
       }
 
       final endpoint = '/api/Ride/get-user-scheduled-rides-history?userId=$userId';
-      print('MRSAHAr ScheduledRides API Request URL = ${_apiProvider.httpClient.baseUrl}$endpoint');
+      print('SAHAr ScheduledRides API Request URL = ${_apiProvider.httpClient.baseUrl}$endpoint');
 
       // Use POST request as per your API
       final response = await _apiProvider.postData(endpoint, {});
 
-      print('MRSAHAr ScheduledRides: response.statusCode = ${response.statusCode}');
-      print('MRSAHAr ScheduledRides: response.body = ${response.body}');
+      print('SAHAr ScheduledRides: response.statusCode = ${response.statusCode}');
+      print('SAHAr ScheduledRides: response.body = ${response.body}');
 
       if (response.statusCode == 200) {
         final historyResponse = ScheduledRideHistoryResponse.fromJson(response.body);
         _scheduledRideHistory.value = historyResponse;
-        print('MRSAHAr ScheduledRides: scheduled ride history loaded successfully');
+        print('SAHAr ScheduledRides: scheduled ride history loaded successfully');
       } else {
         _errorMessage.value = 'Failed to load scheduled ride history: ${response.statusText}';
-        print('MRSAHAr ScheduledRides: failed with statusText = ${response.statusText}');
+        print('SAHAr ScheduledRides: failed with statusText = ${response.statusText}');
       }
     } catch (e) {
       _errorMessage.value = 'Error loading scheduled ride history: $e';
-      print('MRSAHAr ScheduledRides: exception = $e');
+      print('SAHAr ScheduledRides: exception = $e');
     } finally {
       _isLoading.value = false;
-      print('MRSAHAr ScheduledRides: loading finished');
+      print('SAHAr ScheduledRides: loading finished');
     }
   }
 

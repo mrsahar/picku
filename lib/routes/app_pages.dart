@@ -6,6 +6,7 @@ import 'package:pick_u/authentication/otp_screen.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
 import 'package:pick_u/authentication/reset_password_screen.dart';
 import 'package:pick_u/authentication/signup_screen.dart';
+import 'package:pick_u/bindings/chat_binding.dart';
 import 'package:pick_u/bindings/edit_profile_binding.dart';
 import 'package:pick_u/bindings/forgot_password_binding.dart';
 import 'package:pick_u/bindings/login_binding.dart';
@@ -16,6 +17,7 @@ import 'package:pick_u/bindings/ride_history_binding.dart';
 import 'package:pick_u/bindings/scheduled_ride_history_binding.dart';
 import 'package:pick_u/bindings/signup_binding.dart';
 import 'package:pick_u/routes/app_route_observer.dart';
+import 'package:pick_u/taxi/ChatScreen.dart';
 import 'package:pick_u/taxi/history/history_screen.dart';
 import 'package:pick_u/taxi/main_map.dart';
 import 'package:pick_u/taxi/scheduled/scheduled_ride_history_page.dart';
@@ -101,6 +103,13 @@ class AppPages {
     GetPage(
       name: AppRoutes.privacyPolicy,
       page: () => const PrivacyPolicyScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.chatScreen,
+      page: () => const ChatScreen(),
+      binding: ChatBinding(),
+      transitionDuration: const Duration(milliseconds: 300),
     )
+
   ];
 }

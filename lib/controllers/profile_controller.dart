@@ -1,13 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/core/sharePref.dart';
-import 'dart:typed_data';
-import '../models/user_profile_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import '../models/user_profile_model.dart';
 
 class ProfileController extends GetxController {
   final ApiProvider _apiProvider = Get.find<ApiProvider>();
@@ -39,8 +37,8 @@ class ProfileController extends GetxController {
       // API call to get user profile using ApiProvider
       final response = await _apiProvider.postData('/api/User/single-users/$userId', {});
 
-      print('MRSAHAr Response Status Code: ${response.statusCode}');
-      print('MRSAHAr Response Body: ${response.body}');
+      print('SAHAr Response Status Code: ${response.statusCode}');
+      print('SAHAr Response Body: ${response.body}');
 
       if (response.statusCode == 200 && response.body != null) {
         userProfile.value = UserProfileModel.fromJson(response.body);
@@ -48,16 +46,16 @@ class ProfileController extends GetxController {
         // Extract and set profile image if available
         if (userProfile.value != null && userProfile.value!.hasProfilePicture) {
           profileImage.value = userProfile.value!.getImageBytes();
-          print('MRSAHAr Profile image loaded successfully');
+          print('SAHAr Profile image loaded successfully');
         } else {
           profileImage.value = null;
-          print('MRSAHAr No profile image available');
+          print('SAHAr No profile image available');
         }
       } else {
         Get.snackbar('Error', 'Failed to load profile: ${response.statusText ?? 'Unknown error'}');
       }
     } catch (e) {
-      print('MRSAHAr Exception in fetchUserProfile: ${e.toString()}');
+      print('SAHAr Exception in fetchUserProfile: ${e.toString()}');
       Get.snackbar('Error', 'Failed to load profile: ${e.toString()}');
     } finally {
       isLoading.value = false;

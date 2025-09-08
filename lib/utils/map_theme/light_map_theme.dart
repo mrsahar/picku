@@ -1,4 +1,3 @@
-
 String lightMapTheme = '''
 [
     {
@@ -6,7 +5,7 @@ String lightMapTheme = '''
         "elementType": "geometry",
         "stylers": [
             {
-                "color": "#f9f5ed"
+                "color": "#f0f4f8"
             },
             {
                 "saturation": "0"
@@ -18,7 +17,7 @@ String lightMapTheme = '''
         "elementType": "geometry",
         "stylers": [
             {
-                "color": "#d0e3b4"
+                "color": "#d4e2f0"
             }
         ]
     },
@@ -63,7 +62,7 @@ String lightMapTheme = '''
         "elementType": "geometry",
         "stylers": [
             {
-                "color": "#fbd3da"
+                "color": "#e8f0fa"
             }
         ]
     },
@@ -72,7 +71,7 @@ String lightMapTheme = '''
         "elementType": "geometry",
         "stylers": [
             {
-                "color": "#bde6ab"
+                "color": "#c8ddf0"
             }
         ]
     },
@@ -108,7 +107,7 @@ String lightMapTheme = '''
         "elementType": "geometry.fill",
         "stylers": [
             {
-                "color": "#fcfcdd"
+                "color": "#f0f4f8"
             },
             {
                 "saturation": "0"
@@ -120,7 +119,7 @@ String lightMapTheme = '''
         "elementType": "geometry.stroke",
         "stylers": [
             {
-                "color": "#efd151"
+                "color": "#4a6fa5"
             },
             {
                 "visibility": "on"
@@ -141,7 +140,7 @@ String lightMapTheme = '''
         "elementType": "geometry.stroke",
         "stylers": [
             {
-                "color": "#dcdcdc"
+                "color": "#c5d0e6"
             },
             {
                 "visibility": "on"
@@ -168,7 +167,7 @@ String lightMapTheme = '''
                 "visibility": "on"
             },
             {
-                "color": "#dedbd3"
+                "color": "#d6dde8"
             }
         ]
     },
@@ -177,7 +176,7 @@ String lightMapTheme = '''
         "elementType": "geometry.fill",
         "stylers": [
             {
-                "color": "#cfb2db"
+                "color": "#b8c9e8"
             }
         ]
     },
@@ -186,7 +185,7 @@ String lightMapTheme = '''
         "elementType": "geometry",
         "stylers": [
             {
-                "color": "#a2daf2"
+                "color": "#9cc5f0"
             }
         ]
     }

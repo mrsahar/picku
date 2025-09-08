@@ -60,10 +60,10 @@ class ForgotPasswordController extends GetxController {
         email: emailController.text.trim(),
       );
 
-      print('MRSAHAr 📤 ForgotPassword: Sending request for email: ${emailController.text}');
+      print('SAHAr 📤 ForgotPassword: Sending request for email: ${emailController.text}');
       final response = await _apiProvider.forgotPassword(forgotPasswordRequest);
 
-      print('MRSAHAr 📥 ForgotPassword: Response received - Success: ${response.success}');
+      print('SAHAr 📥 ForgotPassword: Response received - Success: ${response.success}');
 
       if (response.success) {
         final globalVars = GlobalVariables.instance;
@@ -92,8 +92,8 @@ class ForgotPasswordController extends GetxController {
         );
       }
     } catch (e, stackTrace) {
-      print('MRSAHAr 💥 ForgotPassword: Exception caught: $e');
-      print('MRSAHAr 📍 ForgotPassword: Stack trace: $stackTrace');
+      print('SAHAr 💥 ForgotPassword: Exception caught: $e');
+      print('SAHAr 📍 ForgotPassword: Stack trace: $stackTrace');
       Get.snackbar(
         'Error',
         'Failed to send reset email. Please try again.',

@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const scheduledRideHistory = '/scheduledRideHistory';
   static const String profileScreen = '/profileScreen';
   static const editProfile = '/editProfile';
+  static const String chatScreen = '/chatScreen';
 
   //Extra
   static const notificationScreen = '/notification';

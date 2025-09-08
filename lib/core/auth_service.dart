@@ -11,7 +11,7 @@ class AuthService {
   /// Returns true if user should stay logged in, false if should be redirected to login
   static Future<bool> isAuthenticated() async {
     try {
-      print('MRSAHAr $TAG: Checking authentication status...');
+      print('SAHAr $TAG: Checking authentication status...');
 
       // Get user data from SharedPreferences
       final userData = await SharedPrefsService.getUserData();
@@ -19,18 +19,18 @@ class AuthService {
       final expiresStr = userData['expires'];
       final isLoggedIn = userData['isLoggedIn'];
 
-      print('MRSAHAr $TAG: Token exists: ${token != null && token.isNotEmpty}');
-      print('MRSAHAr $TAG: Is logged in flag: $isLoggedIn');
+      print('SAHAr $TAG: Token exists: ${token != null && token.isNotEmpty}');
+      print('SAHAr $TAG: Is logged in flag: $isLoggedIn');
 
       // Check if user has basic login data
       if (token == null || token.isEmpty || isLoggedIn != 'true') {
-        print('MRSAHAr $TAG: No valid login data found');
+        print('SAHAr $TAG: No valid login data found');
         return false;
       }
 
       // Check token expiry
       if (expiresStr == null || expiresStr.isEmpty) {
-        print('MRSAHAr $TAG: No expiry date found');
+        print('SAHAr $TAG: No expiry date found');
         await _clearInvalidSession();
         return false;
       }
@@ -40,27 +40,27 @@ class AuthService {
         final now = DateTime.now();
         final isExpired = now.isAfter(expiryDate);
 
-        print('MRSAHAr $TAG: Token expires at: $expiryDate');
-        print('MRSAHAr $TAG: Current time: $now');
-        print('MRSAHAr $TAG: Is expired: $isExpired');
+        print('SAHAr $TAG: Token expires at: $expiryDate');
+        print('SAHAr $TAG: Current time: $now');
+        print('SAHAr $TAG: Is expired: $isExpired');
 
         if (isExpired) {
-          print('MRSAHAr $TAG: Token expired, clearing session');
+          print('SAHAr $TAG: Token expired, clearing session');
           await _clearExpiredSession();
           return false;
         }
 
-        print('MRSAHAr $TAG: Authentication valid');
+        print('SAHAr $TAG: Authentication valid');
         return true;
 
       } catch (e) {
-        print('MRSAHAr $TAG: Error parsing expiry date: $e');
+        print('SAHAr $TAG: Error parsing expiry date: $e');
         await _clearInvalidSession();
         return false;
       }
 
     } catch (e) {
-      print('MRSAHAr $TAG: Error checking authentication: $e');
+      print('SAHAr $TAG: Error checking authentication: $e');
       await _clearInvalidSession();
       return false;
     }
@@ -72,7 +72,7 @@ class AuthService {
       final isAuth = await isAuthenticated();
 
       if (isAuth) {
-        print('MRSAHAr $TAG: User authenticated, navigating to MainMap');
+        print('SAHAr $TAG: User authenticated, navigating to MainMap');
 
         // Update GlobalVariables for consistency
         final userData = await SharedPrefsService.getUserData();
@@ -84,11 +84,11 @@ class AuthService {
         // Navigate to MainMap
         Get.offAllNamed(AppRoutes.MainMap);
       } else {
-        print('MRSAHAr $TAG: User not authenticated, staying on login');
+        print('SAHAr $TAG: User not authenticated, staying on login');
         Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
       }
     } catch (e) {
-      print('MRSAHAr $TAG: Error in checkAndNavigate: $e');
+      print('SAHAr $TAG: Error in checkAndNavigate: $e');
       Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
     }
   }
@@ -102,7 +102,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print('MRSAHAr $TAG: Error getting current user: $e');
+      print('SAHAr $TAG: Error getting current user: $e');
       return null;
     }
   }
@@ -119,11 +119,11 @@ class AuthService {
       final now = DateTime.now();
       final difference = expiryDate.difference(now).inMinutes;
 
-      print('MRSAHAr $TAG: Token expires in $difference minutes');
+      print('SAHAr $TAG: Token expires in $difference minutes');
       return difference <= minutes;
 
     } catch (e) {
-      print('MRSAHAr $TAG: Error checking token expiry warning: $e');
+      print('SAHAr $TAG: Error checking token expiry warning: $e');
       return true;
     }
   }
@@ -131,7 +131,7 @@ class AuthService {
   /// Logout user and navigate to login screen
   static Future<void> logout({bool showMessage = true}) async {
     try {
-      print('MRSAHAr $TAG: Logging out user...');
+      print('SAHAr $TAG: Logging out user...');
 
       // Clear SharedPreferences
       await SharedPrefsService.clearUserData();
@@ -157,7 +157,7 @@ class AuthService {
       Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
 
     } catch (e) {
-      print('MRSAHAr $TAG: Error during logout: $e');
+      print('SAHAr $TAG: Error during logout: $e');
     }
   }
 

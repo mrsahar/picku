@@ -20,7 +20,7 @@ class RideController extends GetxController {
   var stops = <RideStop>[].obs;
   var isMultiStopRide = false.obs;
   var markers = <Marker>{}.obs;
-
+  Rx<LatLng?> currentLatLng = Rx<LatLng?>(null);
   // Camera controller for map
   GoogleMapController? mapController;
 

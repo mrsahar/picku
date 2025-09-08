@@ -26,15 +26,15 @@ class OTPController extends GetxController {
     final globalVars = GlobalVariables.instance;
     if (globalVars.hasUserEmail) {
       email.value = globalVars.userEmail;
-      print('MRSAHAr 📧 OTP: Got email from GlobalVariables: ${email.value}');
+      print('SAHAr 📧 OTP: Got email from GlobalVariables: ${email.value}');
     } else {
       // Fallback: Get email from arguments (backup method)
       final args = Get.arguments;
       if (args != null && args['email'] != null) {
         email.value = args['email'];
-        print('MRSAHAr 📧 OTP: Got email from arguments: ${email.value}');
+        print('SAHAr 📧 OTP: Got email from arguments: ${email.value}');
       } else {
-        print('MRSAHAr ❌ OTP: No email found in GlobalVariables or arguments');
+        print('SAHAr ❌ OTP: No email found in GlobalVariables or arguments');
       }
     }
   }
@@ -90,7 +90,7 @@ class OTPController extends GetxController {
         otp: completeOTP.value,
       );
 
-      print('MRSAHAr 📤 OTP: Sending verification request for: ${email.value}');
+      print('SAHAr 📤 OTP: Sending verification request for: ${email.value}');
       final response = await _apiProvider.verifyOTP(otpRequest);
 
       if (response.success) {
@@ -114,7 +114,7 @@ class OTPController extends GetxController {
         );
       }
     } catch (e) {
-      print('MRSAHAr 💥 OTP: Verification error: $e');
+      print('SAHAr 💥 OTP: Verification error: $e');
       Get.snackbar(
         'Error',
         'Failed to verify OTP. Please try again.',
@@ -144,7 +144,7 @@ class OTPController extends GetxController {
       // Clear current OTP
       clearOTP();
 
-      print('MRSAHAr 🔄 OTP: Resending OTP to: ${email.value}');
+      print('SAHAr 🔄 OTP: Resending OTP to: ${email.value}');
       // Implement resend OTP API call here if available
       Get.snackbar(
         'OTP Sent',
@@ -154,7 +154,7 @@ class OTPController extends GetxController {
         snackPosition: SnackPosition.TOP,
       );
     } catch (e) {
-      print('MRSAHAr 💥 OTP: Resend error: $e');
+      print('SAHAr 💥 OTP: Resend error: $e');
       Get.snackbar(
         'Error',
         'Failed to resend OTP. Please try again.',
