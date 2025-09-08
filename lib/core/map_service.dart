@@ -300,7 +300,7 @@ class MapService extends GetxService {
       // Dramatic zoom effect
       await mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(target: pickupLatLng, zoom: 10.0),
+          CameraPosition(target: pickupLatLng, zoom: 14.0),
         ),
       );
 
@@ -310,18 +310,8 @@ class MapService extends GetxService {
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: pickupLatLng,
-            zoom: 17.5,
-            tilt: 60.0,
-            bearing: 45.0,
+            zoom: 17,
           ),
-        ),
-      );
-
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      await mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: pickupLatLng, zoom: 16.5),
         ),
       );
     } catch (e) {

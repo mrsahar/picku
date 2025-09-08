@@ -36,7 +36,8 @@ enum RideStatus {
   driverAssigned,
   tripStarted,
   tripCompleted,
-  cancelled
+  cancelled,
+  noDriver
 }
 
 class RideBookingController extends GetxController {
@@ -415,7 +416,7 @@ class RideBookingController extends GetxController {
           );
         } else if (rideData is String && rideData.contains('No live drivers available')) {
           // No drivers available
-          rideStatus.value = RideStatus.waiting;
+          rideStatus.value = RideStatus.noDriver;
           Get.snackbar(
             'No Drivers Available',
             'No live drivers available right now. Please try again later.',

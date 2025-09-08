@@ -161,7 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
             switch (bookingController.rideStatus.value) {
               case RideStatus.waiting:
                 return const WaitingForDriverWidget();
-
+              case RideStatus.noDriver:
+                return const NoDriversAvailableWidget();
               case RideStatus.driverAssigned:
               case RideStatus.tripStarted:
                 return driverInfoWidget(context);
