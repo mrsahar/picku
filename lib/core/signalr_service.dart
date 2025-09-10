@@ -1,6 +1,11 @@
 // Create a new file: services/signalr_service.dart
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
+import 'package:pick_u/core/map_service.dart';
 import 'package:signalr_core/signalr_core.dart';
+import 'package:get/get.dart';
+
+import 'dart:async';
 import 'package:get/get.dart';
 
 class SignalRService extends GetxService {
@@ -15,6 +20,9 @@ class SignalRService extends GetxService {
   final driverLongitude = 0.0.obs;
   final driverLastUpdate = DateTime.now().obs;
   final isDriverLocationActive = false.obs;
+
+  // Get MapService instance
+  MapService get _mapService => Get.find<MapService>();
 
   Future<void> initializeConnection() async {
     try {
@@ -129,7 +137,7 @@ class SignalRService extends GetxService {
 
   void _handleLocationUpdate(dynamic locationData) {
     try {
-      print('Processing location update: $locationData');
+      print(' SAHArSAHAr Processing location update: $locationData');
 
       if (locationData is Map<String, dynamic>) {
         String rideId = locationData['rideId'] ?? '';
@@ -142,14 +150,16 @@ class SignalRService extends GetxService {
           double lng = double.tryParse(locationData['longitude'].toString()) ?? 0.0;
 
           if (lat != 0.0 && lng != 0.0) {
+            // Update observables
             driverLatitude.value = lat;
             driverLongitude.value = lng;
             driverLastUpdate.value = DateTime.now();
+            isDriverLocationActive.value = true;
 
-            print('Driver location updated: ($lat, $lng)');
+            print(' SAHArSAHAr Driver location updated: ($lat, $lng)');
 
-            // Update driver location on map through controller
-            _updateDriverLocationOnMap(lat, lng);
+            // Update driver location with smooth animation and auto-centering
+            _updateDriverLocationWithAnimation(lat, lng);
 
             // Show notification for first location update
             if (!isDriverLocationActive.value) {
@@ -161,30 +171,98 @@ class SignalRService extends GetxService {
               );
             }
           } else {
-            print('Invalid coordinates received: lat=$lat, lng=$lng');
+            print(' SAHArSAHAr Invalid coordinates received: lat=$lat, lng=$lng');
           }
         } else {
-          print('Location update for different ride: $rideId vs $_currentRideId');
+          print(' SAHArSAHAr Location update for different ride: $rideId vs $_currentRideId');
         }
       } else {
-        print('Invalid location data format: ${locationData.runtimeType}');
+        print(' SAHArSAHAr Invalid location data format: ${locationData.runtimeType}');
       }
     } catch (e) {
-      print('Error handling location update: $e');
+      print(' SAHArSAHAr Error handling location update: $e');
     }
   }
 
-  void _updateDriverLocationOnMap(double lat, double lng) {
+  /// Enhanced method to update driver location with animation and auto-centering
+  void _updateDriverLocationWithAnimation(double lat, double lng) {
     try {
       final controller = Get.find<RideBookingController>();
-      // Directly update the driver location observables
+
+      // Update controller observables (for backward compatibility)
       controller.driverLatitude.value = lat;
       controller.driverLongitude.value = lng;
       controller.isDriverLocationActive.value = true;
 
-      print(' SAHAr SignalR: Driver location updated through controller: ($lat, $lng)');
+      // Get driver name from controller
+      String driverName = controller.driverName.value.isNotEmpty
+          ? controller.driverName.value
+          : 'Driver';
+
+      // Use MapService to create animated driver marker with auto-centering
+      _mapService.updateDriverMarkerWithAnimation(
+        lat,
+        lng,
+        driverName,
+        centerMap: true, // Auto-center map on driver
+      );
+
+      print(' SAHArSAHAr Driver location updated with animation: ($lat, $lng)');
     } catch (e) {
-      print(' SAHAr Error updating driver location on map: $e');
+      print(' SAHArSAHAr Error updating driver location with animation: $e');
+
+      // Fallback to basic marker update
+      try {
+        final controller = Get.find<RideBookingController>();
+        controller.driverLatitude.value = lat;
+        controller.driverLongitude.value = lng;
+        controller.isDriverLocationActive.value = true;
+
+        _mapService.updateDriverMarker(lat, lng, 'Driver');
+      } catch (fallbackError) {
+        print(' SAHArSAHAr Fallback also failed: $fallbackError');
+      }
+    }
+  }
+
+  /// Enable/disable automatic map centering on driver location updates
+  void setAutoCenter(bool autoCenter) {
+    // This method can be used to control auto-centering behavior
+    // For now, we always auto-center, but this provides flexibility
+  }
+
+  /// Get current driver location as LatLng
+  LatLng? getCurrentDriverLocation() {
+    if (driverLatitude.value != 0.0 && driverLongitude.value != 0.0) {
+      return LatLng(driverLatitude.value, driverLongitude.value);
+    }
+    return null;
+  }
+
+  /// Check if driver location is being actively tracked
+  bool get isTrackingDriver => isDriverLocationActive.value && _currentRideId != null;
+
+  /// Get time since last location update
+  Duration getTimeSinceLastUpdate() {
+    return DateTime.now().difference(driverLastUpdate.value);
+  }
+
+  /// Force center map on current driver location
+  Future<void> centerOnDriverLocation() async {
+    LatLng? driverLocation = getCurrentDriverLocation();
+    if (driverLocation != null) {
+      await _mapService.animateToLocation(driverLocation, zoom: 16.0);
+      Get.snackbar(
+        'Centered',
+        'Map centered on driver location',
+        duration: const Duration(seconds: 2),
+      );
+    } else {
+      Get.snackbar(
+        'No Driver Location',
+        'Driver location not available',
+        duration: const Duration(seconds: 2),
+      );
     }
   }
 

@@ -115,7 +115,86 @@ class RideBookingController extends GetxController {
     driverLatitude.value = latitude;
     driverLongitude.value = longitude;
     isDriverLocationActive.value = true;
-    print('SAHAr Driver location updated: ($latitude, $longitude)');
+
+    print(' SAHArSAHAr Controller: Driver location updated: ($latitude, $longitude)');
+
+    // Trigger map animation through MapService
+    String driverDisplayName = driverName.value.isNotEmpty ? driverName.value : 'Driver';
+    _mapService.updateDriverMarkerWithAnimation(
+      latitude,
+      longitude,
+      driverDisplayName,
+      centerMap: true,
+    );
+  }
+
+  Future<void> centerOnDriverLocation() async {
+    if (driverLatitude.value != 0.0 && driverLongitude.value != 0.0) {
+      LatLng driverLocation = LatLng(driverLatitude.value, driverLongitude.value);
+      await _mapService.animateToLocation(driverLocation, zoom: 16.0);
+
+      Get.snackbar(
+        'Centered',
+        'Map centered on driver location',
+        duration: const Duration(seconds: 2),
+      );
+    } else {
+      Get.snackbar(
+        'Driver Not Located',
+        'Driver location is not available yet',
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+// Toggle auto-centering on driver location updates
+  var autoCenter = true.obs;
+
+  void toggleAutoCenter() {
+    autoCenter.value = !autoCenter.value;
+    Get.snackbar(
+      autoCenter.value ? 'Auto-Center Enabled' : 'Auto-Center Disabled',
+      autoCenter.value
+          ? 'Map will automatically center on driver location'
+          : 'Map centering is now manual',
+      duration: const Duration(seconds: 2),
+    );
+  }
+  LatLng? getDriverLocation() {
+    if (driverLatitude.value != 0.0 && driverLongitude.value != 0.0) {
+      return LatLng(driverLatitude.value, driverLongitude.value);
+    }
+    return null;
+  }
+  double? getDistanceToDriver() {
+    LatLng? userLocation = _locationService.currentLatLng.value;
+    LatLng? driverLocation = getDriverLocation();
+
+    if (userLocation != null && driverLocation != null) {
+      return _locationService.calculateDistance(userLocation, driverLocation);
+    }
+
+    return null;
+  }
+
+// Get formatted distance to driver
+  String getFormattedDistanceToDriver() {
+    double? distance = getDistanceToDriver();
+    if (distance != null) {
+      if (distance < 1000) {
+        return '${distance.round()}m away';
+      } else {
+        return '${(distance / 1000).toStringAsFixed(1)}km away';
+      }
+    }
+    return 'Distance unknown';
+  }
+
+// Clear driver location when ride ends
+  void clearDriverLocation() {
+    driverLatitude.value = 0.0;
+    driverLongitude.value = 0.0;
+    isDriverLocationActive.value = false;
   }
 
   // FIXED: Multi-stop management - using proper observable updates
@@ -133,7 +212,7 @@ class RideBookingController extends GetxController {
     // Force UI update
     stopControllers.refresh();
     additionalStops.refresh();
-    print('SAHAr Stop added. Total stops: ${additionalStops.length}');
+    print(' SAHArSAHAr Stop added. Total stops: ${additionalStops.length}');
   }
 
   void removeStop(int index) {
@@ -148,7 +227,7 @@ class RideBookingController extends GetxController {
       // Force UI update
       stopControllers.refresh();
       additionalStops.refresh();
-      print('SAHAr Stop removed at index $index');
+      print(' SAHArSAHAr Stop removed at index $index');
     }
   }
 
@@ -208,16 +287,16 @@ class RideBookingController extends GetxController {
 
   // FIXED: Start ride with proper API structure
   Future<void> startRide() async {
-    print('SAHAr startRide() called');
+    print(' SAHArSAHAr startRide() called');
 
     if (!isRideBooked.value) {
-      print('SAHAr Ride not booked yet');
+      print(' SAHArSAHAr Ride not booked yet');
       Get.snackbar('Error', 'Please book a ride first');
       return;
     }
 
     if (pickupLocation.value == null || dropoffLocation.value == null) {
-      print('SAHAr Missing pickup or dropoff location');
+      print(' SAHArSAHAr Missing pickup or dropoff location');
       Get.snackbar('Error', 'Please set pickup and dropoff locations');
       return;
     }
@@ -238,7 +317,7 @@ class RideBookingController extends GetxController {
 
     try {
       isLoading.value = true;
-      print('SAHAr Preparing stops...');
+      print(' SAHArSAHAr Preparing stops...');
 
       List<Map<String, dynamic>> allStops = [];
 
@@ -249,7 +328,7 @@ class RideBookingController extends GetxController {
         "latitude": pickupLocation.value!.latitude,
         "longitude": pickupLocation.value!.longitude,
       });
-      print('SAHAr Added pickup: ${pickupLocation.value!.address}');
+      print(' SAHArSAHAr Added pickup: ${pickupLocation.value!.address}');
 
       // Additional stops
       for (int i = 0; i < additionalStops.length; i++) {
@@ -261,7 +340,7 @@ class RideBookingController extends GetxController {
             "latitude": stop.latitude,
             "longitude": stop.longitude,
           });
-          print('SAHAr Added stop ${i + 1}: ${stop.address}');
+          print(' SAHArSAHAr Added stop ${i + 1}: ${stop.address}');
         }
       }
 
@@ -272,7 +351,7 @@ class RideBookingController extends GetxController {
         "latitude": dropoffLocation.value!.latitude,
         "longitude": dropoffLocation.value!.longitude,
       });
-      print('SAHAr Added dropoff: ${dropoffLocation.value!.address}');
+      print(' SAHArSAHAr Added dropoff: ${dropoffLocation.value!.address}');
 
       DateTime scheduledDateTime = isScheduled.value && getScheduledDateTime() != null
           ? getScheduledDateTime()!
@@ -290,13 +369,13 @@ class RideBookingController extends GetxController {
         "stops": allStops,
       };
 
-      print('SAHAr Request payload: $requestData');
+      print(' SAHArSAHAr Request payload: $requestData');
 
       // Set appropriate status based on ride type
       rideStatus.value = isScheduled.value ? RideStatus.waiting : RideStatus.waiting;
 
       Response response = await _apiProvider.postData(ApiEndpoints.bookRide, requestData);
-      print('SAHAr API response: ${response.body}');
+      print(' SAHArSAHAr API response: ${response.body}');
 
       if (response.isOk) {
         await _handleRideResponse(response);
@@ -305,12 +384,12 @@ class RideBookingController extends GetxController {
         Get.snackbar('Error', 'Failed to start ride: ${response.statusText}');
       }
     } catch (e) {
-      print('SAHAr Exception caught: $e');
+      print(' SAHArSAHAr Exception caught: $e');
       rideStatus.value = RideStatus.cancelled;
       Get.snackbar('Error', 'Failed to start ride: $e');
     } finally {
       isLoading.value = false;
-      print('SAHAr Ride booking process completed');
+      print(' SAHArSAHAr Ride booking process completed');
     }
   }
 
@@ -342,7 +421,7 @@ class RideBookingController extends GetxController {
 
   // FIXED: End trip functionality with proper endpoint
   Future<void> endTrip() async {
-    print('SAHAr endTrip() method called');
+    print(' SAHArSAHAr endTrip() method called');
     if (currentRideId.value.isEmpty) {
       Get.snackbar('Error', 'Ride ID not found');
       return;
@@ -350,20 +429,20 @@ class RideBookingController extends GetxController {
 
     try {
       isLoading.value = true;
-      print('SAHAr Ending trip with ride ID: ${currentRideId.value}');
+      print(' SAHArSAHAr Ending trip with ride ID: ${currentRideId.value}');
 
       String endpoint = ApiEndpoints.endTrip.replaceAll('{rideId}', currentRideId.value);
       Response response = await _apiProvider.postData(endpoint, {});
 
       if (response.isOk) {
-        print('SAHAr Trip ended successfully: ${response.body}');
+        print(' SAHArSAHAr Trip ended successfully: ${response.body}');
         _handleTripCompletion(response);
       } else {
-        print('SAHAr Failed to end trip: ${response.statusText}');
+        print(' SAHArSAHAr Failed to end trip: ${response.statusText}');
         Get.snackbar('Error', 'Failed to end trip: ${response.statusText}');
       }
     } catch (e) {
-      print('SAHAr Error ending trip: $e');
+      print(' SAHArSAHAr Error ending trip: $e');
       Get.snackbar('Error', 'Failed to end trip: $e');
     } finally {
       isLoading.value = false;
@@ -374,7 +453,7 @@ class RideBookingController extends GetxController {
   Future<void> _handleRideResponse(Response response) async {
     try {
       var responseBody = response.body;
-      print('SAHAr Handling ride response: $responseBody');
+      print(' SAHArSAHAr Handling ride response: $responseBody');
 
       if (responseBody is Map<String, dynamic>) {
         // Handle scheduled rides differently
@@ -425,14 +504,14 @@ class RideBookingController extends GetxController {
         }
       }
     } catch (e) {
-      print('SAHAr Error handling ride response: $e');
+      print(' SAHArSAHAr Error handling ride response: $e');
       Get.snackbar('Error', 'Failed to process ride response: $e');
     }
   }
 
   void _handleTripCompletion(Response response) {
     var responseBody = response.body;
-    print('SAHAr Processing trip completion response: $responseBody');
+    print(' SAHArSAHAr Processing trip completion response: $responseBody');
 
     // Always set the status to completed first
     rideStatus.value = RideStatus.tripCompleted;
@@ -460,7 +539,7 @@ class RideBookingController extends GetxController {
   }
 
   void _showPaymentDialog(Map<String, dynamic> tripData) {
-    print('SAHAr Showing payment dialog with data: $tripData');
+    print(' SAHArSAHAr Showing payment dialog with data: $tripData');
 
     String rideId = tripData['rideId'] ?? currentRideId.value;
     double finalFare = (tripData['finalFare'] ?? tripData['totalFare'] ?? estimatedPrice.value).toDouble();
@@ -738,13 +817,13 @@ class RideBookingController extends GetxController {
         "paymentMethod": "digital",
       };
 
-      print('SAHAr Processing payment: $paymentData');
+      print(' SAHArSAHAr Processing payment: $paymentData');
 
       // Call payment API
       Response response = await _apiProvider.postData(ApiEndpoints.processPayment, paymentData);
 
       if (response.isOk) {
-        print('SAHAr Payment processed successfully: ${response.body}');
+        print(' SAHArSAHAr Payment processed successfully: ${response.body}');
 
         Get.snackbar(
           'Payment Successful!',
@@ -756,11 +835,11 @@ class RideBookingController extends GetxController {
 
         clearBooking();
       } else {
-        print('SAHAr Payment failed: ${response.statusText}');
+        print(' SAHArSAHAr Payment failed: ${response.statusText}');
         Get.snackbar('Payment Failed', 'Failed to process payment: ${response.statusText}');
       }
     } catch (e) {
-      print('SAHAr Error processing payment: $e');
+      print(' SAHArSAHAr Error processing payment: $e');
       Get.snackbar('Payment Error', 'Failed to process payment: $e');
     } finally {
       isLoading.value = false;
@@ -769,14 +848,14 @@ class RideBookingController extends GetxController {
 
   // FIXED: Submit tip with proper API structure
   Future<void> _submitTip(double tipAmount, double finalFare, double totalAmount) async {
-    print('SAHAr 🟡 _submitTip() called');
-    print('SAHAr 💰 Tip Amount: ₹${tipAmount.toStringAsFixed(2)}');
-    print('SAHAr 🧾 Final Fare: ₹${finalFare.toStringAsFixed(2)}');
-    print('SAHAr 📊 Total Amount: ₹${totalAmount.toStringAsFixed(2)}');
+    print(' SAHArSAHAr 🟡 _submitTip() called');
+    print(' SAHArSAHAr 💰 Tip Amount: ₹${tipAmount.toStringAsFixed(2)}');
+    print(' SAHArSAHAr 🧾 Final Fare: ₹${finalFare.toStringAsFixed(2)}');
+    print(' SAHArSAHAr 📊 Total Amount: ₹${totalAmount.toStringAsFixed(2)}');
 
     try {
       isLoading.value = true;
-      print('SAHAr ⏳ isLoading set to true');
+      print(' SAHArSAHAr ⏳ isLoading set to true');
 
       var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
 
@@ -788,13 +867,13 @@ class RideBookingController extends GetxController {
         "createdAt": DateTime.now().toIso8601String(),
       };
 
-      print('SAHAr 📦 Tip Payload: $tipData');
+      print(' SAHArSAHAr 📦 Tip Payload: $tipData');
 
       Response response = await _apiProvider.postData(ApiEndpoints.submitTip, tipData);
-      print('SAHAr 📥 API Response: ${response.body}');
+      print(' SAHArSAHAr 📥 API Response: ${response.body}');
 
       if (response.isOk) {
-        print('SAHAr ✅ Tip submitted successfully');
+        print(' SAHArSAHAr ✅ Tip submitted successfully');
         Get.snackbar(
           'Tip Added!',
           'Tip of ₹${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!',
@@ -803,15 +882,15 @@ class RideBookingController extends GetxController {
           colorText: Colors.white,
         );
       } else {
-        print('SAHAr ❌ Tip submission failed: ${response.statusText}');
+        print(' SAHArSAHAr ❌ Tip submission failed: ${response.statusText}');
         Get.snackbar('Error', 'Failed to process tip: ${response.statusText}');
       }
     } catch (e) {
-      print('SAHAr 🔥 Exception during tip submission: $e');
+      print(' SAHArSAHAr 🔥 Exception during tip submission: $e');
       Get.snackbar('Error', 'Failed to process tip: $e');
     } finally {
       isLoading.value = false;
-      print('SAHAr ✅ isLoading set to false');
+      print(' SAHArSAHAr ✅ isLoading set to false');
     }
   }
 

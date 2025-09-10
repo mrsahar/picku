@@ -35,15 +35,15 @@ class ResetPasswordController extends GetxController {
     final globalVars = GlobalVariables.instance;
     if (globalVars.hasUserEmail) {
       email.value = globalVars.userEmail;
-      print('SAHAr 📧 ResetPassword: Got email from GlobalVariables: ${email.value}');
+      print(' SAHArSAHAr 📧 ResetPassword: Got email from GlobalVariables: ${email.value}');
     } else {
       // Fallback: Get email from arguments (backup method)
       final args = Get.arguments;
       if (args != null && args['email'] != null) {
         email.value = args['email'];
-        print('SAHAr 📧 ResetPassword: Got email from arguments: ${email.value}');
+        print(' SAHArSAHAr 📧 ResetPassword: Got email from arguments: ${email.value}');
       } else {
-        print('SAHAr ❌ ResetPassword: No email found in GlobalVariables or arguments');
+        print(' SAHArSAHAr ❌ ResetPassword: No email found in GlobalVariables or arguments');
       }
     }
   }
@@ -168,10 +168,10 @@ class ResetPasswordController extends GetxController {
         newPassword: newPasswordController.text,
       );
 
-      print('SAHAr 📤 ResetPassword: Sending request for email: ${email.value}');
+      print(' SAHArSAHAr 📤 ResetPassword: Sending request for email: ${email.value}');
       final response = await _apiProvider.resetPassword(resetPasswordRequest);
 
-      print('SAHAr 📥 ResetPassword: Response received - Success: ${response.success}');
+      print(' SAHArSAHAr 📥 ResetPassword: Response received - Success: ${response.success}');
 
       if (response.success) {
         clearForm();
@@ -195,8 +195,8 @@ class ResetPasswordController extends GetxController {
         );
       }
     } catch (e, stackTrace) {
-      print('SAHAr 💥 ResetPassword: Exception caught: $e');
-      print('SAHAr 📍 ResetPassword: Stack trace: $stackTrace');
+      print(' SAHArSAHAr 💥 ResetPassword: Exception caught: $e');
+      print(' SAHArSAHAr 📍 ResetPassword: Stack trace: $stackTrace');
       Get.snackbar(
         'Error',
         'Failed to reset password. Please try again.',
@@ -226,7 +226,7 @@ class ResetPasswordController extends GetxController {
       // Clear current OTP
       clearOTP();
 
-      print('SAHAr 🔄 ResetPassword: Resending OTP to: ${email.value}');
+      print(' SAHArSAHAr 🔄 ResetPassword: Resending OTP to: ${email.value}');
       // You can call forgot password API again to resend OTP
       Get.snackbar(
         'OTP Sent',
@@ -236,7 +236,7 @@ class ResetPasswordController extends GetxController {
         snackPosition: SnackPosition.TOP,
       );
     } catch (e) {
-      print('SAHAr 💥 ResetPassword: Resend error: $e');
+      print(' SAHArSAHAr 💥 ResetPassword: Resend error: $e');
       Get.snackbar(
         'Error',
         'Failed to resend OTP. Please try again.',

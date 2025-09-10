@@ -56,10 +56,10 @@ class EditProfileController extends GetxController {
         if (userData.hasProfilePicture) {
           currentProfileImage.value = userData.getImageBytes();
         }
-        print('SAHAr User data loaded: ${userData.name}');
+        print(' SAHArSAHAr User data loaded: ${userData.name}');
       }
     } catch (e) {
-      print('SAHAr Error loading user data: $e');
+      print(' SAHArSAHAr Error loading user data: $e');
       Get.snackbar(
         'Error',
         'Failed to load user data',
@@ -108,7 +108,7 @@ class EditProfileController extends GetxController {
 
       if (pickedFile != null) {
         selectedImagePath.value = pickedFile.path;
-        print('SAHAr Image selected: ${pickedFile.path}');
+        print(' SAHArSAHAr Image selected: ${pickedFile.path}');
       }
     } catch (e) {
       Get.snackbar(
@@ -236,20 +236,20 @@ class EditProfileController extends GetxController {
       );
 
       // 🔍 SAHAr Debug: Print FormData contents
-      print('SAHAr ⚠️ FormData Fields:');
-      formData.fields.forEach((f) => print('SAHAr 🔹 ${f.key} = ${f.value}'));
+      print(' SAHArSAHAr ⚠️ FormData Fields:');
+      formData.fields.forEach((f) => print(' SAHArSAHAr 🔹 ${f.key} = ${f.value}'));
 
-      print('SAHAr 📷 FormData Files:');
+      print(' SAHArSAHAr 📷 FormData Files:');
       formData.files.forEach((f) {
-        print('SAHAr 📷 ${f.key} = ${f.value.filename}');
+        print(' SAHArSAHAr 📷 ${f.key} = ${f.value.filename}');
       });
 
       // Send multipart request using your updated ApiProvider
       final response = await _apiProvider.postData2('/api/User/update-user', formData);
 
       // 🔍 SAHAr Debug: Response
-      print('SAHAr ✅ Response Status: ${response.statusCode}');
-      print('SAHAr ✅ Response Body: ${response.bodyString}');
+      print(' SAHArSAHAr ✅ Response Status: ${response.statusCode}');
+      print(' SAHArSAHAr ✅ Response Body: ${response.bodyString}');
 
       if (response.statusCode == 200 || response.isOk) {
         Get.snackbar(
@@ -263,7 +263,7 @@ class EditProfileController extends GetxController {
         throw Exception(response.statusText ?? 'Failed to update profile');
       }
     } catch (e) {
-      print('SAHAr ❌ Error updating profile: $e');
+      print(' SAHArSAHAr ❌ Error updating profile: $e');
       Get.snackbar(
         'Error',
         'Failed to update profile: $e',

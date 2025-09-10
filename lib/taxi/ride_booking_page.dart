@@ -555,7 +555,7 @@ class RideBookingPage extends StatelessWidget {
                   try {
                     await controller.showPickupLocationWithZoom();
                   } catch (e) {
-                    print('Error showing pickup location: $e');
+                    print(' SAHArError showing pickup location: $e');
                   }
                 });
               },
@@ -729,7 +729,7 @@ class RideBookingPage extends StatelessWidget {
       try {
         await controller.bookRide();
       } catch (e) {
-        print('Error calculating route: $e');
+        print(' SAHArError calculating route: $e');
         // You might want to show a snackbar here if needed
       }
     }

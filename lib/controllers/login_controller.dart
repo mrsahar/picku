@@ -90,7 +90,7 @@ class LoginController extends GetxController {
         deviceToken:'',
       );
 
-      print('SAHAr 📤 Login: Sending request for email: ${emailController.text}');
+      print(' SAHArSAHAr 📤 Login: Sending request for email: ${emailController.text}');
       final response = await _apiProvider.login(loginRequest);
 
       if (response.success && response.data != null) {
@@ -145,7 +145,7 @@ class LoginController extends GetxController {
         );
       }
     } catch (e) {
-      print('SAHAr 💥 Login: Error: $e');
+      print(' SAHArSAHAr 💥 Login: Error: $e');
       Get.snackbar(
         'Error',
         'Failed to login. Please try again.',
@@ -162,7 +162,7 @@ class LoginController extends GetxController {
   // Enhanced method to check authentication status with token validation
   Future<void> checkAuthenticationStatus() async {
     try {
-      print('SAHAr 🔍 Checking authentication status...');
+      print(' SAHArSAHAr 🔍 Checking authentication status...');
 
       // Get user data from SharedPreferences
       final userData = await SharedPrefsService.getUserData();
@@ -170,13 +170,13 @@ class LoginController extends GetxController {
       final expiresStr = userData['expires'];
       final isLoggedIn = userData['isLoggedIn'];
 
-      print('SAHAr 📱 Token exists: ${token != null}');
-      print('SAHAr 📱 Is logged in: $isLoggedIn');
-      print('SAHAr 📱 Expires: $expiresStr');
+      print(' SAHArSAHAr 📱 Token exists: ${token != null}');
+      print(' SAHArSAHAr 📱 Is logged in: $isLoggedIn');
+      print(' SAHArSAHAr 📱 Expires: $expiresStr');
 
       // Check if user has login data
       if (token != null && token.isNotEmpty && isLoggedIn == 'true') {
-        print('SAHAr ✅ User has login data, checking token expiry...');
+        print(' SAHArSAHAr ✅ User has login data, checking token expiry...');
 
         // Check if token is expired
         final isTokenExpired = await SharedPrefsService.isTokenExpired();
@@ -185,13 +185,13 @@ class LoginController extends GetxController {
         if (expiresStr != null) {
           try {
             final expiryDate = DateTime.parse(expiresStr);
-            print('SAHAr ⏰ Token expires at: $expiryDate');
-            print('SAHAr ⏰ Current time: $now');
-            print('SAHAr ⏰ Token expired: $isTokenExpired');
+            print(' SAHArSAHAr ⏰ Token expires at: $expiryDate');
+            print(' SAHArSAHAr ⏰ Current time: $now');
+            print(' SAHArSAHAr ⏰ Token expired: $isTokenExpired');
 
             if (!isTokenExpired && now.isBefore(expiryDate)) {
               // Token is valid, navigate to MainMap
-              print('SAHAr 🚀 Token is valid, navigating to MainMap');
+              print(' SAHArSAHAr 🚀 Token is valid, navigating to MainMap');
 
               // Update GlobalVariables for consistency
               final globalVars = GlobalVariables.instance;
@@ -204,12 +204,12 @@ class LoginController extends GetxController {
               return;
             }
           } catch (e) {
-            print('SAHAr 💥 Error parsing expiry date: $e');
+            print(' SAHArSAHAr 💥 Error parsing expiry date: $e');
           }
         }
 
         // Token is expired or invalid
-        print('SAHAr ❌ Token expired or invalid, clearing data and staying on login');
+        print(' SAHArSAHAr ❌ Token expired or invalid, clearing data and staying on login');
         await SharedPrefsService.clearUserData();
 
         // Clear GlobalVariables
@@ -228,10 +228,10 @@ class LoginController extends GetxController {
           duration: const Duration(seconds: 3),
         );
       } else {
-        print('SAHAr ❌ No valid login data found, staying on login screen');
+        print(' SAHArSAHAr ❌ No valid login data found, staying on login screen');
       }
     } catch (e) {
-      print('SAHAr 💥 Error checking authentication status: $e');
+      print(' SAHArSAHAr 💥 Error checking authentication status: $e');
       // On error, clear any corrupted data and stay on login screen
       await SharedPrefsService.clearUserData();
     }
@@ -270,7 +270,7 @@ class LoginController extends GetxController {
         snackPosition: SnackPosition.TOP,
       );
     } catch (e) {
-      print('SAHAr 💥 Logout error: $e');
+      print(' SAHArSAHAr 💥 Logout error: $e');
     } finally {
       isLoading.value = false;
     }

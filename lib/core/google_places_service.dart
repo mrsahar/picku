@@ -34,15 +34,15 @@ class GooglePlacesService {
 
           return places;
         } else {
-          print('SAHAr Places API Error: ${data['status']}');
+          print(' SAHArSAHAr Places API Error: ${data['status']}');
           return [];
         }
       } else {
-        print('SAHAr HTTP Error: ${response.statusCode}');
+        print(' SAHArSAHAr HTTP Error: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('SAHAr Error searching places: $e');
+      print(' SAHArSAHAr Error searching places: $e');
       return [];
     }
   }
@@ -75,15 +75,15 @@ class GooglePlacesService {
 
           return predictions;
         } else {
-          print('SAHAr Autocomplete API Error: ${data['status']}');
+          print(' SAHArSAHAr Autocomplete API Error: ${data['status']}');
           return [];
         }
       } else {
-        print('SAHAr HTTP Error: ${response.statusCode}');
+        print(' SAHArSAHAr HTTP Error: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('SAHAr Error getting autocomplete suggestions: $e');
+      print(' SAHArSAHAr Error getting autocomplete suggestions: $e');
       return [];
     }
   }
@@ -101,15 +101,15 @@ class GooglePlacesService {
         if (data['status'] == 'OK') {
           return PlaceDetails.fromJson(data['result']);
         } else {
-          print('SAHAr Place Details API Error: ${data['status']}');
+          print(' SAHArSAHAr Place Details API Error: ${data['status']}');
           return null;
         }
       } else {
-        print('SAHAr HTTP Error: ${response.statusCode}');
+        print(' SAHArSAHAr HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('SAHAr Error getting place details: $e');
+      print(' SAHArSAHAr Error getting place details: $e');
       return null;
     }
   }

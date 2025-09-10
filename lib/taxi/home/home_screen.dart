@@ -357,8 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
 
         // Driver tracking widgets (updated to use new architecture)
-        DriverTrackingWidget(controller: bookingController),
-        FitMapButton(controller: bookingController, mapService: mapService),
+        //DriverTrackingControlsWidget(controller: bookingController),
       ],
     );
   }

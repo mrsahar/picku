@@ -37,8 +37,8 @@ class ProfileController extends GetxController {
       // API call to get user profile using ApiProvider
       final response = await _apiProvider.postData('/api/User/single-users/$userId', {});
 
-      print('SAHAr Response Status Code: ${response.statusCode}');
-      print('SAHAr Response Body: ${response.body}');
+      print(' SAHArSAHAr Response Status Code: ${response.statusCode}');
+      print(' SAHArSAHAr Response Body: ${response.body}');
 
       if (response.statusCode == 200 && response.body != null) {
         userProfile.value = UserProfileModel.fromJson(response.body);
@@ -46,16 +46,16 @@ class ProfileController extends GetxController {
         // Extract and set profile image if available
         if (userProfile.value != null && userProfile.value!.hasProfilePicture) {
           profileImage.value = userProfile.value!.getImageBytes();
-          print('SAHAr Profile image loaded successfully');
+          print(' SAHArSAHAr Profile image loaded successfully');
         } else {
           profileImage.value = null;
-          print('SAHAr No profile image available');
+          print(' SAHArSAHAr No profile image available');
         }
       } else {
         Get.snackbar('Error', 'Failed to load profile: ${response.statusText ?? 'Unknown error'}');
       }
     } catch (e) {
-      print('SAHAr Exception in fetchUserProfile: ${e.toString()}');
+      print(' SAHArSAHAr Exception in fetchUserProfile: ${e.toString()}');
       Get.snackbar('Error', 'Failed to load profile: ${e.toString()}');
     } finally {
       isLoading.value = false;

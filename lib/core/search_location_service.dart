@@ -56,7 +56,7 @@ class SearchService extends GetxService {
 
       searchSuggestions.value = predictions;
     } catch (e) {
-      print('Error searching locations: $e');
+      print(' SAHArError searching locations: $e');
       Get.snackbar('Search Error', 'Failed to search locations. Please try again.');
       searchSuggestions.clear();
     } finally {
@@ -69,7 +69,7 @@ class SearchService extends GetxService {
     try {
       return await GooglePlacesService.getPlaceDetails(placeId);
     } catch (e) {
-      print('Error getting place details: $e');
+      print(' SAHArError getting place details: $e');
       Get.snackbar('Error', 'Failed to get location details');
       return null;
     }
