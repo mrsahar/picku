@@ -40,7 +40,7 @@ dependencies:
   line_awesome_flutter: ^3.0.1
   flutter_otp_text_field: ^1.2.0
   fl_country_code_picker: ^0.1.9+1
-  flutter_native_splash: ^2.4.2
+  flutter_native_splash: ^2.4.6
   google_maps_flutter: ^2.10.0
   flutter_dash: ^1.0.0
   http: ^1.5.0
@@ -54,6 +54,9 @@ dependencies:
   image: ^4.5.4
   signalr_core: ^1.1.2
   url_launcher: ^6.3.2
+  flutter_launcher_icons: ^0.14.4
+
+
 
 dev_dependencies:
   flutter_test:
@@ -64,7 +67,38 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/images/app_icon.png"
+    background_color: "#1A2A44"  # Your primary navy color
+    theme_color: "#1A2A44"       # Your primary navy color
+  windows:
+    generate: true
+    image_path: "assets/images/app_icon.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/images/app_icon.png"
 
+flutter_native_splash:
+  color: "#FFFFFF"              # Your main background color (white)
+  image: assets/images/splash_logo.png
+  color_dark: "#1A2A44"         # Your primary navy for dark mode
+  image_dark: assets/images/splash_logo_white.png  # Optional: white version of logo for dark mode
+
+  android_12:
+    image: assets/images/splash_logo.png
+    icon_background_color: "#FFFFFF"  # White background for Android 12+
+    color: "#FFFFFF"                  # White background
+    icon_background_color_dark: "#1A2A44"  # Navy background for dark mode
+    color_dark: "#1A2A44"                  # Navy background for dark mode
+
+  web: false
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -79,6 +113,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/img/
+    - assets/images/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

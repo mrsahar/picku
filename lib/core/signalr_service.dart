@@ -9,7 +9,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 
 class SignalRService extends GetxService {
-  static const String hubUrl = 'http://sahilsally9-001-site1.qtempurl.com/rideHub';
+  static const String hubUrl = 'http://pickurides.com/rideHub';
 
   HubConnection? _connection;
   bool _isConnected = false;
