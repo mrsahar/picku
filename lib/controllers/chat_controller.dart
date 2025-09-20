@@ -28,7 +28,7 @@ class ChatController extends GetxController {
   final RxString currentUserId = ''.obs;
 
   // Hub URL - adjust according to your backend
-  final String hubUrl = "http://sahilsally9-001-site1.qtempurl.com/ridechathub";
+  final String hubUrl = "http://pickurides.com/ridechathub";
 
   @override
   void onInit() {
