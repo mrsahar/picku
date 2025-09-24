@@ -283,11 +283,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Show pickup location button (when pickup is set but not booked)
         Positioned(
-          top: 40,
+          top: 90,
           right: 16,
           child: Obx(() {
-            if (bookingController.pickupLocation.value != null &&
-                !bookingController.isRideBooked.value) {
+            if (bookingController.pickupLocation.value != null) {
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -481,21 +480,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 if (controller.additionalStops.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: MColor.primaryNavy.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${controller.additionalStops.where((stop) => stop.address.isNotEmpty).length} additional stop(s)',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: MColor.primaryNavy.withOpacity(0.8),
+                  GestureDetector(
+                    onTap: () => _showAdditionalStopsDialog(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MColor.primaryNavy.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: MColor.primaryNavy.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.flag,
+                            size: 12,
+                            color: MColor.primaryNavy.withOpacity(0.8),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${controller.additionalStops.where((stop) => stop.address.isNotEmpty).length} additional stop(s)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: MColor.primaryNavy.withOpacity(0.8),
+
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -527,6 +545,29 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(width: 4),
                               Text(
                                 mapService.routeDistance.value,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: MColor.primaryNavy,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            width: 1,
+                            height: 16,
+                            color: MColor.primaryNavy.withOpacity(0.2),
+                          ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.payments_outlined,
+                                size: 14,
+                                color: MColor.primaryNavy.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${controller.estimatedFare.value}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -608,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : Text(
                             controller.isScheduled.value
                                 ? 'Schedule It'
-                                : 'Start Ride',
+                                : 'Find Driver',
                           ),
                   ),
                 ),
@@ -625,4 +666,142 @@ class _HomeScreenState extends State<HomeScreen> {
       isWidget = (isWidget + 1) % 6;
     });
   }
+
+  void _showAdditionalStopsDialog(BuildContext context) {
+    final controller = bookingController;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Row(
+                  children: [
+                    Icon(Icons.alt_route, color: MColor.primaryNavy, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Stops Details",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: MColor.primaryNavy,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Divider(color: Colors.grey.shade300, height: 1),
+
+                const SizedBox(height: 12),
+
+                // Content
+                Expanded(
+                  child: Obx(() {
+                    if (controller.additionalStops.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No additional stops added.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: controller.additionalStops.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final stop = controller.additionalStops[index];
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: MColor.primaryNavy.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: MColor.primaryNavy.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor:
+                                MColor.primaryNavy.withOpacity(0.1),
+                                child: Icon(Icons.flag,
+                                    size: 18, color: MColor.primaryNavy),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  stop.address,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: MColor.primaryNavy,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: MColor.primaryNavy.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "Stop ${stop.stopOrder - 1}",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: MColor.primaryNavy,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 16),
+                // Actions
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, size: 18, color: MColor.primaryNavy),
+                    label: Text(
+                      "Close",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: MColor.primaryNavy,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 }

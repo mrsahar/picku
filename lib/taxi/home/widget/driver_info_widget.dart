@@ -334,7 +334,7 @@ Widget _buildCompactRideActionButton(
                         AlertDialog(
                           title: const Text('End Trip'),
                           content: Text(
-                            'End this trip?\n\nEstimated: ₹${controller.estimatedPrice.value.toStringAsFixed(2)}',
+                            'End this trip?\n\nEstimated: \$${controller.estimatedPrice.value.toStringAsFixed(2)}',
                           ),
                           actions: [
                             TextButton(

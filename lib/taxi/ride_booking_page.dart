@@ -336,6 +336,7 @@ class RideBookingPage extends StatelessWidget {
           // Search Suggestions - Updated to use SearchService directly
           Obx(() {
             if (_searchService.searchSuggestions.isNotEmpty || _searchService.isSearching.value) {
+
               return Container(
                 margin: const EdgeInsets.only(top: 8),
                 decoration: BoxDecoration(
@@ -470,6 +471,9 @@ class RideBookingPage extends StatelessWidget {
                     if (controller.additionalStops.isNotEmpty)
                       Text('✓ ${controller.additionalStops.length} additional stop(s) added'),
                     Obx(() {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        controller.getFareEstimate(); // Safe after first frame
+                      });
                       if (_mapService.routeDistance.value.isNotEmpty && _mapService.routeDuration.value.isNotEmpty) {
                         return Row(
                             children: [
@@ -479,6 +483,7 @@ class RideBookingPage extends StatelessWidget {
                                   children: [
                                     Text('✓ Distance: ${_mapService.routeDistance.value}'),
                                     Text('✓ Duration: ${_mapService.routeDuration.value}'),
+                                    Text('✓ Estimated Fare: \$${controller.estimatedFare.value}'),
                                   ],
                                 ),
                               ),

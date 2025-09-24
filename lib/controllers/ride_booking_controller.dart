@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,6 +22,7 @@ class ApiEndpoints {
   static const String endTrip = '/api/Ride/{rideId}/end';
   static const String submitTip = '/api/Tip';
   static const String processPayment = '/api/Payment/process';
+  static const String fareEstimate = '/api/Ride/fare-estimate';
 }
 
 class AppConstants {
@@ -63,6 +65,12 @@ class RideBookingController extends GetxController {
   var isMultiStopRide = false.obs;
 
   // Scheduling variables
+  // Fare estimation variables
+  var estimatedFare = 0.0.obs;
+  var fareMessage = ''.obs;
+  var fareCurrency = 'CAD'.obs;
+  var isLoadingFare = false.obs;
+
   var isScheduled = false.obs;
   var scheduledDate = Rx<DateTime?>(null);
   var scheduledTime = Rx<TimeOfDay?>(null);
@@ -449,6 +457,76 @@ class RideBookingController extends GetxController {
     }
   }
 
+  Future<void> getFareEstimate() async {
+    print('SAHArSAHAr getFareEstimate() method called');
+
+    try {
+      isLoading.value = true;
+
+      String routeDistanceStr = _mapService.routeDistance.value;
+      print('SAHArSAHAr routeDistanceStr: $routeDistanceStr');
+
+      if (routeDistanceStr.isEmpty) {
+        print('SAHArSAHAr Route distance is empty');
+        return;
+      }
+
+      // Extract numeric distance
+      String numericPart = routeDistanceStr.split(' ').first;
+      double distance = double.tryParse(numericPart) ?? 0.0;
+      print('SAHArSAHAr Parsed distance: $distance');
+
+      // Get pickup address
+      String address = pickupLocation.value?.address ?? '';
+      print('SAHArSAHAr Pickup address: $address');
+
+      if (address.isEmpty) {
+        print('SAHArSAHAr Pickup address is empty');
+        return;
+      }
+
+      // Duration (static for now)
+      String duration = "0.0";
+
+      // Build full query string
+      String endpoint =
+          "${ApiEndpoints.fareEstimate}?Address=${Uri.encodeComponent(address)}&distance=$distance&duration=$duration";
+
+      print('SAHArSAHAr Calling fareEstimate API: $endpoint');
+
+      Response response = await _apiProvider.postData(endpoint,{});
+
+      if (response.isOk) {
+        print('SAHArSAHAr Fare estimate response: ${response.body}');
+
+        var responseBody = response.body;
+        var fareData = responseBody['fare'] is String
+            ? json.decode(responseBody['fare'])
+            : responseBody['fare'];
+
+        if (fareData != null && fareData['EstimatedFare'] != null) {
+          // Delay update until after build (safe for Obx)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            estimatedFare.value = (fareData['EstimatedFare'] ?? 0.0).toDouble();
+            print('SAHArSAHAr Fare updated: ${estimatedFare.value}');
+          });
+        } else {
+          print('SAHArSAHAr No fare data in response');
+          Get.snackbar('Error', 'No fare data received');
+        }
+      } else {
+        print('SAHArSAHAr Failed to fetch fare estimate: ${response.statusText}');
+        Get.snackbar('Error', 'Failed to fetch fare estimate: ${response.statusText}');
+      }
+    } catch (e) {
+      print('SAHArSAHAr Error in getFareEstimate: $e');
+      Get.snackbar('Error', 'Failed to get fare estimate: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+
   // Handle ride booking response
   Future<void> _handleRideResponse(Response response) async {
     try {
@@ -634,7 +712,7 @@ class RideBookingController extends GetxController {
                     Get.back();
                     _completePayment(finalFare);
                   },
-                  child: Text('Pay ₹${finalFare.toStringAsFixed(2)}',
+                  child: Text('Pay \$${finalFare.toStringAsFixed(2)}',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
@@ -710,12 +788,12 @@ class RideBookingController extends GetxController {
                 ),
                 child: Column(
                   children: [
-                    Text('Fare: ₹${finalFare.toStringAsFixed(2)}'),
+                    Text('Fare: \$${finalFare.toStringAsFixed(2)}'),
                     if (selectedTip.value > 0)
-                      Text('Tip: ₹${selectedTip.value.toStringAsFixed(2)}',
+                      Text('Tip: \$${selectedTip.value.toStringAsFixed(2)}',
                           style: TextStyle(color: MColor.primaryNavy)),
                     Divider(),
-                    Text('Total: ₹${(finalFare + selectedTip.value).toStringAsFixed(2)}',
+                    Text('Total: \$${(finalFare + selectedTip.value).toStringAsFixed(2)}',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -751,7 +829,7 @@ class RideBookingController extends GetxController {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Custom tip amount',
-                  prefixText: '₹',
+                  prefixText: '\$',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -790,7 +868,7 @@ class RideBookingController extends GetxController {
               }
               await _completePayment(totalAmount);
             },
-            child: Text('Pay ₹${(finalFare + selectedTip.value).toStringAsFixed(2)}',
+            child: Text('Pay \$${(finalFare + selectedTip.value).toStringAsFixed(2)}',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           )),
         ],
@@ -827,7 +905,7 @@ class RideBookingController extends GetxController {
 
         Get.snackbar(
           'Payment Successful!',
-          'Payment of ₹${amount.toStringAsFixed(2)} completed successfully!${tipAmount > 0 ? '\nTip of ₹${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!' : ''}',
+          'Payment of \$${amount.toStringAsFixed(2)} completed successfully!${tipAmount > 0 ? '\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!' : ''}',
           backgroundColor: Colors.green.withOpacity(0.8),
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
@@ -849,9 +927,9 @@ class RideBookingController extends GetxController {
   // FIXED: Submit tip with proper API structure
   Future<void> _submitTip(double tipAmount, double finalFare, double totalAmount) async {
     print(' SAHArSAHAr 🟡 _submitTip() called');
-    print(' SAHArSAHAr 💰 Tip Amount: ₹${tipAmount.toStringAsFixed(2)}');
-    print(' SAHArSAHAr 🧾 Final Fare: ₹${finalFare.toStringAsFixed(2)}');
-    print(' SAHArSAHAr 📊 Total Amount: ₹${totalAmount.toStringAsFixed(2)}');
+    print(' SAHArSAHAr 💰 Tip Amount: \$${tipAmount.toStringAsFixed(2)}');
+    print(' SAHArSAHAr 🧾 Final Fare: \$${finalFare.toStringAsFixed(2)}');
+    print(' SAHArSAHAr 📊 Total Amount: \$${totalAmount.toStringAsFixed(2)}');
 
     try {
       isLoading.value = true;
@@ -876,7 +954,7 @@ class RideBookingController extends GetxController {
         print(' SAHArSAHAr ✅ Tip submitted successfully');
         Get.snackbar(
           'Tip Added!',
-          'Tip of ₹${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!',
+          'Tip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!',
           duration: Duration(seconds: 3),
           backgroundColor: Colors.green.withOpacity(0.8),
           colorText: Colors.white,
@@ -1122,7 +1200,7 @@ class RideBookingController extends GetxController {
                 Get.back();
                 _completePayment(estimatedPrice.value);
               },
-              child: Text('Pay ₹${estimatedPrice.value.toStringAsFixed(2)}',
+              child: Text('Pay \$${estimatedPrice.value.toStringAsFixed(2)}',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),

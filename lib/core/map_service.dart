@@ -284,7 +284,8 @@ class MapService extends GetxService {
     }
 
     if (_previousDriverLocation != newLocation) {
-      _startUltraSmoothDriverAnimation(_previousDriverLocation!, newLocation, driverName);
+      // Use route-following animation instead of ultra-smooth
+      _startDriverAnimationWithRouteFollowing(_previousDriverLocation!, newLocation, driverName);
       _previousDriverLocation = newLocation;
     }
   }
@@ -655,22 +656,25 @@ class MapService extends GetxService {
     }
   }
 
-  /// Clear all markers and polylines
+  /// Clear all markers and polylines except user marker
   void clearMap() {
     _animationTimer?.cancel();
     _isAnimating = false;
     _previousDriverLocation = null;
     _currentAnimationStep = 0;
-    _driverMarkerIcon = null;
-    _pointsMarkerIcon = null;
-    // ADD these lines:
+    // Don't reset custom marker icons - keep them loaded
+    // _driverMarkerIcon = null;
+    // _pointsMarkerIcon = null;
+
     _interpolationPoints.clear();
     _interpolationIndex = 0;
 
     _currentRoutePolyline.clear();
     _currentPolylineIndex = 0;
 
-    markers.clear();
+    // Remove all markers except user location marker
+    markers.removeWhere((marker) => marker.markerId.value != 'user_location');
+
     polylines.clear();
     routeDistance.value = '';
     routeDuration.value = '';
