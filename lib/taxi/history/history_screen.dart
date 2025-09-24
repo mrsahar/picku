@@ -89,7 +89,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                     Expanded(
                       child: SummaryWidget(
                         title: "Cost",
-                        value: '₹${controller.totalFare.toStringAsFixed(2)}',
+                        value: '\$${controller.totalFare.toStringAsFixed(2)}',
                         icon: Icons.account_balance_wallet,
                         iconColor: MColor.primaryNavy,
                       ),

@@ -3,14 +3,14 @@ import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/signup_controller.dart';
 
-class SignUpFormWidget extends StatelessWidget {
+class SignUpFormWidget extends GetView<SignUpController> {
   const SignUpFormWidget({
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<SignUpController>();
+  //  final controller = Get.find<SignUpController>();
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),

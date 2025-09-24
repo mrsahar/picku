@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
+import 'package:pick_u/routes/app_routes.dart';
 
 import '../signup_screen.dart';
 
@@ -26,8 +27,12 @@ class LoginFooterWidget extends StatelessWidget {
         ),
         const SizedBox(height: 30 - 20),
         TextButton(
+
+
+
           onPressed: () {
-            Get.to(() => const SignupScreen());
+              Get.toNamed(AppRoutes.SIGNUP_SCREEN);
+            //Get.to(() => const SignupScreen());
           },
           child: Text.rich(
             TextSpan(

@@ -138,7 +138,7 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    '₹${ride.fareFinal.toStringAsFixed(2)}',
+                    '\$${ride.fareFinal.toStringAsFixed(2)}',
                     style: theme.textTheme.titleMedium!.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,

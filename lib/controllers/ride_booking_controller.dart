@@ -607,7 +607,7 @@ class RideBookingController extends GetxController {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Total Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('₹${finalFare.toStringAsFixed(2)}',
+                        Text('\$${finalFare.toStringAsFixed(2)}',
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
                       ],
                     ),
@@ -730,7 +730,7 @@ class RideBookingController extends GetxController {
                 spacing: 8,
                 children: tipOptions.map((tip) =>
                     ChoiceChip(
-                      label: Text('₹${tip.toStringAsFixed(0)}'),
+                      label: Text('\$${tip.toStringAsFixed(0)}'),
                       selected: selectedTip.value == tip,
                       onSelected: (selected) {
                         if (selected) selectedTip.value = tip;
@@ -1101,7 +1101,7 @@ class RideBookingController extends GetxController {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Estimated Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('₹${estimatedPrice.value.toStringAsFixed(2)}',
+                    Text('\$${estimatedPrice.value.toStringAsFixed(2)}',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
                   ],
                 ),

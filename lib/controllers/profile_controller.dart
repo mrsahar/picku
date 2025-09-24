@@ -76,7 +76,6 @@ class ProfileController extends GetxController {
 
   Future<void> logout() async {
     try {
-      // Show confirmation dialog
       bool? confirmed = await Get.dialog<bool>(
         AlertDialog(
           title: const Text('Logout'),

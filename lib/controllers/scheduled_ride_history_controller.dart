@@ -31,7 +31,7 @@ class ScheduledRideHistoryController extends GetxController {
   double get totalFare => scheduledRideHistory?.totalFare ?? 0.0;
 
   // Calculate spent amount in INR
-  String get totalSpentINR => '₹${totalFare.toStringAsFixed(2)}';
+  String get totalSpentINR => '\$${totalFare.toStringAsFixed(2)}';
 
   @override
   void onInit() {

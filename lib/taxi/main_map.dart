@@ -133,9 +133,7 @@ class _MainMapState extends State<MainMap> {
                   title: "Logout",
                   textColor: Colors.red,
                   icon: LineAwesomeIcons.sign_out_alt_solid,
-                  onPress: () {
-                    Get.to(() => const DriverScreen());
-                  }),
+                  onPress: () => logout()),
             ],
           ),
         ),
@@ -158,5 +156,37 @@ class _MainMapState extends State<MainMap> {
         ],
       ),
     );
+  }
+  Future<void> logout() async {
+    try {
+      bool? confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        // Clear user data from SharedPreferences
+        await SharedPrefsService.clearUserData();
+
+        // Navigate to login screen and remove all previous routes
+        Get.offAllNamed('/login');
+
+        Get.snackbar('Success', 'Logged out successfully');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to logout: ${e.toString()}');
+    }
   }
 }
