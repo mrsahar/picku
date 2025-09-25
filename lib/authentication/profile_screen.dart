@@ -106,52 +106,52 @@ class ProfileScreen extends StatelessWidget {
                   icon: const Icon(LineAwesomeIcons.edit),
                 ),
                 const SizedBox(height: 10),
-                const Divider(color: Colors.black12),
-                const SizedBox(height: 10),
+                // const Divider(color: Colors.black12),
+                // const SizedBox(height: 10),
 
                 /// -- MENU
-                ProfileMenuWidget(
-                  title: 'Notification',
-                  icon: LineAwesomeIcons.bell_solid,
-                  onPress: () {
-                    Get.toNamed(AppRoutes.notificationScreen);
-                  },
-                ),
-                ProfileMenuWidget(
-                  title: 'Your Rides',
-                  icon: LineAwesomeIcons.car_side_solid,
-                  onPress: () {
-                    Get.toNamed(AppRoutes.rideHistory);
-                  },
-                ),
-                ProfileMenuWidget(
-                  title: 'Pre-Booked Rides',
-                  icon: LineAwesomeIcons.address_book_solid,
-                  onPress: () {
-                    Get.toNamed(AppRoutes.scheduledRideHistory);
-                  },
-                ),
-                ProfileMenuWidget(
-                  title: 'Settings',
-                  icon: LineAwesomeIcons.cog_solid,
-                  onPress: () {
-                    Get.toNamed(AppRoutes.settingsScreen);
-                  },
-                ),
-                ProfileMenuWidget(
-                  title: 'Help Center',
-                  icon: LineAwesomeIcons.broadcast_tower_solid,
-                  onPress: () {
-                    Get.toNamed(AppRoutes.helpCenterScreen);
-                  },
-                ),
-                ProfileMenuWidget(
-                  title: 'Privacy Policy',
-                  icon: LineAwesomeIcons.question_circle_solid,
-                  onPress: () {
-                    Get.toNamed(AppRoutes.privacyPolicy);
-                  },
-                ),
+                // ProfileMenuWidget(
+                //   title: 'Notification',
+                //   icon: LineAwesomeIcons.bell_solid,
+                //   onPress: () {
+                //     Get.toNamed(AppRoutes.notificationScreen);
+                //   },
+                // ),
+                // ProfileMenuWidget(
+                //   title: 'Your Rides',
+                //   icon: LineAwesomeIcons.car_side_solid,
+                //   onPress: () {
+                //     Get.toNamed(AppRoutes.rideHistory);
+                //   },
+                // ),
+                // ProfileMenuWidget(
+                //   title: 'Pre-Booked Rides',
+                //   icon: LineAwesomeIcons.address_book_solid,
+                //   onPress: () {
+                //     Get.toNamed(AppRoutes.scheduledRideHistory);
+                //   },
+                // ),
+                // ProfileMenuWidget(
+                //   title: 'Settings',
+                //   icon: LineAwesomeIcons.cog_solid,
+                //   onPress: () {
+                //     Get.toNamed(AppRoutes.settingsScreen);
+                //   },
+                // ),
+                // ProfileMenuWidget(
+                //   title: 'Help Center',
+                //   icon: LineAwesomeIcons.broadcast_tower_solid,
+                //   onPress: () {
+                //     Get.toNamed(AppRoutes.helpCenterScreen);
+                //   },
+                // ),
+                // ProfileMenuWidget(
+                //   title: 'Privacy Policy',
+                //   icon: LineAwesomeIcons.question_circle_solid,
+                //   onPress: () {
+                //     Get.toNamed(AppRoutes.privacyPolicy);
+                //   },
+                // ),
                 const Divider(color: Colors.black12),
                 const SizedBox(height: 10),
                 ProfileMenuWidget(

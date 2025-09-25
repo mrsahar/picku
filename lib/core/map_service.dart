@@ -271,22 +271,38 @@ class MapService extends GetxService {
     final newLocation = LatLng(lat, lng);
 
     print(' SAHArSAHAR Updating driver location: $lat, $lng');
+    print(' SAHArSAHAR Driver marker icon available: ${_driverMarkerIcon != null}');
 
-    if (centerMap) {
-      animateToLocation(newLocation, zoom: 16.0);
-    }
-
+    // Always create/update the marker immediately for first location
     if (_previousDriverLocation == null) {
       double bearing = _getBearingForLocation(newLocation);
       _createDriverMarker(newLocation, driverName, bearing);
       _previousDriverLocation = newLocation;
+
+      // Force center map on first driver location
+      if (centerMap) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          animateToLocation(newLocation, zoom: 16.0);
+        });
+      }
+
+      print(' SAHArSAHAR First driver marker created at: $lat, $lng');
       return;
     }
 
+    // For subsequent updates, animate if location changed
     if (_previousDriverLocation != newLocation) {
-      // Use route-following animation instead of ultra-smooth
+      if (centerMap) {
+        animateToLocation(newLocation, zoom: 16.0);
+      }
+
+      // Use route-following animation for movement
       _startDriverAnimationWithRouteFollowing(_previousDriverLocation!, newLocation, driverName);
       _previousDriverLocation = newLocation;
+    } else {
+      // Same location, just ensure marker exists
+      double bearing = _getBearingForLocation(newLocation);
+      _createDriverMarker(newLocation, driverName, bearing);
     }
   }
 

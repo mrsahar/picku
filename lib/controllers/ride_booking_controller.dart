@@ -94,6 +94,10 @@ class RideBookingController extends GetxController {
   final driverLongitude = 0.0.obs;
   final isDriverLocationActive = false.obs;
 
+  // Distance-based notifications
+  final hasShownApproachingNotification = false.obs;
+  final hasShownArrivedNotification = false.obs;
+
   // SignalR Service
   late SignalRService signalRService;
 
@@ -126,6 +130,9 @@ class RideBookingController extends GetxController {
 
     print(' SAHArSAHAr Controller: Driver location updated: ($latitude, $longitude)');
 
+    // Check distance and show notifications
+    _checkDriverDistanceAndNotify();
+
     // Trigger map animation through MapService
     String driverDisplayName = driverName.value.isNotEmpty ? driverName.value : 'Driver';
     _mapService.updateDriverMarkerWithAnimation(
@@ -136,38 +143,219 @@ class RideBookingController extends GetxController {
     );
   }
 
-  Future<void> centerOnDriverLocation() async {
-    if (driverLatitude.value != 0.0 && driverLongitude.value != 0.0) {
-      LatLng driverLocation = LatLng(driverLatitude.value, driverLongitude.value);
-      await _mapService.animateToLocation(driverLocation, zoom: 16.0);
+  // Check driver distance and show appropriate notifications
+  void _checkDriverDistanceAndNotify() {
+    double? distance = getDistanceToDriver();
+    if (distance == null || rideStatus.value != RideStatus.driverAssigned) return;
 
-      Get.snackbar(
-        'Centered',
-        'Map centered on driver location',
-        duration: const Duration(seconds: 2),
-      );
-    } else {
-      Get.snackbar(
-        'Driver Not Located',
-        'Driver location is not available yet',
-        duration: const Duration(seconds: 2),
-      );
+    print('SAHAr Driver distance: ${distance.round()}m');
+
+    // Show "Driver has arrived" notification (10m or less)
+    if (distance <= 10 && !hasShownArrivedNotification.value) {
+      hasShownArrivedNotification.value = true;
+      _showDriverArrivedDialog();
+    }
+    // Show "Driver is approaching" notification (75m or less, but more than 10m)
+    else if (distance <= 75 && distance > 10 && !hasShownApproachingNotification.value) {
+      hasShownApproachingNotification.value = true;
+      _showDriverApproachingDialog();
     }
   }
 
-// Toggle auto-centering on driver location updates
-  var autoCenter = true.obs;
+  // Show driver approaching notification (75m or less)
+  void _showDriverApproachingDialog() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 8,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon
+            Icon(
+              Icons.directions_car_rounded,
+              size: 56,
+              color: MColor.primaryNavy,
+            ),
+            const SizedBox(height: 20),
 
-  void toggleAutoCenter() {
-    autoCenter.value = !autoCenter.value;
-    Get.snackbar(
-      autoCenter.value ? 'Auto-Center Enabled' : 'Auto-Center Disabled',
-      autoCenter.value
-          ? 'Map will automatically center on driver location'
-          : 'Map centering is now manual',
-      duration: const Duration(seconds: 2),
+            // Title
+            Text(
+              'Driver Approaching!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: MColor.primaryNavy,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+
+            // Subtitle
+            Text(
+              '${driverName.value.isNotEmpty ? driverName.value : "Your driver"} is getting close to your pickup location.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black87,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+
+            Text(
+              'Please be ready!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+
+            // Expected arrival info
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.access_time, size: 16, color: MColor.primaryNavy),
+                const SizedBox(width: 6),
+                Text(
+                  'Expected arrival: ${getFormattedDistanceToDriver()}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MColor.primaryNavy,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+              ),
+              onPressed: () => Get.back(),
+              child: const Text(
+                'Got it!',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+      barrierDismissible: true,
+    );
+
+    // Auto-dismiss after 15 seconds
+    Future.delayed(const Duration(seconds: 15), () {
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+    });
+  }
+
+
+  // Show driver arrived notification (10m or less)
+  void _showDriverArrivedDialog() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 8,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              size: 56,
+              color: MColor.primaryNavy,
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              'Driver Has Arrived!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: MColor.primaryNavy,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+
+            // Subtitle
+            Text(
+              '${driverName.value.isNotEmpty ? driverName.value : "Your driver"} is here and ready to start your ride.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black87,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: MColor.primaryNavy,
+                    side: BorderSide(color: MColor.primaryNavy),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () => Get.back(),
+                  child: const Text('Not Yet'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MColor.primaryNavy,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    Get.back();
+                    startTrip();
+                  },
+                  child: const Text('Start Trip'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      barrierDismissible: false,
     );
   }
+
   LatLng? getDriverLocation() {
     if (driverLatitude.value != 0.0 && driverLongitude.value != 0.0) {
       return LatLng(driverLatitude.value, driverLongitude.value);
@@ -203,6 +391,10 @@ class RideBookingController extends GetxController {
     driverLatitude.value = 0.0;
     driverLongitude.value = 0.0;
     isDriverLocationActive.value = false;
+
+    // Reset notification flags when clearing driver location
+    hasShownApproachingNotification.value = false;
+    hasShownArrivedNotification.value = false;
   }
 
   // FIXED: Multi-stop management - using proper observable updates
@@ -1147,6 +1339,10 @@ class RideBookingController extends GetxController {
     isRideBooked.value = false;
     resetForm();
     _locationService.getCurrentLocation();
+
+    // Reset notification flags for next ride
+    hasShownApproachingNotification.value = false;
+    hasShownArrivedNotification.value = false;
   }
 
   void _showDefaultPaymentDialog() {

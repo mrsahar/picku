@@ -87,10 +87,6 @@ class _MainMapState extends State<MainMap> {
 
               ),
               ProfileMenuWidget(
-                  title: "Home",
-                  icon: LineAwesomeIcons.home_solid,
-                  onPress: () {}),
-              ProfileMenuWidget(
                   title: "Profile",
                   icon: LineAwesomeIcons.user_solid,
                   onPress: () {
@@ -102,28 +98,44 @@ class _MainMapState extends State<MainMap> {
                   onPress: () {
                     Get.toNamed(AppRoutes.rideHistory);
                   }),
-              Container(height: 8),ProfileMenuWidget(
-                  title: "Scheduled Ride",
+              ProfileMenuWidget(
+                  title: "Pre-Booked",
                   icon: LineAwesomeIcons.comment,
                   onPress: () {
                     Get.toNamed(AppRoutes.scheduledRideHistory);
                   }),
               ProfileMenuWidget(
+                  title: "Notification",
+                  icon: LineAwesomeIcons.comment,
+                  onPress: () {
+                    Get.toNamed(AppRoutes.notificationScreen);
+                  }),
+
+              ProfileMenuWidget(
                   title: "Wallet",
                   icon: LineAwesomeIcons.wallet_solid,
                   onPress: () {}),
               ProfileMenuWidget(
-                  title: "Settings",
-                  icon: LineAwesomeIcons.tools_solid,
-                  onPress: () {
-                    Get.to(() => const SelectCarPage());
-                  }),
+                title: 'Settings',
+                icon: LineAwesomeIcons.cog_solid,
+                onPress: () {
+                  Get.toNamed(AppRoutes.settingsScreen);
+                },
+              ),
               ProfileMenuWidget(
-                  title: "Feedback",
-                  icon: LineAwesomeIcons.comment,
-                  onPress: () {
-                    Get.to(() => const PaymentMethodsPage());
-                  }),
+                title: 'Help Center',
+                icon: LineAwesomeIcons.broadcast_tower_solid,
+                onPress: () {
+                  Get.toNamed(AppRoutes.helpCenterScreen);
+                },
+              ),
+              ProfileMenuWidget(
+                title: 'Privacy Policy',
+                icon: LineAwesomeIcons.question_circle_solid,
+                onPress: () {
+                  Get.toNamed(AppRoutes.privacyPolicy);
+                },
+              ),
 
               Container(height: 8),
               const Divider(

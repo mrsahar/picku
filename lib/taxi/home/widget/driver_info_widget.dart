@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/chat_controller.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/core/signalr_service.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 import 'package:url_launcher/url_launcher.dart';
