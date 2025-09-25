@@ -19,7 +19,10 @@ Widget driverInfoWidget(BuildContext context) {
       return _buildCancelledCard(theme);
     }
 
+    // Show driver info widget for all driver-related statuses
     if (controller.rideStatus.value != RideStatus.driverAssigned &&
+        controller.rideStatus.value != RideStatus.driverNear &&
+        controller.rideStatus.value != RideStatus.driverArrived &&
         controller.rideStatus.value != RideStatus.tripStarted &&
         controller.rideStatus.value != RideStatus.tripCompleted) {
       return const SizedBox.shrink();
@@ -258,8 +261,10 @@ Color _getStatusColor(RideStatus status) {
     case RideStatus.tripStarted:
       return Colors.blue;
     case RideStatus.driverAssigned:
+    case RideStatus.driverNear:
       return Colors.orange;
     case RideStatus.tripCompleted:
+    case RideStatus.driverArrived:
       return Colors.green;
     case RideStatus.cancelled:
       return Colors.red;
@@ -276,6 +281,8 @@ IconData _getStatusIcon(RideStatus status) {
     case RideStatus.tripStarted:
       return Icons.drive_eta;
     case RideStatus.driverAssigned:
+    case RideStatus.driverNear:
+    case RideStatus.driverArrived:
       return Icons.person_pin_circle;
     case RideStatus.tripCompleted:
       return Icons.check_circle;
@@ -294,7 +301,11 @@ String _getStatusText(RideStatus status) {
     case RideStatus.tripStarted:
       return "Trip in Progress";
     case RideStatus.driverAssigned:
-      return "Driver is coming";
+      return "Driver Assigned";
+    case RideStatus.driverNear:
+      return "Driver is Near";
+    case RideStatus.driverArrived:
+      return "Driver has Arrived";
     case RideStatus.tripCompleted:
       return "Trip Completed";
     case RideStatus.cancelled:
@@ -318,7 +329,7 @@ Widget _buildCompactRideActionButton(
         height: 44,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
+            backgroundColor: MColor.primaryNavy,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -399,6 +410,8 @@ Widget _buildCompactRideActionButton(
       );
 
     case RideStatus.driverAssigned:
+    case RideStatus.driverNear:
+    case RideStatus.driverArrived:
       return SizedBox(
         width: double.infinity,
         height: 44,
@@ -663,4 +676,3 @@ Widget _buildCancelledCard(ThemeData theme) {
     ),
   );
 }
-

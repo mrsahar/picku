@@ -51,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _initializeServices() {
-    // Get services from dependency injection
     try {
       bookingController = Get.find<RideBookingController>();
       locationService = Get.find<LocationService>();
@@ -59,8 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       // Fallback - create services if not found
       bookingController = Get.put(RideBookingController());
-      locationService = Get.find<LocationService>();
-      mapService = Get.find<MapService>();
     }
   }
 
@@ -182,6 +179,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 return const NoDriversAvailableWidget();
               case RideStatus.driverAssigned:
               case RideStatus.tripStarted:
+              case RideStatus.driverNear:
+              case RideStatus.driverArrived:
                 return driverInfoWidget(context);
 
               case RideStatus.tripCompleted:

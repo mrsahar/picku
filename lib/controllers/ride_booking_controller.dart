@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -36,6 +38,8 @@ enum RideStatus {
   booked,
   waiting,
   driverAssigned,
+  driverNear,
+  driverArrived,
   tripStarted,
   tripCompleted,
   cancelled,
@@ -101,6 +105,9 @@ class RideBookingController extends GetxController {
   // SignalR Service
   late SignalRService signalRService;
 
+  // Audio player for notifications
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   @override
   void onInit() {
     super.onInit();
@@ -129,8 +136,6 @@ class RideBookingController extends GetxController {
     isDriverLocationActive.value = true;
 
     print(' SAHArSAHAr Controller: Driver location updated: ($latitude, $longitude)');
-
-    // Check distance and show notifications
     _checkDriverDistanceAndNotify();
 
     // Trigger map animation through MapService
@@ -146,20 +151,126 @@ class RideBookingController extends GetxController {
   // Check driver distance and show appropriate notifications
   void _checkDriverDistanceAndNotify() {
     double? distance = getDistanceToDriver();
-    if (distance == null || rideStatus.value != RideStatus.driverAssigned) return;
+
+    // Debug logging
+    print('SAHAr Distance Check - Distance: $distance, RideStatus: ${rideStatus.value}');
+    print('SAHAr Notification flags - Approaching: ${hasShownApproachingNotification.value}, Arrived: ${hasShownArrivedNotification.value}');
+
+    // Return early if no distance or inappropriate ride status
+    if (distance == null) {
+      print('SAHAr Distance Check: No distance available');
+      return;
+    }
+
+    // Only show notifications for these ride statuses
+    if (rideStatus.value != RideStatus.driverAssigned &&
+        rideStatus.value != RideStatus.driverNear &&
+        rideStatus.value != RideStatus.driverArrived &&
+        rideStatus.value != RideStatus.waiting &&
+        rideStatus.value != RideStatus.booked) {
+      print('SAHAr Distance Check: Wrong ride status (${rideStatus.value}) for notifications');
+      return;
+    }
 
     print('SAHAr Driver distance: ${distance.round()}m');
-
+    hasShownArrivedNotification.value = false;
     // Show "Driver has arrived" notification (10m or less)
     if (distance <= 10 && !hasShownArrivedNotification.value) {
+      print('SAHAr Showing arrived dialog - Distance: ${distance.round()}m');
       hasShownArrivedNotification.value = true;
+      rideStatus.value = RideStatus.driverArrived; // Update ride status
       _showDriverArrivedDialog();
+      _playNotificationSound(); // Play sound on arrival
     }
     // Show "Driver is approaching" notification (75m or less, but more than 10m)
     else if (distance <= 75 && distance > 10 && !hasShownApproachingNotification.value) {
+      print('SAHAr Showing approaching dialog - Distance: ${distance.round()}m');
       hasShownApproachingNotification.value = true;
+      rideStatus.value = RideStatus.driverNear; // Update ride status
       _showDriverApproachingDialog();
+      _playNotificationSound(); // Play sound on approach
     }
+  }
+
+  // Enhanced notification sound system with multiple fallbacks
+  Future<void> _playNotificationSound() async {
+    bool soundPlayed = false;
+
+    try {
+      print('SAHAr: === NOTIFICATION SOUND START ===');
+
+      // Method 1: Try playing asset sound with proper initialization
+      try {
+        print('SAHAr: Attempting to play asset sound...');
+        await _audioPlayer.stop(); // Stop any current playback
+        await _audioPlayer.setSource(AssetSource('sounds/notification.mp3'));
+        await _audioPlayer.setVolume(1.0);
+        await _audioPlayer.resume();
+        soundPlayed = true;
+        print('SAHAr: ✅ Asset sound played successfully');
+      } catch (assetError) {
+        print('SAHAr: ❌ Asset sound failed: $assetError');
+      }
+
+      // Method 2: Try system alert sound if asset failed
+      if (!soundPlayed) {
+        try {
+          print('SAHAr: Trying system alert sound...');
+          await SystemSound.play(SystemSoundType.alert);
+          soundPlayed = true;
+          print('SAHAr: ✅ System alert sound played');
+        } catch (systemError) {
+          print('SAHAr: ❌ System alert failed: $systemError');
+        }
+      }
+
+      // Method 3: Try click sound as backup
+      if (!soundPlayed) {
+        try {
+          print('SAHAr: Trying system click sound...');
+          await SystemSound.play(SystemSoundType.click);
+          soundPlayed = true;
+          print('SAHAr: ✅ System click sound played');
+        } catch (clickError) {
+          print('SAHAr: ❌ System click failed: $clickError');
+        }
+      }
+
+      // Method 4: Haptic feedback as final fallback
+      try {
+        print('SAHAr: Adding haptic feedback...');
+        await HapticFeedback.heavyImpact();
+        await Future.delayed(Duration(milliseconds: 200));
+        await HapticFeedback.heavyImpact();
+        print('SAHAr: ✅ Haptic feedback completed');
+      } catch (hapticError) {
+        print('SAHAr: ❌ Haptic feedback failed: $hapticError');
+      }
+
+      if (soundPlayed) {
+        print('SAHAr: ✅ Notification sound system completed successfully');
+      } else {
+        print('SAHAr: ⚠️ Sound failed but haptic feedback should work');
+      }
+
+    } catch (e) {
+      print('SAHAr: 🔥 Critical error in notification sound: $e');
+    } finally {
+      print('SAHAr: === NOTIFICATION SOUND END ===');
+    }
+  }
+
+  // Test method to check if sound system works
+  Future<void> testNotificationSound() async {
+    print('SAHAr: 🧪 Testing notification sound system...');
+    await _playNotificationSound();
+    Get.snackbar(
+      'Sound Test',
+      'Check console for sound test results. Did you hear anything?',
+      duration: Duration(seconds: 4),
+      backgroundColor: Colors.blue.withOpacity(0.8),
+      colorText: Colors.white,
+    );
   }
 
   // Show driver approaching notification (75m or less)
@@ -326,7 +437,9 @@ class RideBookingController extends GetxController {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  onPressed: () => Get.back(),
+                  onPressed: () => {
+                    Get.back(),
+                  },
                   child: const Text('Not Yet'),
                 ),
               ),

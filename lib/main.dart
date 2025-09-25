@@ -17,15 +17,6 @@ void main() {
   // Initialize global variables
   Get.lazyPut(() =>GlobalVariables());
   runApp(const MyApp());
-  initializeServices();
-}
-
-void initializeServices() {
-  Get.lazyPut(() =>LocationService());
-  Get.lazyPut(() =>ApiProvider());
-  Get.lazyPut(() =>RideController());
-  Get.lazyPut(() =>LocationService());
-  Get.lazyPut(() =>RideBookingController());
 }
 
 class MyApp extends StatefulWidget {

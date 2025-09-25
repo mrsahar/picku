@@ -24,6 +24,22 @@ class SignalRService extends GetxService {
   // Get MapService instance
   MapService get _mapService => Get.find<MapService>();
 
+  @override
+  void onInit() {
+    super.onInit();
+    // Auto-initialize connection when service is created
+    print(' SAHAr SignalR: Service initialized, starting connection...');
+    initializeConnection();
+  }
+
+  @override
+  void onClose() {
+    // Clean up when service is disposed (app closing)
+    print(' SAHAr SignalR: Service closing, cleaning up connection...');
+    dispose();
+    super.onClose();
+  }
+
   Future<void> initializeConnection() async {
     try {
       _connection = HubConnectionBuilder()
@@ -206,7 +222,7 @@ class SignalRService extends GetxService {
         driverName,
         centerMap: true, // Auto-center map on driver
       );
-
+      controller.updateDriverLocation(lat, lng);
       print(' SAHArSAHAr Driver location updated with animation: ($lat, $lng)');
     } catch (e) {
       print(' SAHArSAHAr Error updating driver location with animation: $e');
