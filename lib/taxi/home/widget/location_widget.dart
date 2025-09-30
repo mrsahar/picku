@@ -22,7 +22,6 @@ class EnhancedDestinationWidget extends StatelessWidget {
       locationService = Get.find<LocationService>();
     } catch (e) {
       bookingController = Get.put(RideBookingController());
-      locationService = Get.find<LocationService>();
     }
   }
 
@@ -92,7 +91,7 @@ class EnhancedDestinationWidget extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Main booking card
                 Container(
@@ -168,7 +167,7 @@ class EnhancedDestinationWidget extends StatelessWidget {
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.only(top: 4),
                     child: GestureDetector(
                       onTap: () async {
                         // Use the callback passed from HomeScreen

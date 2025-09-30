@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/controllers/ride_controller.dart';
-import 'package:pick_u/core/location_service.dart';
-import 'package:pick_u/providers/api_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:pick_u/utils/theme/app_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
@@ -11,10 +9,14 @@ import 'package:pick_u/routes/app_pages.dart';
 
 import 'core/global_variables.dart';
 
-void main() {
+ void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  // Initialize global variables
+  await dotenv.load(fileName: "assets/.env");
+
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+  await Stripe.instance.applySettings();
+  FlutterNativeSplash.remove();
   Get.lazyPut(() =>GlobalVariables());
   runApp(const MyApp());
 }

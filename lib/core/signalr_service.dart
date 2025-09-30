@@ -8,12 +8,27 @@ import 'package:get/get.dart';
 import 'dart:async';
 import 'package:get/get.dart';
 
+enum SignalRConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+  error
+}
+
 class SignalRService extends GetxService {
   static const String hubUrl = 'http://pickurides.com/rideHub';
+  static const Duration retryInterval = Duration(seconds: 5);
 
   HubConnection? _connection;
   bool _isConnected = false;
   String? _currentRideId;
+  Timer? _retryTimer;
+  int _retryAttempts = 0;
+  static const int maxRetryAttempts = 10; // Maximum retry attempts before backing off
+
+  // Connection status observable
+  final connectionStatus = SignalRConnectionStatus.disconnected.obs;
 
   // Observables for driver location
   final driverLatitude = 0.0.obs;
@@ -36,14 +51,18 @@ class SignalRService extends GetxService {
   void onClose() {
     // Clean up when service is disposed (app closing)
     print(' SAHAr SignalR: Service closing, cleaning up connection...');
+    _retryTimer?.cancel();
     dispose();
     super.onClose();
   }
 
   Future<void> initializeConnection() async {
     try {
+      connectionStatus.value = SignalRConnectionStatus.connecting;
+
       _connection = HubConnectionBuilder()
           .withUrl(hubUrl)
+          .withAutomaticReconnect([1000, 2000, 5000, 10000, 30000]) // Built-in retry with backoff
           .build();
 
       // Listen for ride status changes
@@ -67,15 +86,22 @@ class SignalRService extends GetxService {
         print(' SAHAr SignalR: Connection closed: $error');
         _isConnected = false;
         isDriverLocationActive.value = false;
+        connectionStatus.value = SignalRConnectionStatus.disconnected;
+        _startRetryTimer();
       });
 
       _connection!.onreconnecting((error) {
         print(' SAHAr SignalR: Reconnecting: $error');
+        connectionStatus.value = SignalRConnectionStatus.reconnecting;
       });
 
       _connection!.onreconnected((connectionId) {
         print(' SAHAr SignalR: Reconnected with ID: $connectionId');
         _isConnected = true;
+        connectionStatus.value = SignalRConnectionStatus.connected;
+        _retryAttempts = 0; // Reset retry attempts on successful connection
+        _retryTimer?.cancel();
+
         // Re-subscribe to ride if we have one
         if (_currentRideId != null) {
           subscribeToRide(_currentRideId!);
@@ -84,11 +110,40 @@ class SignalRService extends GetxService {
 
       await _connection!.start();
       _isConnected = true;
+      connectionStatus.value = SignalRConnectionStatus.connected;
+      _retryAttempts = 0;
       print(' SAHAr SignalR: Successfully connected to RideHub');
 
     } catch (e) {
       print(' SAHAr SignalR: Failed to connect: $e');
       _isConnected = false;
+      connectionStatus.value = SignalRConnectionStatus.error;
+      _startRetryTimer();
+    }
+  }
+
+  void _startRetryTimer() {
+    _retryTimer?.cancel();
+
+    if (_retryAttempts < maxRetryAttempts) {
+      _retryAttempts++;
+      print(' SAHAr SignalR: Starting retry timer (attempt $_retryAttempts/$maxRetryAttempts)');
+
+      _retryTimer = Timer(retryInterval, () {
+        if (!_isConnected) {
+          print(' SAHAr SignalR: Retrying connection...');
+          initializeConnection();
+        }
+      });
+    } else {
+      print(' SAHAr SignalR: Max retry attempts reached, backing off');
+      connectionStatus.value = SignalRConnectionStatus.error;
+
+      // Start a longer interval timer for periodic retry attempts
+      _retryTimer = Timer(const Duration(minutes: 1), () {
+        _retryAttempts = 0; // Reset counter for new attempt cycle
+        _startRetryTimer();
+      });
     }
   }
 
@@ -128,6 +183,13 @@ class SignalRService extends GetxService {
     } catch (e) {
       print(' SAHAr SignalR: Failed to unsubscribe: $e');
     }
+  }
+
+  // Manual retry method that can be called from UI
+  Future<void> retryConnection() async {
+    _retryTimer?.cancel();
+    _retryAttempts = 0;
+    await initializeConnection();
   }
 
   void _handleRideStatusUpdate(dynamic rideData) {
@@ -282,7 +344,9 @@ class SignalRService extends GetxService {
     }
   }
 
+  /// Dispose method to clean up resources
   Future<void> dispose() async {
+    _retryTimer?.cancel();
     await unsubscribeFromRide();
     if (_connection != null) {
       await _connection!.stop();

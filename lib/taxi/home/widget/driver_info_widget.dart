@@ -342,7 +342,7 @@ Widget _buildCompactRideActionButton(
                   bool confirm =
                       await Get.dialog<bool>(
                         AlertDialog(
-                          title: const Text('End Trip'),
+                          title: const Text('End Ride'),
                           content: Text(
                             'End this trip?\n\nEstimated: \$${controller.estimatedPrice.value.toStringAsFixed(2)}',
                           ),
@@ -357,7 +357,7 @@ Widget _buildCompactRideActionButton(
                                 backgroundColor: MColor.primaryNavy,
                               ),
                               child: const Text(
-                                'End Trip',
+                                'End Ride',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -379,7 +379,7 @@ Widget _buildCompactRideActionButton(
                     strokeWidth: 2,
                   ),
                 )
-              : const Text("End Trip"),
+              : const Text("End Ride"),
         ),
       );
 
@@ -438,7 +438,7 @@ Widget _buildCompactRideActionButton(
                     strokeWidth: 2,
                   ),
                 )
-              : const Text("Start Trip"),
+              : const Text("Start Ride"),
         ),
       );
 
@@ -547,7 +547,7 @@ void _handleChatNavigation(RideBookingController controller) {
     existingChatController.updateRideInfo(
       rideId: controller.currentRideId.value,
       driverId: controller.driverId.value,
-      driverName: controller.driverName.value,
+      driverName: controller.driverName.value, status: RideStatus.driverArrived,
     );
 
     if (Get.currentRoute != AppRoutes.chatScreen) {

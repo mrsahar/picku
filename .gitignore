@@ -11,6 +11,9 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+assets/.env
+
+#Dotenv
 .env
 
 # IntelliJ related

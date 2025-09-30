@@ -4,12 +4,14 @@ import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pick_u/core/google_places_service.dart';
 import 'package:pick_u/core/location_service.dart';
 import 'package:pick_u/core/map_service.dart';
+import 'package:pick_u/core/payment_service.dart';
 import 'package:pick_u/core/search_location_service.dart';
 import 'package:pick_u/core/sharePref.dart';
 import 'package:pick_u/core/signalr_service.dart';
@@ -23,13 +25,14 @@ class ApiEndpoints {
   static const String startTrip = '/api/Ride/{rideId}/start';
   static const String endTrip = '/api/Ride/{rideId}/end';
   static const String submitTip = '/api/Tip';
-  static const String processPayment = '/api/Payment/process';
+  static const String processPayment = '/api/Payment/customer-payments';
   static const String fareEstimate = '/api/Ride/fare-estimate';
 }
 
 class AppConstants {
   static const String defaultUserId = "44f9ebba-b24d-4df1-8a60-bd7035b6097d";
   static const List<double> tipPercentages = [10.0, 15.0, 20.0];
+  static const String defaultUserName = "Name";
 }
 
 // Enum for ride status
@@ -83,6 +86,7 @@ class RideBookingController extends GetxController {
   var isLoading = false.obs;
   var isRideBooked = false.obs;
   var currentRideId = ''.obs;
+  var prevRideId = ''.obs;
   var rideStatus = RideStatus.pending.obs; // Using enum now
 
   // Driver information
@@ -98,6 +102,10 @@ class RideBookingController extends GetxController {
   final driverLongitude = 0.0.obs;
   final isDriverLocationActive = false.obs;
 
+  // Distance tracking for destination (when trip started)
+  final distanceToDestination = 0.0.obs;
+  final isTrackingDestination = false.obs;
+
   // Distance-based notifications
   final hasShownApproachingNotification = false.obs;
   final hasShownArrivedNotification = false.obs;
@@ -112,11 +120,36 @@ class RideBookingController extends GetxController {
   void onInit() {
     super.onInit();
     _initializeServices();
+    _setupLocationListener();
   }
 
   Future<void> _initializeServices() async {
     signalRService = Get.put(SignalRService());
     await signalRService.initializeConnection();
+  }
+
+  void _setupLocationListener() {
+    // Listen to user location changes to update distance to destination when trip is started
+    ever(_locationService.currentLatLng, (LatLng? newLocation) {
+      if (newLocation != null && isTrackingDestination.value) {
+        _updateDistanceToDestination();
+      }
+    });
+  }
+
+  void _updateDistanceToDestination() {
+    if (dropoffLocation.value != null && _locationService.currentLatLng.value != null) {
+      LatLng userLocation = _locationService.currentLatLng.value!;
+      LatLng destinationLocation = LatLng(
+        dropoffLocation.value!.latitude,
+        dropoffLocation.value!.longitude,
+      );
+
+      double distance = _locationService.calculateDistance(userLocation, destinationLocation);
+      distanceToDestination.value = distance;
+
+      print(' SAHAr Distance to destination updated: ${distance.round()}m');
+    }
   }
 
   @override
@@ -192,85 +225,29 @@ class RideBookingController extends GetxController {
     }
   }
 
-  // Enhanced notification sound system with multiple fallbacks
+  // Play notification sound
+
   Future<void> _playNotificationSound() async {
-    bool soundPlayed = false;
-
     try {
-      print('SAHAr: === NOTIFICATION SOUND START ===');
-
-      // Method 1: Try playing asset sound with proper initialization
-      try {
-        print('SAHAr: Attempting to play asset sound...');
-        await _audioPlayer.stop(); // Stop any current playback
-        await _audioPlayer.setSource(AssetSource('sounds/notification.mp3'));
-        await _audioPlayer.setVolume(1.0);
-        await _audioPlayer.resume();
-        soundPlayed = true;
-        print('SAHAr: ✅ Asset sound played successfully');
-      } catch (assetError) {
-        print('SAHAr: ❌ Asset sound failed: $assetError');
-      }
-
-      // Method 2: Try system alert sound if asset failed
-      if (!soundPlayed) {
-        try {
-          print('SAHAr: Trying system alert sound...');
-          await SystemSound.play(SystemSoundType.alert);
-          soundPlayed = true;
-          print('SAHAr: ✅ System alert sound played');
-        } catch (systemError) {
-          print('SAHAr: ❌ System alert failed: $systemError');
-        }
-      }
-
-      // Method 3: Try click sound as backup
-      if (!soundPlayed) {
-        try {
-          print('SAHAr: Trying system click sound...');
-          await SystemSound.play(SystemSoundType.click);
-          soundPlayed = true;
-          print('SAHAr: ✅ System click sound played');
-        } catch (clickError) {
-          print('SAHAr: ❌ System click failed: $clickError');
-        }
-      }
-
-      // Method 4: Haptic feedback as final fallback
-      try {
-        print('SAHAr: Adding haptic feedback...');
-        await HapticFeedback.heavyImpact();
-        await Future.delayed(Duration(milliseconds: 200));
-        await HapticFeedback.heavyImpact();
-        print('SAHAr: ✅ Haptic feedback completed');
-      } catch (hapticError) {
-        print('SAHAr: ❌ Haptic feedback failed: $hapticError');
-      }
-
-      if (soundPlayed) {
-        print('SAHAr: ✅ Notification sound system completed successfully');
-      } else {
-        print('SAHAr: ⚠️ Sound failed but haptic feedback should work');
-      }
-
+      // Play a short sound for notifications
+      await _audioPlayer.setSource(AssetSource('sounds/notification.mp3'));
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.resume();
+      _startVibration();
     } catch (e) {
-      print('SAHAr: 🔥 Critical error in notification sound: $e');
-    } finally {
-      print('SAHAr: === NOTIFICATION SOUND END ===');
+      print('SAHAr Error playing notification sound: $e');
     }
   }
-
-  // Test method to check if sound system works
-  Future<void> testNotificationSound() async {
-    print('SAHAr: 🧪 Testing notification sound system...');
-    await _playNotificationSound();
-    Get.snackbar(
-      'Sound Test',
-      'Check console for sound test results. Did you hear anything?',
-      duration: Duration(seconds: 4),
-      backgroundColor: Colors.blue.withOpacity(0.8),
-      colorText: Colors.white,
-    );
+  Future<void> _startVibration() async {
+    try {
+      for (int i = 0; i < 6; i++) {
+        HapticFeedback.heavyImpact(); // Strong vibration
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      print('SAHAr Vibration pattern completed (3 seconds)');
+    } catch (e) {
+      print('SAHAr Error starting vibration: $e');
+    }
   }
 
   // Show driver approaching notification (75m or less)
@@ -458,7 +435,7 @@ class RideBookingController extends GetxController {
                     Get.back();
                     startTrip();
                   },
-                  child: const Text('Start Trip'),
+                  child: const Text('Start Ride'),
                 ),
               ),
             ],
@@ -488,6 +465,21 @@ class RideBookingController extends GetxController {
 
 // Get formatted distance to driver
   String getFormattedDistanceToDriver() {
+    // When trip has started, show distance to destination instead of driver
+    if (rideStatus.value == RideStatus.tripStarted && isTrackingDestination.value) {
+      if (distanceToDestination.value > 0) {
+        double distance = distanceToDestination.value;
+        if (distance < 1000) {
+          return '${distance.round()}m remaining';
+        } else {
+          return '${(distance / 1000).toStringAsFixed(1)} km remaining';
+        }
+      } else {
+        return 'Calculating distance...';
+      }
+    }
+
+    // Default behavior - show distance to driver
     double? distance = getDistanceToDriver();
     if (distance != null) {
       if (distance < 1000) {
@@ -721,12 +713,18 @@ class RideBookingController extends GetxController {
 
       if (response.isOk) {
         rideStatus.value = RideStatus.tripStarted;
+
+        // Enable destination tracking when trip starts
+        isTrackingDestination.value = true;
+        _updateDistanceToDestination(); // Calculate initial distance
+
         Get.snackbar('Trip Started', 'Your trip has started successfully!');
+        print(' SAHAr Trip started - destination tracking enabled');
       } else {
-        Get.snackbar('Error', 'Failed to start trip: ${response.statusText}');
+        Get.snackbar('Error', 'Failed to Start Ride: ${response.statusText}');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to start trip: $e');
+      Get.snackbar('Error', 'Failed to Start Ride: $e');
     } finally {
       isLoading.value = false;
     }
@@ -752,11 +750,11 @@ class RideBookingController extends GetxController {
         _handleTripCompletion(response);
       } else {
         print(' SAHArSAHAr Failed to end trip: ${response.statusText}');
-        Get.snackbar('Error', 'Failed to end trip: ${response.statusText}');
+        Get.snackbar('Error', 'Failed to End Ride: ${response.statusText}');
       }
     } catch (e) {
       print(' SAHArSAHAr Error ending trip: $e');
-      Get.snackbar('Error', 'Failed to end trip: $e');
+      Get.snackbar('Error', 'Failed to End Ride: $e');
     } finally {
       isLoading.value = false;
     }
@@ -918,12 +916,11 @@ class RideBookingController extends GetxController {
 
     // Fallback if no proper response data
     Get.snackbar('Trip Completed', 'Your trip has ended successfully!');
-    _showDefaultPaymentDialog();
   }
 
   void _showPaymentDialog(Map<String, dynamic> tripData) {
     print(' SAHArSAHAr Showing payment dialog with data: $tripData');
-
+    prevRideId = tripData['rideId'] ?? currentRideId.value;
     String rideId = tripData['rideId'] ?? currentRideId.value;
     double finalFare = (tripData['finalFare'] ?? tripData['totalFare'] ?? estimatedPrice.value).toDouble();
     double distance = (tripData['distance'] ?? 0.0).toDouble();
@@ -1182,52 +1179,7 @@ class RideBookingController extends GetxController {
     );
   }
 
-  // Enhanced payment methods with API integration
-  Future<void> _completePayment(double amount) async {
-    try {
-      isLoading.value = true;
-      var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
 
-      // Calculate tip amount
-      double tipAmount = amount - estimatedPrice.value;
-
-      Map<String, dynamic> paymentData = {
-        "rideId": currentRideId.value,
-        "userId": userId,
-        "totalAmount": amount,
-        "fareAmount": estimatedPrice.value,
-        "tipAmount": tipAmount,
-        "paymentMethod": "digital",
-      };
-
-      print(' SAHArSAHAr Processing payment: $paymentData');
-
-      // Call payment API
-      Response response = await _apiProvider.postData(ApiEndpoints.processPayment, paymentData);
-
-      if (response.isOk) {
-        print(' SAHArSAHAr Payment processed successfully: ${response.body}');
-
-        Get.snackbar(
-          'Payment Successful!',
-          'Payment of \$${amount.toStringAsFixed(2)} completed successfully!${tipAmount > 0 ? '\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!' : ''}',
-          backgroundColor: Colors.green.withOpacity(0.8),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
-
-        clearBooking();
-      } else {
-        print(' SAHArSAHAr Payment failed: ${response.statusText}');
-        Get.snackbar('Payment Failed', 'Failed to process payment: ${response.statusText}');
-      }
-    } catch (e) {
-      print(' SAHArSAHAr Error processing payment: $e');
-      Get.snackbar('Payment Error', 'Failed to process payment: $e');
-    } finally {
-      isLoading.value = false;
-    }
-  }
 
   // FIXED: Submit tip with proper API structure
   Future<void> _submitTip(double tipAmount, double finalFare, double totalAmount) async {
@@ -1243,7 +1195,7 @@ class RideBookingController extends GetxController {
       var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
 
       Map<String, dynamic> tipData = {
-        "rideId": currentRideId.value,
+        "rideId": prevRideId,
         "userId": userId,
         "driverId": driverId.value,
         "amount": tipAmount,
@@ -1445,6 +1397,10 @@ class RideBookingController extends GetxController {
     driverLatitude.value = 0.0;
     driverLongitude.value = 0.0;
     isDriverLocationActive.value = false;
+
+    // Reset destination tracking
+    isTrackingDestination.value = false;
+    distanceToDestination.value = 0.0;
   }
 
   void clearBooking() {
@@ -1456,68 +1412,126 @@ class RideBookingController extends GetxController {
     // Reset notification flags for next ride
     hasShownApproachingNotification.value = false;
     hasShownArrivedNotification.value = false;
+
+    // Reset destination tracking
+    isTrackingDestination.value = false;
+    distanceToDestination.value = 0.0;
   }
 
-  void _showDefaultPaymentDialog() {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 8),
-            Text('Trip Completed!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Container(
-          width: Get.width * 0.8,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Your trip has been completed successfully!',
-                  style: TextStyle(fontSize: 16)),
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Estimated Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('\$${estimatedPrice.value.toStringAsFixed(2)}',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                Get.back();
-                _completePayment(estimatedPrice.value);
-              },
-              child: Text('Pay \$${estimatedPrice.value.toStringAsFixed(2)}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-          ),
-        ],
-      ),
-      barrierDismissible: false,
-    );
+  Future<void> _completePayment(double amount) async {
+    try {
+      print('SAHAr: Starting _completePayment with amount: $amount');
+      isLoading.value = true;
+
+      var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
+      print('SAHAr: Retrieved userId: $userId');
+
+      double tipAmount = amount - estimatedPrice.value;
+      print('SAHAr: Calculated tipAmount: $tipAmount');
+
+      String? paymentToken = await _processStripePayment(amount);
+      print('SAHAr: Stripe payment token: $paymentToken');
+
+      if (paymentToken == null) {
+        print('SAHAr: Stripe payment failed, aborting backend call');
+        Get.snackbar('Payment Failed', 'Card payment was not processed');
+        return;
+      }
+
+      // New payment data structure
+      Map<String, dynamic> paymentData = {
+        "rideId": currentRideId.value,
+        "paidAmount": estimatedPrice.value,
+        "tipAmount": tipAmount,
+        "driverId": driverId.value,
+        "userId": userId,
+        "paymentToken": paymentToken
+      };
+
+      print('SAHAr: Sending paymentData to backend: $paymentData');
+
+      Response response = await _apiProvider.postData(ApiEndpoints.processPayment, paymentData);
+
+      if (response.isOk) {
+        print('SAHAr: Payment recorded successfully: ${response.body}');
+
+        Get.snackbar(
+          'Payment Successful!',
+          'Payment of \$${amount.toStringAsFixed(2)} completed successfully!${tipAmount > 0 ? '\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!' : ''}',
+          backgroundColor: Colors.green.withOpacity(0.8),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+
+        print('SAHAr: Clearing booking');
+        clearBooking();
+      } else {
+        print('SAHAr: Failed to record payment: ${response.statusText}');
+        Get.snackbar('Recording Failed', 'Payment processed but failed to record: ${response.statusText}');
+      }
+    } catch (e) {
+      print('SAHAr: Error in _completePayment: $e');
+      Get.snackbar('Payment Error', 'Failed to process payment: $e');
+    } finally {
+      isLoading.value = false;
+      print('SAHAr: isLoading set to false');
+    }
   }
+
+
+  Future<String?> _processStripePayment(double amount) async {
+    try {
+      print('SAHAr: Starting _processStripePayment with amount: $amount');
+
+      int amountInCents = (amount * 100).round();
+      print('SAHAr: Converted amount to cents: $amountInCents');
+
+      Map<String, dynamic>? paymentIntent = await PaymentService.createPaymentIntent(
+        amount: amountInCents.toString(),
+        currency: 'cad',
+      );
+
+      if (paymentIntent == null) {
+        print('SAHAr: Failed to create payment intent');
+        throw Exception('Failed to create payment intent');
+      }
+
+      print('SAHAr: Received paymentIntent: $paymentIntent');
+
+      // Extract the payment intent ID
+      String paymentIntentId = paymentIntent['id'] ?? '';
+      print('SAHAr: Payment Intent ID: $paymentIntentId');
+
+      var userName = await SharedPrefsService.getUserFullName() ?? AppConstants.defaultUserName;
+      print('SAHAr: Retrieved userName for merchantDisplayName: $userName');
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentIntent['client_secret'],
+          style: ThemeMode.light,
+          merchantDisplayName: userName,
+        ),
+      );
+
+      print('SAHAr: Payment sheet initialized');
+
+      await Stripe.instance.presentPaymentSheet();
+      print('SAHAr: Payment sheet presented successfully');
+
+      // Return the payment intent ID as the token
+      return paymentIntentId;
+
+    } on StripeException catch (e) {
+      print('SAHAr: StripeException: ${e.error.localizedMessage}');
+      Get.snackbar('Payment Cancelled', 'Payment was cancelled or failed');
+      return null;
+    } catch (e) {
+      print('SAHAr: General error in _processStripePayment: $e');
+      Get.snackbar('Payment Error', 'Failed to process payment: $e');
+      return null;
+    }
+  }
+
 
   // Getters that delegate to services
   List<AutocompletePrediction> get searchSuggestions => _searchService.searchSuggestions;

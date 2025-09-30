@@ -89,7 +89,7 @@ class ChatScreen extends GetView<ChatController> {
 
   Widget _buildConnectionStatus() {
     return Obx(() {
-      if (controller.isLoading.value) {
+      if (controller.isLoadingMessages.value) {
         return Container(
           padding: const EdgeInsets.all(8),
           color: Colors.orange.withOpacity(0.1),

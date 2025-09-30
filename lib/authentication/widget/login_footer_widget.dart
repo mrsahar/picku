@@ -3,8 +3,6 @@ import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/routes/app_routes.dart';
 
-import '../signup_screen.dart';
-
 class LoginFooterWidget extends StatelessWidget {
   const LoginFooterWidget({
     super.key,

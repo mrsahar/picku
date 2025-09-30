@@ -14,7 +14,7 @@ import 'package:pick_u/taxi/ride_booking_page.dart';
 import 'package:pick_u/utils/map_theme/dark_map_theme.dart';
 import 'package:pick_u/utils/map_theme/light_map_theme.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
-import 'package:pick_u/widget/driver_tracking_widget.dart';
+import 'package:pick_u/widget/signalr_status_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -354,8 +354,12 @@ class _HomeScreenState extends State<HomeScreen> {
           }),
         ),
 
-        // Driver tracking widgets (updated to use new architecture)
-        //DriverTrackingControlsWidget(controller: bookingController),
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SignalRStatusWidget(),
+          ),
+        ),
       ],
     );
   }
@@ -509,7 +513,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                               color: MColor.primaryNavy.withOpacity(0.8),
-
                             ),
                           ),
                         ],
@@ -676,7 +679,10 @@ class _HomeScreenState extends State<HomeScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           child: Container(
             padding: const EdgeInsets.all(16),
             constraints: const BoxConstraints(maxHeight: 400),
@@ -737,10 +743,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 16,
-                                backgroundColor:
-                                MColor.primaryNavy.withOpacity(0.1),
-                                child: Icon(Icons.flag,
-                                    size: 18, color: MColor.primaryNavy),
+                                backgroundColor: MColor.primaryNavy.withOpacity(
+                                  0.1,
+                                ),
+                                child: Icon(
+                                  Icons.flag,
+                                  size: 18,
+                                  color: MColor.primaryNavy,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -756,7 +766,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: MColor.primaryNavy.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(6),
@@ -784,7 +796,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, size: 18, color: MColor.primaryNavy),
+                    icon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: MColor.primaryNavy,
+                    ),
                     label: Text(
                       "Close",
                       style: TextStyle(
@@ -802,5 +818,4 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
 }
