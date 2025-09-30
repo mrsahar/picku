@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
-import 'package:pick_u/core/sharePref.dart';
+import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/taxi/car/select_car_screen.dart';
 import 'package:pick_u/taxi/home/driver_screen.dart';

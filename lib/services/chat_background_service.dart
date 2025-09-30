@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/models/message_screen_model.dart';
+import 'package:pick_u/services/notification_service.dart';
 import 'package:signalr_core/signalr_core.dart';
 
 class ChatBackgroundService extends GetxService {
@@ -28,6 +29,9 @@ class ChatBackgroundService extends GetxService {
 
   // Service active flag
   final RxBool isServiceActive = false.obs;
+
+  // Add notification service reference
+  NotificationService get _notificationService => NotificationService.to;
 
   @override
   void onInit() {
@@ -250,9 +254,33 @@ class ChatBackgroundService extends GetxService {
 
       messages.add(messageWithUserFlag);
 
+      // Show notification only if message is not from current user
+      if (!isFromCurrentUser) {
+        _showChatNotification(messageWithUserFlag);
+      }
+
       print(' SAHAr 📨 Received message: ${chatMessage.message}');
     } catch (e) {
       print(' SAHAr ❌ Error handling received message: $e');
+    }
+  }
+
+  /// Show notification for new chat message
+  Future<void> _showChatNotification(ChatMessage message) async {
+    try {
+      // Determine sender name (use driver name if message is from driver)
+      String senderName = driverName.value.isNotEmpty ? driverName.value : 'Driver';
+
+      // Show notification via notification service
+      await _notificationService.showChatNotification(
+        senderName: senderName,
+        message: message.message,
+        rideId: rideId.value,
+      );
+
+      print(' SAHAr 🔔 Notification sent for message from: $senderName');
+    } catch (e) {
+      print(' SAHAr ❌ Failed to show notification: $e');
     }
   }
 

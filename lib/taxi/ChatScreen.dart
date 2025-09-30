@@ -2,24 +2,116 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/chat_controller.dart';
 import 'package:pick_u/models/message_screen_model.dart';
+import 'package:pick_u/services/chat_background_service.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:pick_u/services/notification_service.dart';
 
-class ChatScreen extends GetView<ChatController> {
+class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
   const ChatScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Initialize notification service when chat screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeNotifications();
+      _cancelRideNotifications();
+    });
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: _buildAppBar(),
       body: Column(
         children: [
+          _buildNotificationStatus(),
           _buildConnectionStatus(),
           Expanded(child: _buildMessagesList()),
           _buildMessageInput(),
         ],
       ),
     );
+  }
+  void _cancelRideNotifications() {
+    try {
+      final rideId = ChatBackgroundService.to.rideId.value;
+      if (rideId.isNotEmpty) {
+        NotificationService.to.cancelRideNotification(rideId);
+        print('🔔 Cancelled notifications for ride: $rideId');
+      }
+    } catch (e) {
+      print('❌ Failed to cancel ride notifications: $e');
+    }
+  }
+
+  /// Initialize notification permissions
+  void _initializeNotifications() async {
+    final notificationService = NotificationService.to;
+    if (!notificationService.notificationsEnabled) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      _showNotificationPermissionDialog();
+    }
+  }
+
+  /// Show notification permission dialog
+  void _showNotificationPermissionDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.chat_bubble, color: MColor.primaryNavy),
+            const SizedBox(width: 8),
+            const Text('Enable Chat Notifications'),
+          ],
+        ),
+        content: const Text(
+          'Get notified when your driver sends you messages. This helps you stay connected during your ride.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Maybe Later'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: MColor.primaryNavy),
+            onPressed: () async {
+              Get.back();
+              await NotificationService.to.checkAndRequestPermissions();
+            },
+            child: const Text('Enable', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build notification status banner
+  Widget _buildNotificationStatus() {
+    return Obx(() {
+      final notificationService = NotificationService.to;
+      if (!notificationService.notificationsEnabled) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          color: Colors.orange.shade100,
+          child: Row(
+            children: [
+              Icon(Icons.notifications_off, color: Colors.orange.shade800, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Notifications disabled. You won\'t receive message alerts.',
+                  style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+                ),
+              ),
+              TextButton(
+                onPressed: () => NotificationService.to.checkAndRequestPermissions(),
+                child: Text('Enable', style: TextStyle(color: Colors.orange.shade800)),
+              ),
+            ],
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    });
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -71,6 +163,26 @@ class ChatScreen extends GetView<ChatController> {
         ],
       )),
       actions: [
+        // Notification status indicator
+        Obx(() {
+          final notificationService = NotificationService.to;
+          return IconButton(
+            icon: Icon(
+              notificationService.notificationsEnabled
+                  ? Icons.notifications_active
+                  : Icons.notifications_off,
+              color: notificationService.notificationsEnabled
+                  ? Colors.white
+                  : Colors.grey.shade400,
+              size: 20,
+            ),
+            onPressed: () => notificationService.checkAndRequestPermissions(),
+            tooltip: notificationService.notificationsEnabled
+                ? 'Notifications enabled'
+                : 'Enable notifications',
+          );
+        }),
+        // Connection status indicator
         Obx(() => Container(
           margin: const EdgeInsets.only(right: 16),
           child: Icon(

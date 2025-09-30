@@ -13,6 +13,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // Enable core library desugaring
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -46,4 +48,6 @@ flutter {
 dependencies {
     // Material Components for Android - Required for Flutter Stripe
     implementation("com.google.android.material:material:1.9.0")
+    // Core library desugaring - Required for flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:pick_u/core/global_variables.dart';
+import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/models/forgot_password_model.dart';
 import 'package:pick_u/models/login_model.dart';
 import 'package:pick_u/models/otp_model.dart';

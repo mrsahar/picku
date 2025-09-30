@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_disposable.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:pick_u/core/google_places_service.dart';
-import 'package:pick_u/core/location_service.dart';
+import 'package:pick_u/services/google_places_service.dart';
+import 'package:pick_u/services/location_service.dart';
 
 class SearchService extends GetxService {
   static SearchService get to => Get.find();

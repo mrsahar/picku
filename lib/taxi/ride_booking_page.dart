@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/core/location_service.dart';
-import 'package:pick_u/core/search_location_service.dart';
-import 'package:pick_u/core/map_service.dart';
-import 'package:pick_u/core/google_places_service.dart';
+import 'package:pick_u/services/location_service.dart';
+import 'package:pick_u/services/search_location_service.dart';
+import 'package:pick_u/services/map_service.dart';
+import 'package:pick_u/services/google_places_service.dart';
 import 'package:pick_u/models/location_model.dart';
 import 'package:pick_u/utils/theme/app_theme.dart';
 import 'package:intl/intl.dart';

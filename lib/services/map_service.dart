@@ -1,11 +1,11 @@
-import 'dart:math' as math;
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:pick_u/core/google_directions_service.dart';
 import 'package:pick_u/models/location_model.dart';
+import 'package:pick_u/services/google_directions_service.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
 class MapService extends GetxService {
@@ -17,7 +17,7 @@ class MapService extends GetxService {
   var isLoadingRoute = false.obs;
   var routeDistance = ''.obs;
   var routeDuration = ''.obs;
-  List<LatLng> _interpolationPoints = [];
+  final List<LatLng> _interpolationPoints = [];
   int _interpolationIndex = 0;
 
   GoogleMapController? mapController;

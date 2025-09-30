@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/core/location_service.dart';
-import 'package:pick_u/core/map_service.dart';
+import 'package:pick_u/services/location_service.dart';
+import 'package:pick_u/services/map_service.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
 // class DriverTrackingControlsWidget extends StatelessWidget {

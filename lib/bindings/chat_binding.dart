@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/chat_controller.dart';
-import 'package:pick_u/core/chat_background_service.dart';
+import 'package:pick_u/services/chat_background_service.dart';
 
 class ChatBinding extends Bindings {
   @override

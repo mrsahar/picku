@@ -3,6 +3,16 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Notification permissions -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Android 13+ (API 33+) notification permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- For notification sound -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- For notification LED -->
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
     <application
         android:label="PickU"
         android:name="${applicationName}"

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/core/chat_background_service.dart';
-import 'package:pick_u/core/sharePref.dart';
+import 'package:pick_u/services/chat_background_service.dart';
+import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/models/message_screen_model.dart';
 
 

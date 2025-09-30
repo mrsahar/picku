@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:pick_u/core/sharePref.dart';
+import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/models/scheduled_ride_history_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 

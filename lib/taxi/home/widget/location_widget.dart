@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
-import 'package:pick_u/core/location_service.dart';
+import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/taxi/ride_booking_page.dart';
 
 class EnhancedDestinationWidget extends StatelessWidget {

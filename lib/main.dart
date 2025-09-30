@@ -6,8 +6,9 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/bindings/initial_binding.dart';
 import 'package:pick_u/routes/app_pages.dart';
+import 'package:pick_u/services/notification_service.dart';
 
-import 'core/global_variables.dart';
+import 'services/global_variables.dart';
 
  void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,10 @@ import 'core/global_variables.dart';
 
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
   await Stripe.instance.applySettings();
+
+  // Initialize notification service early
+  Get.put(NotificationService(), permanent: true);
+
   FlutterNativeSplash.remove();
   Get.lazyPut(() =>GlobalVariables());
   runApp(const MyApp());

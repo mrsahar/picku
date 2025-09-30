@@ -2,11 +2,11 @@
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/controllers/ride_controller.dart';
-import 'package:pick_u/core/chat_background_service.dart';
-import 'package:pick_u/core/global_variables.dart';
-import 'package:pick_u/core/location_service.dart';
-import 'package:pick_u/core/map_service.dart';
-import 'package:pick_u/core/search_location_service.dart';
+import 'package:pick_u/services/chat_background_service.dart';
+import 'package:pick_u/services/global_variables.dart';
+import 'package:pick_u/services/location_service.dart';
+import 'package:pick_u/services/map_service.dart';
+import 'package:pick_u/services/search_location_service.dart';
 import 'package:pick_u/providers/api_provider.dart';
 
 class InitialBinding extends Bindings {

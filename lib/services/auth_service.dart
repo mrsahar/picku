@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:pick_u/core/global_variables.dart';
-import 'package:pick_u/core/sharePref.dart';
+import 'package:pick_u/services/global_variables.dart';
+import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/routes/app_routes.dart';
 
 class AuthService {

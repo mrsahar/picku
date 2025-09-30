@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pick_u/core/global_variables.dart';
-import 'package:pick_u/core/sharePref.dart';
+import 'package:pick_u/services/global_variables.dart';
+import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/models/login_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/routes/app_routes.dart';

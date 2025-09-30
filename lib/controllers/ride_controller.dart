@@ -1,7 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:pick_u/core/location_service.dart';
+import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/models/ride_models.dart';
 import 'package:pick_u/providers/api_provider.dart';
 

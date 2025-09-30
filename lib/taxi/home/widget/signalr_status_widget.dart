@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pick_u/core/signalr_service.dart';
+import 'package:pick_u/services/signalr_service.dart';
 
 class SignalRStatusWidget extends StatelessWidget {
   const SignalRStatusWidget({super.key});

@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pick_u/core/sharePref.dart';
+import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/providers/api_provider.dart';
 
 import '../models/user_profile_model.dart';

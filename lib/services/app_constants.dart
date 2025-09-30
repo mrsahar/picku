@@ -1,4 +1,4 @@
-// lib/app/core/constants/app_constants.dart
+// lib/app/services/constants/app_constants.dart
 class AppConstants {
   static const String API_BASE_URL = 'http://pickurides.com';
 
