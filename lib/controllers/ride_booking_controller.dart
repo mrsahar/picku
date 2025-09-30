@@ -747,6 +747,7 @@ class RideBookingController extends GetxController {
 
       if (response.isOk) {
         print(' SAHArSAHAr Trip ended successfully: ${response.body}');
+        prevRideId.value = currentRideId.value;
         _handleTripCompletion(response);
       } else {
         print(' SAHArSAHAr Failed to end trip: ${response.statusText}');
@@ -920,7 +921,7 @@ class RideBookingController extends GetxController {
 
   void _showPaymentDialog(Map<String, dynamic> tripData) {
     print(' SAHArSAHAr Showing payment dialog with data: $tripData');
-    prevRideId = tripData['rideId'] ?? currentRideId.value;
+    prevRideId.value = tripData['rideId'];
     String rideId = tripData['rideId'] ?? currentRideId.value;
     double finalFare = (tripData['finalFare'] ?? tripData['totalFare'] ?? estimatedPrice.value).toDouble();
     double distance = (tripData['distance'] ?? 0.0).toDouble();
@@ -1195,7 +1196,7 @@ class RideBookingController extends GetxController {
       var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
 
       Map<String, dynamic> tipData = {
-        "rideId": prevRideId,
+        "rideId": prevRideId.value,
         "userId": userId,
         "driverId": driverId.value,
         "amount": tipAmount,
@@ -1440,7 +1441,7 @@ class RideBookingController extends GetxController {
 
       // New payment data structure
       Map<String, dynamic> paymentData = {
-        "rideId": currentRideId.value,
+        "rideId": prevRideId.value,
         "paidAmount": estimatedPrice.value,
         "tipAmount": tipAmount,
         "driverId": driverId.value,
