@@ -42,7 +42,7 @@ class SummaryWidget extends StatelessWidget {
                 Text(
                   title,
                   style: theme.textTheme.labelMedium!.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                   ),
                 ),
               ],
@@ -52,7 +52,7 @@ class SummaryWidget extends StatelessWidget {
             Text(
               value,
               style: theme.textTheme.labelLarge!.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha:0.7),
               ),
             ),
           ],

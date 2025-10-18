@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/widget/picku_appbar.dart';
 
 class SearchLocation extends StatelessWidget {
@@ -34,8 +33,8 @@ class SearchLocation extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? Colors.black.withOpacity(0.2)
-                        : Colors.grey.withOpacity(0.2),
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : Colors.grey.withValues(alpha:0.2),
                     spreadRadius: 2,
                     blurRadius: 4,
                     offset: const Offset(0, 3),

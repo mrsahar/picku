@@ -39,7 +39,7 @@ class ResetPasswordScreen extends StatelessWidget {
                 focusedBorderColor: const Color(0xFFFFC900),
                 mainAxisAlignment: MainAxisAlignment.center,
                 numberOfFields: 6,
-                fillColor: Colors.black.withOpacity(0.1),
+                fillColor: Colors.black.withValues(alpha:0.1),
                 filled: true,
                 onSubmit: (code) {
                   // Store the complete OTP in controller

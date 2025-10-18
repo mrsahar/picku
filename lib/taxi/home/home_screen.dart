@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasInitialLocationBeenSet = false;
 
   static const CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(12.9352, 77.6245),
+    target: LatLng(43.6532, -79.3832), // Toronto, CN Tower area
     zoom: 14,
   );
 
@@ -143,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
               initialCameraPosition: _kGooglePlex,
               myLocationButtonEnabled: false,
               myLocationEnabled: false,
+              zoomControlsEnabled: false,
               markers: mapService.markers.toSet(),
               // Use MapService markers
               polylines: mapService.polylines.toSet(),
@@ -213,8 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 break;
 
               case RideStatus.pending:
-              default:
-                // Default fallback - show initial destination widget (like new app started)
                 return AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   transitionBuilder: (child, animation) {
@@ -247,32 +246,47 @@ class _HomeScreenState extends State<HomeScreen> {
           }),
         ),
 
-        // Clear booking button (when ride is booked)
+        // Clear booking button (when ride is booked) - checking RideStatus
         Positioned(
           top: 40,
           right: 16,
           child: Obx(() {
-            if (bookingController.isRideBooked.value) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.red, size: 22),
-                  onPressed: () {
-                    bookingController.clearBooking();
-                    Get.snackbar('Cleared', 'Ride booking cleared');
-                  },
-                  tooltip: 'Clear Route',
-                  padding: const EdgeInsets.all(8),
+            // Define the ride statuses where clear button should be hidden
+            final hideClearButtonStatuses = [
+              RideStatus.waiting,
+              RideStatus.driverAssigned,
+              RideStatus.driverNear,
+              RideStatus.driverArrived,
+              RideStatus.tripStarted,
+              RideStatus.tripCompleted,
+            ];
+
+            // Show clear button only if ride is booked AND not in restricted statuses
+            if (bookingController.isRideBooked.value && 
+                !hideClearButtonStatuses.contains(bookingController.rideStatus.value)) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.clear, color: MColor.danger, size: 22),
+                    onPressed: () {
+                      bookingController.clearBooking();
+                      Get.snackbar('Cleared', 'Ride booking cleared');
+                    },
+                    tooltip: 'Clear Route',
+                    padding: const EdgeInsets.all(8),
+                  ),
                 ),
               );
             }
@@ -280,31 +294,53 @@ class _HomeScreenState extends State<HomeScreen> {
           }),
         ),
 
-        // Show pickup location button (when pickup is set but not booked)
+        // Show pickup location button with animated position
         Positioned(
-          top: 90,
           right: 16,
           child: Obx(() {
+            // Define the ride statuses where clear button should be hidden
+            final hideClearButtonStatuses = [
+              RideStatus.waiting,
+              RideStatus.driverAssigned,
+              RideStatus.driverNear,
+              RideStatus.driverArrived,
+              RideStatus.tripStarted,
+              RideStatus.tripCompleted,
+            ];
+
+            // Check if clear button is hidden
+            final isClearButtonHidden = bookingController.isRideBooked.value && 
+                hideClearButtonStatuses.contains(bookingController.rideStatus.value);
+
+            // Animate position based on clear button visibility
+            final targetTop = isClearButtonHidden ? 40.0 : 90.0;
+
             if (bookingController.pickupLocation.value != null) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+              return AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                top: targetTop,
+                right: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.my_location, color: Colors.blue, size: 22),
+                    onPressed: () => mapService.showPickupLocationWithZoom(
+                      bookingController.pickupLocation.value,
                     ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: Icon(Icons.my_location, color: Colors.blue, size: 22),
-                  onPressed: () => mapService.showPickupLocationWithZoom(
-                    bookingController.pickupLocation.value,
-                  ), // Use MapService method
-                  tooltip: 'Show Pickup Location',
-                  padding: const EdgeInsets.all(8),
+                    tooltip: 'Show Pickup Location',
+                    padding: const EdgeInsets.all(8),
+                  ),
                 ),
               );
             }
@@ -328,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -395,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: const BorderRadius.only(),
         boxShadow: [
           BoxShadow(
-            color: MColor.primaryNavy.withOpacity(0.15),
+            color: MColor.primaryNavy.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, -8),
           ),
@@ -410,15 +446,15 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  MColor.primaryNavy.withOpacity(0.08),
-                  MColor.primaryNavy.withOpacity(0.12),
+                  MColor.primaryNavy.withValues(alpha: 0.08),
+                  MColor.primaryNavy.withValues(alpha: 0.12),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: MColor.primaryNavy.withOpacity(0.2),
+                color: MColor.primaryNavy.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -429,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: MColor.primaryNavy.withOpacity(0.15),
+                        color: MColor.primaryNavy.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
@@ -445,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: MColor.primaryNavy.withOpacity(0.9),
+                          color: MColor.primaryNavy.withValues(alpha: 0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -458,7 +494,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: MColor.primaryNavy.withOpacity(0.15),
+                        color: MColor.primaryNavy.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
@@ -474,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: MColor.primaryNavy.withOpacity(0.9),
+                          color: MColor.primaryNavy.withValues(alpha: 0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -491,10 +527,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: MColor.primaryNavy.withOpacity(0.1),
+                        color: MColor.primaryNavy.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: MColor.primaryNavy.withOpacity(0.3),
+                          color: MColor.primaryNavy.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -504,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(
                             Icons.flag,
                             size: 12,
-                            color: MColor.primaryNavy.withOpacity(0.8),
+                            color: MColor.primaryNavy.withValues(alpha: 0.8),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -512,7 +548,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
-                              color: MColor.primaryNavy.withOpacity(0.8),
+                              color: MColor.primaryNavy.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -531,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: MColor.primaryNavy.withOpacity(0.1),
+                          color: MColor.primaryNavy.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Row(
@@ -542,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(
                                 Icons.straighten,
                                 size: 14,
-                                color: MColor.primaryNavy.withOpacity(0.7),
+                                color: MColor.primaryNavy.withValues(alpha: 0.7),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -558,14 +594,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             width: 1,
                             height: 16,
-                            color: MColor.primaryNavy.withOpacity(0.2),
+                            color: MColor.primaryNavy.withValues(alpha: 0.2),
                           ),
                           Row(
                             children: [
                               Icon(
                                 Icons.payments_outlined,
                                 size: 14,
-                                color: MColor.primaryNavy.withOpacity(0.7),
+                                color: MColor.primaryNavy.withValues(alpha: 0.7),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -581,14 +617,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             width: 1,
                             height: 16,
-                            color: MColor.primaryNavy.withOpacity(0.2),
+                            color: MColor.primaryNavy.withValues(alpha: 0.2),
                           ),
                           Row(
                             children: [
                               Icon(
                                 Icons.access_time,
                                 size: 14,
-                                color: MColor.primaryNavy.withOpacity(0.7),
+                                color: MColor.primaryNavy.withValues(alpha: 0.7),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -619,9 +655,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 flex: 2,
                 child: OutlinedButton(
                   onPressed: () => Get.to(() => RideBookingPage()),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.edit_location_outlined, size: 18),
                       SizedBox(width: 6),
                       Text('Edit'),
@@ -733,18 +769,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: MColor.primaryNavy.withOpacity(0.05),
+                            color: MColor.primaryNavy.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: MColor.primaryNavy.withOpacity(0.2),
+                              color: MColor.primaryNavy.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Row(
                             children: [
                               CircleAvatar(
                                 radius: 16,
-                                backgroundColor: MColor.primaryNavy.withOpacity(
-                                  0.1,
+                                backgroundColor: MColor.primaryNavy.withValues(
+                                  alpha: 0.1,
                                 ),
                                 child: Icon(
                                   Icons.flag,
@@ -770,7 +806,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: MColor.primaryNavy.withOpacity(0.15),
+                                  color: MColor.primaryNavy.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(

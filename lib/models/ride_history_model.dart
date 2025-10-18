@@ -74,10 +74,10 @@ class RideItem {
   // Color get statusColor {
   //   switch (status.toLowerCase()) {
   //     case 'completed':
-  //       return Colors.green;
+  //       return MColor.primaryNavy;
   //     case 'cancelled':
   //     case 'canceled':
-  //       return Colors.red;
+  //       return MColor.danger;
   //     case 'ongoing':
   //       return Colors.blue;
   //     default:

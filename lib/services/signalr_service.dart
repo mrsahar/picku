@@ -1,12 +1,11 @@
 // Create a new file: services/signalr_service.dart
+import 'dart:async';
+
+import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/services/map_service.dart';
 import 'package:signalr_core/signalr_core.dart';
-import 'package:get/get.dart';
-
-import 'dart:async';
-import 'package:get/get.dart';
 
 enum SignalRConnectionStatus {
   disconnected,
@@ -158,13 +157,6 @@ class SignalRService extends GetxService {
       _currentRideId = rideId;
       isDriverLocationActive.value = true;
       print(' SAHAr SignalR: Subscribed to ride $rideId');
-
-      Get.snackbar(
-        'Tracking Active',
-        'Now tracking driver location',
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 2),
-      );
     } catch (e) {
       print(' SAHAr SignalR: Failed to subscribe to ride: $e');
     }
@@ -245,7 +237,7 @@ class SignalRService extends GetxService {
                 'Driver Located',
                 'Driver is now visible on the map',
                 snackPosition: SnackPosition.TOP,
-                duration: const Duration(seconds: 2),
+                duration: const Duration(seconds: 5),
               );
             }
           } else {
@@ -333,13 +325,13 @@ class SignalRService extends GetxService {
       Get.snackbar(
         'Centered',
         'Map centered on driver location',
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 5),
       );
     } else {
       Get.snackbar(
         'No Driver Location',
         'Driver location not available',
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 5),
       );
     }
   }

@@ -4,6 +4,7 @@ import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/models/signup_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/routes/app_routes.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class SignUpController extends GetxController {
   // Form controllers
@@ -142,7 +143,7 @@ class SignUpController extends GetxController {
       Get.snackbar(
         'Validation Error',
         'Please fill all fields correctly',
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -170,20 +171,20 @@ class SignUpController extends GetxController {
         Get.snackbar(
           'Success',
           response.message,
-          backgroundColor: Colors.green,
+          backgroundColor: MColor.primaryNavy,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
 
         // Navigate to OTP screen with email parameter (backup method)
-        Get.toNamed(AppRoutes.OTP_SCREEN, arguments: {
+        Get.toNamed(AppRoutes.otpScreen, arguments: {
           'email': emailController.text.trim(),
         });
       } else {
         Get.snackbar(
           'Error',
           response.message,
-          backgroundColor: Colors.red,
+          backgroundColor: MColor.danger,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
@@ -192,7 +193,7 @@ class SignUpController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to create account. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );

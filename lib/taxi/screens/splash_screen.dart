@@ -92,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       decoration: BoxDecoration(
                         color: _currentIndex == index
                             ? theme.primaryColor
-                            : theme.primaryColor.withOpacity(0.4),
+                            : theme.primaryColor.withValues(alpha:0.4),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -167,8 +167,8 @@ class OnboardingPage extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.black.withOpacity(0.6),
-              Colors.black.withOpacity(0.3),
+              Colors.black.withValues(alpha:0.6),
+              Colors.black.withValues(alpha:0.3),
             ],
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,

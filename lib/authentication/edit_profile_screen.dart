@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/edit_profile_controller.dart';
 import 'package:pick_u/widget/picku_appbar.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class EditProfileScreen extends StatelessWidget {
   const EditProfileScreen({super.key});
@@ -135,9 +136,9 @@ class EditProfileScreen extends StatelessWidget {
                               ? null
                               : () => controller.deleteAccount(),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withOpacity(0.1),
+                            backgroundColor: MColor.danger.withValues(alpha:0.1),
                             elevation: 0,
-                            foregroundColor: Colors.red,
+                            foregroundColor: MColor.danger,
                             shape: const StadiumBorder(),
                             side: BorderSide.none,
                             minimumSize: const Size(80, 32), // Makes button smaller

@@ -56,7 +56,7 @@ class RideController extends GetxController {
         _moveMapToCurrentLocation();
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to get current location: $e');
+      //Get.snackbar('Error', 'Failed to get current location: $e');
     } finally {
       isLoading.value = false;
     }

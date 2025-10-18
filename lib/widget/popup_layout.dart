@@ -12,7 +12,7 @@ class PopupLayout extends ModalRoute {
 
   @override
   // TODO: implement barrierColor
-  Color? get barrierColor => bgColor ?? Colors.white.withOpacity(0.3);
+  Color? get barrierColor => bgColor ?? Colors.white.withValues(alpha:0.3);
 
   @override
   // TODO: implement barrierDismissible

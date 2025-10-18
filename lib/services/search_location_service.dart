@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_disposable.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/services/google_places_service.dart';
 import 'package:pick_u/services/location_service.dart';
@@ -70,7 +69,7 @@ class SearchService extends GetxService {
       return await GooglePlacesService.getPlaceDetails(placeId);
     } catch (e) {
       print(' SAHArError getting place details: $e');
-      Get.snackbar('Error', 'Failed to get location details');
+      //Get.snackbar('Error', 'Failed to get location details');
       return null;
     }
   }

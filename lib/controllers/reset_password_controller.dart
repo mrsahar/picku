@@ -1,4 +1,4 @@
-// controllers/reset_password_controller.dart
+import 'package:pick_u/utils/theme/mcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/services/global_variables.dart';
@@ -96,7 +96,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Validation Error',
         'Please enter complete 6-digit OTP',
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -107,7 +107,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Error',
         'Email not found. Please go back and try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -118,7 +118,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Validation Error',
         validateNewPassword(newPasswordController.text)!,
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -129,7 +129,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Validation Error',
         validateConfirmPassword(confirmPasswordController.text)!,
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -179,17 +179,17 @@ class ResetPasswordController extends GetxController {
         Get.snackbar(
           'Success',
           response.message,
-          backgroundColor: Colors.green,
+          backgroundColor: MColor.primaryNavy,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
         // Navigate back to Login screen
-        Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+        Get.offAllNamed(AppRoutes.loginScreen);
       } else {
         Get.snackbar(
           'Error',
           response.message,
-          backgroundColor: Colors.red,
+          backgroundColor: MColor.danger,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
@@ -200,7 +200,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to reset password. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -215,7 +215,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Error',
         'Email not found. Please go back and try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -240,7 +240,7 @@ class ResetPasswordController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to resend OTP. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );

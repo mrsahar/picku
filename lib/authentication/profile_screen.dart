@@ -4,7 +4,7 @@ import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
 import 'package:pick_u/widget/picku_appbar.dart';
-
+import 'package:pick_u/utils/theme/mcolors.dart';
 import '../controllers/profile_controller.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -69,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha:0.3),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: const Center(
@@ -157,7 +157,7 @@ class ProfileScreen extends StatelessWidget {
                 ProfileMenuWidget(
                   title: "Logout",
                   icon: LineAwesomeIcons.sign_out_alt_solid,
-                  textColor: Colors.red,
+                  textColor: MColor.danger,
                   endIcon: false,
                   onPress: () => controller.logout(),
                 ),

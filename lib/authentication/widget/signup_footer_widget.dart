@@ -24,7 +24,7 @@ class SignUpFooterWidget extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
-            Get.toNamed(AppRoutes.LOGIN_SCREEN);
+            Get.toNamed(AppRoutes.loginScreen);
           },
           child: Text.rich(TextSpan(children: [
             TextSpan(

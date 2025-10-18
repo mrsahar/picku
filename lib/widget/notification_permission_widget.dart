@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/services/notification_service.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class NotificationPermissionWidget extends StatelessWidget {
   final Widget child;
@@ -160,7 +161,7 @@ class NotificationSettingsButton extends StatelessWidget {
               ? Icons.notifications_active
               : Icons.notifications_off,
           color: notificationService.notificationsEnabled
-              ? Colors.green
+              ? MColor.primaryNavy
               : Colors.grey,
         ),
         title: const Text('Chat Notifications'),
@@ -170,7 +171,7 @@ class NotificationSettingsButton extends StatelessWidget {
               : 'Disabled - Tap to enable notifications',
         ),
         trailing: notificationService.notificationsEnabled
-            ? const Icon(Icons.check_circle, color: Colors.green)
+            ? Icon(Icons.check_circle, color: MColor.primaryNavy)
             : const Icon(Icons.arrow_forward_ios),
         onTap: () async {
           if (!notificationService.notificationsEnabled) {
@@ -180,9 +181,9 @@ class NotificationSettingsButton extends StatelessWidget {
                 'Permission Required',
                 'Please enable notifications in device settings to receive chat messages.',
                 snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.orange.shade100,
-                colorText: Colors.orange.shade800,
-                duration: const Duration(seconds: 4),
+                backgroundColor: MColor.warning,
+                colorText: MColor.warning,
+                duration: const Duration(seconds: 5),
                 mainButton: TextButton(
                   onPressed: () => notificationService.checkAndRequestPermissions(),
                   child: const Text('Try Again'),
@@ -195,9 +196,9 @@ class NotificationSettingsButton extends StatelessWidget {
               'Notifications Enabled',
               'You\'re all set to receive chat notifications!',
               snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.green.shade100,
-              colorText: Colors.green.shade800,
-              icon: const Icon(Icons.check_circle, color: Colors.green),
+              backgroundColor: MColor.primaryNavy,
+              colorText: MColor.primaryNavy,
+              icon: Icon(Icons.check_circle, color: MColor.primaryNavy),
             );
           }
         },

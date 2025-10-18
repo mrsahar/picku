@@ -4,6 +4,7 @@ import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/models/forgot_password_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import '../routes/app_routes.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class ForgotPasswordController extends GetxController {
   // Form controller
@@ -43,13 +44,6 @@ class ForgotPasswordController extends GetxController {
   // Forgot password method
   Future<void> forgotPassword() async {
     if (!validateForm()) {
-      Get.snackbar(
-        'Validation Error',
-        'Please enter a valid email address',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
       return;
     }
 
@@ -71,13 +65,13 @@ class ForgotPasswordController extends GetxController {
         Get.snackbar(
           'Success',
           response.message,
-          backgroundColor: Colors.green,
+          backgroundColor: MColor.primaryNavy,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
 
         // You can modify this based on your flow
-        Get.toNamed(AppRoutes.Reset_Password, arguments: {
+        Get.toNamed(AppRoutes.resetPassword, arguments: {
           'email': emailController.text.trim(),
           'isFromForgotPassword': true, // Flag to indicate this is from forgot password
         });
@@ -86,7 +80,7 @@ class ForgotPasswordController extends GetxController {
         Get.snackbar(
           'Error',
           response.message,
-          backgroundColor: Colors.red,
+          backgroundColor: MColor.danger,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
@@ -97,7 +91,7 @@ class ForgotPasswordController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to send reset email. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );

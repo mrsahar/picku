@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
-import 'package:pick_u/services/sharePref.dart';
 import 'package:pick_u/routes/app_routes.dart';
-import 'package:pick_u/taxi/car/select_car_screen.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/taxi/home/driver_screen.dart';
 import 'package:pick_u/taxi/home/home_screen.dart';
-import 'package:pick_u/taxi/payment/select_payment_page.dart';
 import 'package:pick_u/taxi/wallet/wallet_screen.dart';
 import 'package:pick_u/utils/profile_widget_menu.dart';
 
@@ -35,7 +33,7 @@ class _MainMapState extends State<MainMap> {
     var isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.grey[50];
     //final textColor = isDark ? Colors.white : Colors.black;
-   // final iconColor = isDark ? Colors.orange : Colors.black;
+   // final iconColor = isDark ? MColor.warning : Colors.black;
 
     return Scaffold(
       drawer: Drawer(
@@ -143,7 +141,7 @@ class _MainMapState extends State<MainMap> {
               ),
               ProfileMenuWidget(
                   title: "Logout",
-                  textColor: Colors.red,
+                  textColor: MColor.danger,
                   icon: LineAwesomeIcons.sign_out_alt_solid,
                   onPress: () => logout()),
             ],
@@ -182,7 +180,7 @@ class _MainMapState extends State<MainMap> {
             ),
             TextButton(
               onPressed: () => Get.back(result: true),
-              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+              child: Text('Logout', style: TextStyle(color: MColor.danger)),
             ),
           ],
         ),

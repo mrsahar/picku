@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/widget/picku_appbar.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {

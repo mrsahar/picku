@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:pick_u/services/global_variables.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/models/ride_history_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 

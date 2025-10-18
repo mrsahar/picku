@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/models/user_profile_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
@@ -64,7 +64,7 @@ class EditProfileController extends GetxController {
         'Error',
         'Failed to load user data',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
       );
     }
@@ -115,7 +115,7 @@ class EditProfileController extends GetxController {
         'Error',
         'Failed to pick image: $e',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
       );
     }
@@ -188,7 +188,7 @@ class EditProfileController extends GetxController {
         'Validation Error',
         'Please enter username',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
       );
       return false;
@@ -199,7 +199,7 @@ class EditProfileController extends GetxController {
         'Validation Error',
         'Please enter phone number',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
       );
       return false;
@@ -256,7 +256,7 @@ class EditProfileController extends GetxController {
           'Success',
           'Profile updated successfully',
           snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green,
+          backgroundColor: MColor.primaryNavy,
           colorText: Colors.white,
         );
       } else {
@@ -268,7 +268,7 @@ class EditProfileController extends GetxController {
         'Error',
         'Failed to update profile: $e',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
       );
     } finally {
@@ -295,7 +295,7 @@ class EditProfileController extends GetxController {
               Get.back();
               _performDeleteAccount();
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('Delete', style: TextStyle(color: MColor.danger)),
           ),
         ],
       ),
@@ -315,7 +315,7 @@ class EditProfileController extends GetxController {
             'Success',
             'Account deleted successfully',
             snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green,
+            backgroundColor: MColor.primaryNavy,
             colorText: Colors.white,
           );
           await SharedPrefsService.clearUserData();
@@ -329,7 +329,7 @@ class EditProfileController extends GetxController {
         'Error',
         'Failed to delete account: $e',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
       );
     } finally {

@@ -46,7 +46,7 @@ class AuthController extends GetxController {
           'Welcome!',
           'Signed in successfully as ${account.displayName ?? account.email}',
           snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 5),
         );
 
         // Navigate to home screen or dashboard

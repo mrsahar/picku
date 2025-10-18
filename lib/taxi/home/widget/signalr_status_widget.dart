@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/services/signalr_service.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class SignalRStatusWidget extends StatelessWidget {
   const SignalRStatusWidget({super.key});
@@ -47,9 +48,9 @@ class SignalRStatusWidget extends StatelessWidget {
   Widget _buildStatusIcon(SignalRConnectionStatus status) {
     switch (status) {
       case SignalRConnectionStatus.disconnected:
-        return const Icon(
+        return Icon(
           Icons.wifi_off,
-          color: Colors.red,
+          color: MColor.danger,
           size: 22,
         );
       case SignalRConnectionStatus.connecting:
@@ -57,9 +58,9 @@ class SignalRStatusWidget extends StatelessWidget {
         return Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.wifi,
-              color: Colors.orange,
+              color: MColor.warning,
               size: 22,
             ),
             Positioned(
@@ -68,8 +69,8 @@ class SignalRStatusWidget extends StatelessWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.orange,
+                decoration: BoxDecoration(
+                  color: MColor.warning,
                   shape: BoxShape.circle,
                 ),
                 child: const CircularProgressIndicator(
@@ -81,18 +82,18 @@ class SignalRStatusWidget extends StatelessWidget {
           ],
         );
       case SignalRConnectionStatus.connected:
-        return const Icon(
+        return Icon(
           Icons.wifi,
-          color: Colors.green,
+          color: MColor.primaryNavy,
           size: 22,
         );
       case SignalRConnectionStatus.error:
         return Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.wifi_off,
-              color: Colors.red,
+              color: MColor.danger,
               size: 22,
             ),
             Positioned(
@@ -101,8 +102,8 @@ class SignalRStatusWidget extends StatelessWidget {
               child: Container(
                 width: 6,
                 height: 6,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
+                decoration: BoxDecoration(
+                  color: MColor.danger,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -129,8 +130,8 @@ class SignalRStatusWidget extends StatelessWidget {
           'Connecting',
           'Attempting to establish connection...',
           snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.orange.withOpacity(0.8),
+          duration: const Duration(seconds: 5),
+          backgroundColor: MColor.warning.withValues(alpha:0.8),
           colorText: Colors.white,
         );
         break;
@@ -139,8 +140,8 @@ class SignalRStatusWidget extends StatelessWidget {
           'Connected',
           'Real-time connection is active',
           snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.green.withOpacity(0.8),
+          duration: const Duration(seconds: 5),
+          backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
           colorText: Colors.white,
         );
         break;
@@ -155,7 +156,7 @@ class SignalRStatusWidget extends StatelessWidget {
         ),
         title: Row(
           children: [
-            const Icon(Icons.wifi_off, color: Colors.red, size: 24),
+            Icon(Icons.wifi_off, color: MColor.danger, size: 24),
             const SizedBox(width: 8),
             const Text('Connection Issue'),
           ],
@@ -207,8 +208,8 @@ class SignalRStatusWidget extends StatelessWidget {
                 'Retrying',
                 'Attempting to reconnect...',
                 snackPosition: SnackPosition.TOP,
-                duration: const Duration(seconds: 2),
-                backgroundColor: Colors.blue.withOpacity(0.8),
+                duration: const Duration(seconds: 5),
+                backgroundColor: Colors.blue.withValues(alpha:0.8),
                 colorText: Colors.white,
               );
             },

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/taxi/search/search_location.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 Widget buildTag(String label, BuildContext context, bool isDark) {
   final bgColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]; // Background color
-  final borderColor = isDark ? Colors.orangeAccent : Colors.amberAccent; // Border color
+  final borderColor = isDark ? MColor.warning : Colors.amberAccent; // Border color
   final textColor = isDark ? Colors.white : Colors.black; // Text color
   final iconColor = isDark ? Colors.amberAccent : Colors.black; // Icon color
 

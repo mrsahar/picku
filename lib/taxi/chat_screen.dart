@@ -91,20 +91,20 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
-          color: Colors.orange.shade100,
+          color: MColor.warning,
           child: Row(
             children: [
-              Icon(Icons.notifications_off, color: Colors.orange.shade800, size: 16),
+              Icon(Icons.notifications_off, color: MColor.warning, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Notifications disabled. You won\'t receive message alerts.',
-                  style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+                  style: TextStyle(color: MColor.warning, fontSize: 12),
                 ),
               ),
               TextButton(
                 onPressed: () => NotificationService.to.checkAndRequestPermissions(),
-                child: Text('Enable', style: TextStyle(color: Colors.orange.shade800)),
+                child: Text('Enable', style: TextStyle(color: MColor.warning)),
               ),
             ],
           ),
@@ -153,7 +153,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
                 Text(
                   'Driver',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha:0.8),
                     fontSize: 12,
                   ),
                 ),
@@ -190,8 +190,8 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
                 ? Icons.circle
                 : Icons.circle_outlined,
             color: controller.isConnected.value
-                ? Colors.green
-                : Colors.red,
+                ? MColor.primaryNavy
+                : MColor.danger,
             size: 12,
           ),
         )),
@@ -204,7 +204,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
       if (controller.isLoadingMessages.value) {
         return Container(
           padding: const EdgeInsets.all(8),
-          color: Colors.orange.withOpacity(0.1),
+          color: MColor.warning.withValues(alpha:0.1),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -217,7 +217,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
               Text(
                 'Connecting to chat...',
                 style: TextStyle(
-                  color: Colors.orange[800],
+                  color: MColor.warning,
                   fontSize: 12,
                 ),
               ),
@@ -229,20 +229,20 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
       if (!controller.isConnected.value) {
         return Container(
           padding: const EdgeInsets.all(8),
-          color: Colors.red.withOpacity(0.1),
+          color: MColor.danger.withValues(alpha:0.1),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.error_outline,
-                color: Colors.red[800],
+                color: MColor.danger,
                 size: 16,
               ),
               const SizedBox(width: 8),
               Text(
                 'Connection lost',
                 style: TextStyle(
-                  color: Colors.red[800],
+                  color: MColor.danger,
                   fontSize: 12,
                 ),
               ),
@@ -255,7 +255,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red[800],
+                    color: MColor.danger,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -303,13 +303,13 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: MColor.primaryNavy.withOpacity(0.1),
+              color: MColor.primaryNavy.withValues(alpha:0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_bubble_outline,
               size: 40,
-              color: MColor.primaryNavy.withOpacity(0.5),
+              color: MColor.primaryNavy.withValues(alpha:0.5),
             ),
           ),
           const SizedBox(height: 16),
@@ -351,7 +351,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: MColor.primaryNavy.withOpacity(0.1),
+                color: MColor.primaryNavy.withValues(alpha:0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -383,7 +383,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha:0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -407,7 +407,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
                     message.dateTime.toTimeString(),
                     style: TextStyle(
                       color: isCurrentUser
-                          ? Colors.white.withOpacity(0.7)
+                          ? Colors.white.withValues(alpha:0.7)
                           : Colors.grey[600],
                       fontSize: 11,
                     ),
@@ -428,7 +428,7 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

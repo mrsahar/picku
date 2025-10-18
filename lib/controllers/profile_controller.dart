@@ -2,9 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/providers/api_provider.dart';
-
+import 'package:pick_u/utils/theme/mcolors.dart';
 import '../models/user_profile_model.dart';
 
 class ProfileController extends GetxController {
@@ -87,7 +87,7 @@ class ProfileController extends GetxController {
             ),
             TextButton(
               onPressed: () => Get.back(result: true),
-              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+              child: Text('Logout', style: TextStyle(color: MColor.danger)),
             ),
           ],
         ),

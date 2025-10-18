@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
+
 // TODO remove
 Widget onTripWidget(context) {
   var brightness = MediaQuery.of(context).platformBrightness;
@@ -17,8 +19,8 @@ Widget onTripWidget(context) {
       boxShadow: [
         BoxShadow(
           color: isDarkMode
-              ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6) // Dark shadow
-              : Theme.of(context).colorScheme.onSurface.withOpacity(0.3), // Light shadow
+              ? Theme.of(context).colorScheme.onSurface.withValues(alpha:0.6) // Dark shadow
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha:0.3), // Light shadow
           blurRadius: 10.0,
           offset: const Offset(0, -4), // Shadow at the top
         ),
@@ -45,18 +47,18 @@ Widget onTripWidget(context) {
               onTap: () {
                 // Handle emergency action
               },
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(
                     Icons.error_outline,
-                    color: Colors.red,
+                    color: MColor.danger,
                     size: 18.0,
                   ),
                   SizedBox(width: 4.0),
                   Text(
                     "Emergency",
                     style: TextStyle(
-                      color: Colors.red,
+                      color: MColor.danger,
                       fontSize: 14.0,
                       fontWeight: FontWeight.bold,
                     ),
@@ -98,7 +100,7 @@ Widget onTripWidget(context) {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface.withOpacity(0.6), // Use surface for the dark background
+                          color: Theme.of(context).colorScheme.surface.withValues(alpha:0.6), // Use surface for the dark background
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                         child: const Row(
@@ -225,7 +227,7 @@ Widget _buildCircularButton({
     onTap: onPressed,
     child: CircleAvatar(
       radius: 24.0,
-      backgroundColor: color.withOpacity(0.2), // Color with opacity
+      backgroundColor: color.withValues(alpha:0.2), // Color with opacity
       child: Icon(icon, color: color, size: 28.0),
     ),
   );

@@ -17,7 +17,7 @@ import 'package:pick_u/bindings/ride_history_binding.dart';
 import 'package:pick_u/bindings/scheduled_ride_history_binding.dart';
 import 'package:pick_u/bindings/signup_binding.dart';
 import 'package:pick_u/routes/app_route_observer.dart';
-import 'package:pick_u/taxi/ChatScreen.dart';
+import 'package:pick_u/taxi/chat_screen.dart';
 import 'package:pick_u/taxi/history/history_screen.dart';
 import 'package:pick_u/taxi/main_map.dart';
 import 'package:pick_u/taxi/scheduled/scheduled_ride_history_page.dart';
@@ -31,14 +31,14 @@ import 'app_routes.dart';
 class AppPages {
   AppPages._();
 
-  static const INITIAL = AppRoutes.LOGIN_SCREEN;
+  static const INITIAL = AppRoutes.loginScreen;
 
   // Observer instance
   static final MyRouteObserver routeObserver = MyRouteObserver();
 
   static final List<GetPage> routes = [
     GetPage(
-      name: AppRoutes.SIGNUP_SCREEN,
+      name: AppRoutes.signupScreen,
       page: () => const SignupScreen(),
       binding: SignUpBinding(),
     ),
@@ -53,26 +53,26 @@ class AppPages {
       binding: EditProfileBinding(),
     ),
     GetPage(
-      name: AppRoutes.OTP_SCREEN,
+      name: AppRoutes.otpScreen,
       page: () => const OTPScreen(),
       binding: OtpBinding(),
     ),
     GetPage(
-      name: AppRoutes.LOGIN_SCREEN,
+      name: AppRoutes.loginScreen,
       page: () => const LoginScreen(),
       binding: LoginBinding(),
     ),
     GetPage(
-      name: AppRoutes.MainMap,
+      name: AppRoutes.mainMap,
       page: () => const MainMap(),
     ),
     GetPage(
-      name: AppRoutes.FORGOT_PASSWORD_SCREEN,
+      name: AppRoutes.forgotPasswordScreen,
       page: () => const ForgotPasswordScreen(),
       binding: ForgotPasswordBinding(),
     ),
     GetPage(
-      name: AppRoutes.Reset_Password,
+      name: AppRoutes.resetPassword,
       page: () => const ResetPasswordScreen(),
       binding: ResetPasswordBinding(),
     ),

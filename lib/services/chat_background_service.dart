@@ -90,7 +90,7 @@ class ChatBackgroundService extends GetxService {
     this.driverId.value = driverId;
     this.driverName.value = driverName;
     this.currentUserId.value = currentUserId;
-    this.currentRideStatus.value = status;
+    currentRideStatus.value = status;
 
     // If service is active and ride changed, rejoin
     if (isServiceActive.value && oldRideId != rideId && oldRideId.isNotEmpty) {
@@ -265,11 +265,46 @@ class ChatBackgroundService extends GetxService {
     }
   }
 
-  /// Show notification for new chat message
+  /// Show notification for new chat message - Enhanced with error handling
   Future<void> _showChatNotification(ChatMessage message) async {
     try {
       // Determine sender name (use driver name if message is from driver)
       String senderName = driverName.value.isNotEmpty ? driverName.value : 'Driver';
+
+      // Enhanced notification with debug logging
+      print(' SAHAr 🔔 Preparing notification for message from: $senderName');
+      print(' SAHAr 🔔 Message content: ${message.message}');
+      print(' SAHAr 🔔 Ride ID: ${rideId.value}');
+
+      // Check if notification service is properly initialized
+      if (!_notificationService.isInitialized) {
+        print(' SAHAr ⚠️ Notification service not initialized, attempting to initialize...');
+        try {
+          await _notificationService.initializeNotifications();
+          if (!_notificationService.isInitialized) {
+            print(' SAHAr ❌ Failed to initialize notification service');
+            return;
+          }
+        } catch (initError) {
+          print(' SAHAr ❌ Error initializing notification service: $initError');
+          return;
+        }
+      }
+
+      // Check if notifications are enabled
+      if (!_notificationService.notificationsEnabled) {
+        print(' SAHAr ⚠️ Notifications not enabled, checking permissions...');
+        try {
+          final permissionResult = await _notificationService.checkAndRequestPermissions();
+          if (!permissionResult) {
+            print(' SAHAr ❌ Notification permissions not granted');
+            return;
+          }
+        } catch (permError) {
+          print(' SAHAr ❌ Error checking notification permissions: $permError');
+          return;
+        }
+      }
 
       // Show notification via notification service
       await _notificationService.showChatNotification(
@@ -278,9 +313,28 @@ class ChatBackgroundService extends GetxService {
         rideId: rideId.value,
       );
 
-      print(' SAHAr 🔔 Notification sent for message from: $senderName');
+      print(' SAHAr 🔔 Notification request sent successfully for message from: $senderName');
     } catch (e) {
       print(' SAHAr ❌ Failed to show notification: $e');
+
+      // Try to debug notification service status
+      try {
+        await _notificationService.debugNotificationStatus();
+
+        // Attempt to send a test notification to verify the service is working
+        print(' SAHAr 🧪 Attempting test notification...');
+        await _notificationService.testNotification();
+      } catch (debugError) {
+        print(' SAHAr ❌ Debug and test also failed: $debugError');
+
+        // Last resort: try to refresh notification permissions
+        try {
+          print(' SAHAr 🔄 Refreshing notification permissions as last resort...');
+          await _notificationService.refreshPermissionStatus();
+        } catch (refreshError) {
+          print(' SAHAr ❌ Permission refresh also failed: $refreshError');
+        }
+      }
     }
   }
 

@@ -17,8 +17,8 @@ Widget ratingWidget(BuildContext context) {
       boxShadow: [
         BoxShadow(
           color: isDarkMode
-              ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6) // Dark shadow
-              : Theme.of(context).colorScheme.onSurface.withOpacity(0.3), // Light shadow
+              ? Theme.of(context).colorScheme.onSurface.withValues(alpha:0.6) // Dark shadow
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha:0.3), // Light shadow
           blurRadius: 10.0,
           offset: const Offset(0, -4), // Shadow at the top
         ),
@@ -51,7 +51,7 @@ Widget ratingWidget(BuildContext context) {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), // Using onSurface for dark overlay
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha:0.6), // Using onSurface for dark overlay
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 child: const Row(
@@ -197,7 +197,7 @@ Widget _tipButton(BuildContext context,String text, {bool isSelected = false, re
       decoration: BoxDecoration(
         color: isSelected
             ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.secondary.withOpacity(0.1), // Primary color when selected
+            : Theme.of(context).colorScheme.secondary.withValues(alpha:0.1), // Primary color when selected
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Text(

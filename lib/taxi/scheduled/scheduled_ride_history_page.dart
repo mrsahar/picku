@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/scheduled_ride_history_controller.dart';
 import 'package:pick_u/taxi/history/widget/trip_summary_widget.dart';
 import 'package:pick_u/taxi/scheduled/scheduled_trip_history_card.dart';

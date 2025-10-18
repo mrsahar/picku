@@ -65,7 +65,7 @@ class _LoginFormState extends State<LoginForm> {
               alignment: Alignment.centerRight,
               child: TextButton(
                   onPressed: () {
-                    Get.toNamed(AppRoutes.FORGOT_PASSWORD_SCREEN);
+                    Get.toNamed(AppRoutes.forgotPasswordScreen);
                   },
                   child: const Text("Forgot Password?")),
             ),

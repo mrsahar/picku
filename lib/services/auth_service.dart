@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:pick_u/services/global_variables.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/routes/app_routes.dart';
 
 class AuthService {
@@ -82,14 +82,14 @@ class AuthService {
         globalVars.setLoginStatus(true);
 
         // Navigate to MainMap
-        Get.offAllNamed(AppRoutes.MainMap);
+        Get.offAllNamed(AppRoutes.mainMap);
       } else {
         print(' SAHArSAHAr $TAG: User not authenticated, staying on login');
-        Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+        Get.offAllNamed(AppRoutes.loginScreen);
       }
     } catch (e) {
       print(' SAHArSAHAr $TAG: Error in checkAndNavigate: $e');
-      Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+      Get.offAllNamed(AppRoutes.loginScreen);
     }
   }
 
@@ -148,12 +148,12 @@ class AuthService {
           'You have been logged out successfully',
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 5),
         );
       }
 
       // Navigate to login screen
-      Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+      Get.offAllNamed(AppRoutes.loginScreen);
 
     } catch (e) {
       print(' SAHArSAHAr $TAG: Error during logout: $e');
@@ -175,7 +175,7 @@ class AuthService {
       'Your session has expired. Please login again.',
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 5),
     );
   }
 
@@ -196,7 +196,7 @@ class AuthService {
     final isAuth = await isAuthenticated();
     if (!isAuth) {
       // Session invalid, redirect to login
-      Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+      Get.offAllNamed(AppRoutes.loginScreen);
     }
     return isAuth;
   }

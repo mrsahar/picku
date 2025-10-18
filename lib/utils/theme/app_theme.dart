@@ -117,7 +117,7 @@ class MAppTheme {
     ),
     // Special theme for tracking elements
     chipTheme: ChipThemeData(
-      backgroundColor: MColor.trackingOrange.withOpacity(0.1),
+      backgroundColor: MColor.trackingOrange.withValues(alpha:0.1),
       labelStyle: TextStyle(color: MColor.primaryNavy),
       side: BorderSide(color: MColor.trackingOrange),
     ),
@@ -185,7 +185,7 @@ class MAppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: MColor.white,
-        side: BorderSide(color: MColor.primaryNavy.withOpacity(0.8), width: 1.5),
+        side: BorderSide(color: MColor.primaryNavy.withValues(alpha:0.8), width: 1.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -230,7 +230,7 @@ class MAppTheme {
     ),
     // Special theme for tracking elements in dark mode
     chipTheme: ChipThemeData(
-      backgroundColor: MColor.trackingOrange.withOpacity(0.2),
+      backgroundColor: MColor.trackingOrange.withValues(alpha:0.2),
       labelStyle: TextStyle(color: MColor.white),
       side: BorderSide(color: MColor.trackingOrange),
     ),

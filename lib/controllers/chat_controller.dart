@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/services/chat_background_service.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/models/message_screen_model.dart';
 
 
@@ -105,7 +105,7 @@ class ChatController extends GetxController {
         messageController.clear();
         _scrollToBottom();
       } else {
-        Get.snackbar('Error', 'Failed to send message');
+        //Get.snackbar('Error', 'Failed to send message');
       }
     } finally {
       isSending.value = false;
@@ -115,7 +115,6 @@ class ChatController extends GetxController {
   /// Retry connection
   void retryConnection() async {
     if (!_chatService.isConnected.value) {
-      Get.snackbar('Reconnecting', 'Attempting to reconnect...');
       await _chatService.startService();
     }
   }
@@ -124,8 +123,6 @@ class ChatController extends GetxController {
   void refreshChatHistory() {
     if (_chatService.isConnected.value) {
       _chatService.refreshChatHistory();
-    } else {
-      Get.snackbar('Error', 'Not connected to chat service');
     }
   }
 

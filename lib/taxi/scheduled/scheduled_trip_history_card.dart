@@ -31,13 +31,13 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                   Text(
                     'Scheduled: ${ride.formattedScheduledDate}',
                     style: theme.textTheme.labelMedium!.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: ride.statusColor.withOpacity(0.1),
+                      color: ride.statusColor.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -60,7 +60,7 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                     child: Text(
                       ride.formattedScheduledTime,
                       style: theme.textTheme.labelMedium!.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                       ),
                     ),
                   ),
@@ -88,7 +88,7 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                     child: Text(
                       ride.shortPickupLocation,
                       style: theme.textTheme.bodySmall!.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                       ),
                     ),
                   ),
@@ -103,7 +103,7 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                     child: Text(
                       '', // No end time for scheduled rides
                       style: theme.textTheme.labelMedium!.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                       ),
                     ),
                   ),
@@ -126,7 +126,7 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                     child: Text(
                       ride.shortDropoffLocation,
                       style: theme.textTheme.bodySmall!.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                       ),
                     ),
                   ),

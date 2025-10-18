@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/services/global_variables.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/models/login_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/routes/app_routes.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class LoginController extends GetxController {
 
@@ -114,45 +115,35 @@ class LoginController extends GetxController {
           Get.snackbar(
             'Success',
             message,
-            backgroundColor: Colors.green,
+            backgroundColor: MColor.primaryNavy,
             colorText: Colors.white,
             snackPosition: SnackPosition.TOP,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 5),
           );
 
           // Navigate to MainMap
-          Get.offAllNamed(AppRoutes.MainMap);
+          Get.offAllNamed(AppRoutes.mainMap);
         } else {
           // Show the message from API response
           Get.snackbar(
             'Error',
             message,
-            backgroundColor: Colors.red,
+            backgroundColor: MColor.danger,
             colorText: Colors.white,
             snackPosition: SnackPosition.TOP,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
           );
         }
-      } else {
-        // Handle API error response
-        Get.snackbar(
-          'Error',
-          response.message,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 3),
-        );
       }
     } catch (e) {
       print(' SAHArSAHAr 💥 Login: Error: $e');
       Get.snackbar(
         'Error',
         'Failed to login. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       );
     } finally {
       isLoading.value = false;
@@ -200,7 +191,7 @@ class LoginController extends GetxController {
               globalVars.setLoginStatus(true);
 
               // Navigate to MainMap
-              Get.offAllNamed(AppRoutes.MainMap);
+              Get.offAllNamed(AppRoutes.mainMap);
               return;
             }
           } catch (e) {
@@ -222,10 +213,10 @@ class LoginController extends GetxController {
         Get.snackbar(
           'Session Expired',
           'Your session has expired. Please login again.',
-          backgroundColor: Colors.orange,
+          backgroundColor: MColor.warning,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 5),
         );
       } else {
         print(' SAHArSAHAr ❌ No valid login data found, staying on login screen');
@@ -260,12 +251,12 @@ class LoginController extends GetxController {
       clearForm();
 
       // Navigate to login screen
-      Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+      Get.offAllNamed(AppRoutes.loginScreen);
 
       Get.snackbar(
         'Success',
         'Logged out successfully',
-        backgroundColor: Colors.green,
+        backgroundColor: MColor.primaryNavy,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );

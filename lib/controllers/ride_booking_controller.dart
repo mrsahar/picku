@@ -13,7 +13,7 @@ import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/services/map_service.dart';
 import 'package:pick_u/services/payment_service.dart';
 import 'package:pick_u/services/search_location_service.dart';
-import 'package:pick_u/services/sharePref.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/services/signalr_service.dart';
 import 'package:pick_u/models/location_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
@@ -550,10 +550,10 @@ class RideBookingController extends GetxController {
         pickupController.text = currentLocationData.address;
         pickupLocation.value = currentLocationData;
       } else {
-        Get.snackbar('Error', 'Could not get current location');
+        //Get.snackbar('Error', 'Could not get current location');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to get current location: $e');
+     // Get.snackbar('Error', 'Failed to get current location: $e');
     }
   }
 
@@ -578,7 +578,7 @@ class RideBookingController extends GetxController {
       Get.snackbar(
         'Success',
         'Route calculated!\nDistance: ${_mapService.routeDistance.value}\nDuration: ${_mapService.routeDuration.value}$scheduleInfo',
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       );
 
       Get.back();
@@ -824,7 +824,7 @@ class RideBookingController extends GetxController {
       }
     } catch (e) {
       print('SAHArSAHAr Error in getFareEstimate: $e');
-      Get.snackbar('Error', 'Failed to get fare estimate: $e');
+      //Get.snackbar('Error', 'Failed to get fare estimate: $e');
     } finally {
       isLoading.value = false;
     }
@@ -843,8 +843,8 @@ class RideBookingController extends GetxController {
           Get.snackbar(
             'Ride Scheduled Successfully!',
             'Your ride has been scheduled for ${DateFormat('MMM dd, yyyy hh:mm a').format(getScheduledDateTime()!)}',
-            duration: const Duration(seconds: 3),
-            backgroundColor: Colors.green.withOpacity(0.9),
+            duration: const Duration(seconds: 5),
+            backgroundColor: MColor.primaryNavy.withValues(alpha:0.9),
             colorText: Colors.white,
           );
           clearBooking();
@@ -876,13 +876,7 @@ class RideBookingController extends GetxController {
               'Driver ${driverName.value} has been assigned to your ride.'
           );
         } else if (rideData is String && rideData.contains('No live drivers available')) {
-          // No drivers available
           rideStatus.value = RideStatus.noDriver;
-          Get.snackbar(
-            'No Drivers Available',
-            'No live drivers available right now. Please try again later.',
-            duration: const Duration(seconds: 4),
-          );
         }
       }
     } catch (e) {
@@ -1086,7 +1080,7 @@ class RideBookingController extends GetxController {
               Obx(() => Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: MColor.primaryNavy.withOpacity(0.1),
+                  color: MColor.primaryNavy.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -1116,7 +1110,7 @@ class RideBookingController extends GetxController {
                       onSelected: (selected) {
                         if (selected) selectedTip.value = tip;
                       },
-                      selectedColor: MColor.primaryNavy.withOpacity(0.3),
+                      selectedColor: MColor.primaryNavy.withValues(alpha:0.3),
                       labelStyle: TextStyle(
                         color: selectedTip.value == tip ? MColor.primaryNavy : Colors.black,
                         fontWeight: selectedTip.value == tip ? FontWeight.bold : FontWeight.normal,
@@ -1214,7 +1208,7 @@ class RideBookingController extends GetxController {
           'Tip Added!',
           'Tip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!',
           duration: Duration(seconds: 3),
-          backgroundColor: Colors.green.withOpacity(0.8),
+          backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
           colorText: Colors.white,
         );
       } else {
@@ -1459,9 +1453,9 @@ class RideBookingController extends GetxController {
         Get.snackbar(
           'Payment Successful!',
           'Payment of \$${amount.toStringAsFixed(2)} completed successfully!${tipAmount > 0 ? '\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!' : ''}',
-          backgroundColor: Colors.green.withOpacity(0.8),
+          backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
           colorText: Colors.white,
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 5),
         );
 
         print('SAHAr: Clearing booking');

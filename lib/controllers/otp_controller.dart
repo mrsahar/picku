@@ -4,6 +4,7 @@ import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/models/otp_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/routes/app_routes.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class OTPController extends GetxController {
   // Store the complete OTP
@@ -50,7 +51,7 @@ class OTPController extends GetxController {
       Get.snackbar(
         'Validation Error',
         'Please enter complete 6-digit OTP',
-        backgroundColor: Colors.orange,
+        backgroundColor: MColor.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -61,7 +62,7 @@ class OTPController extends GetxController {
       Get.snackbar(
         'Error',
         'Email not found. Please go back and sign up again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -97,18 +98,18 @@ class OTPController extends GetxController {
         Get.snackbar(
           'Success',
           response.message,
-          backgroundColor: Colors.green,
+          backgroundColor: MColor.primaryNavy,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
 
         // Navigate to Login screen (replace with your actual login screen route)
-        Get.offAllNamed(AppRoutes.LOGIN_SCREEN);
+        Get.offAllNamed(AppRoutes.loginScreen);
       } else {
         Get.snackbar(
           'Error',
           response.message,
-          backgroundColor: Colors.red,
+          backgroundColor: MColor.danger,
           colorText: Colors.white,
           snackPosition: SnackPosition.TOP,
         );
@@ -118,7 +119,7 @@ class OTPController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to verify OTP. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -133,7 +134,7 @@ class OTPController extends GetxController {
       Get.snackbar(
         'Error',
         'Email not found. Please go back and sign up again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
@@ -158,7 +159,7 @@ class OTPController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to resend OTP. Please try again.',
-        backgroundColor: Colors.red,
+        backgroundColor: MColor.danger,
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );

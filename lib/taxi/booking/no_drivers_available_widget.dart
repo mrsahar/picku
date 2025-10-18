@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
+import 'package:pick_u/taxi/ride_booking_page.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class NoDriversAvailableWidget extends StatelessWidget {
   const NoDriversAvailableWidget({super.key});
@@ -34,13 +36,13 @@ class NoDriversAvailableWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: MColor.warning.withValues(alpha:0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.taxi_alert,
               size: 64,
-              color: Colors.orange[600],
+              color: MColor.warning,
             ),
           ),
 
@@ -61,7 +63,7 @@ class NoDriversAvailableWidget extends StatelessWidget {
           Text(
             'Sorry, no live drivers are available in your area right now. Please try again in a few minutes.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha:0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -72,10 +74,10 @@ class NoDriversAvailableWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
+              color: theme.colorScheme.primary.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.3),
+                color: theme.colorScheme.primary.withValues(alpha:0.3),
               ),
             ),
             child: Column(
@@ -135,12 +137,8 @@ class NoDriversAvailableWidget extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Schedule for later (you can implement this)
-                    Get.snackbar(
-                      'Schedule Ride',
-                      'Scheduled ride feature coming soon!',
-                      duration: const Duration(seconds: 2),
-                    );
+                      controller.isScheduled.value = true;
+                      Get.to(() => RideBookingPage());
                   },
                   icon: const Icon(Icons.schedule),
                   label: const Text('Schedule'),

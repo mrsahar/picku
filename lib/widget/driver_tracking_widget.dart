@@ -1,11 +1,11 @@
 // Add this widget to show driver tracking status
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/services/location_service.dart';
-import 'package:pick_u/services/map_service.dart';
-import 'package:pick_u/utils/theme/mcolors.dart';
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:google_maps_flutter/google_maps_flutter.dart';
+// import 'package:pick_u/controllers/ride_booking_controller.dart';
+// import 'package:pick_u/services/location_service.dart';
+// import 'package:pick_u/services/map_service.dart';
+// import 'package:pick_u/utils/theme/mcolors.dart';
 
 // class DriverTrackingControlsWidget extends StatelessWidget {
 //   final RideBookingController controller;
@@ -40,7 +40,7 @@ import 'package:pick_u/utils/theme/mcolors.dart';
 //                 borderRadius: BorderRadius.circular(12),
 //                 boxShadow: [
 //                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.1),
+//                     color: Colors.black.withValues(alpha:0.1),
 //                     blurRadius: 8,
 //                     offset: const Offset(0, 2),
 //                   ),
@@ -67,7 +67,7 @@ import 'package:pick_u/utils/theme/mcolors.dart';
 //                 borderRadius: BorderRadius.circular(12),
 //                 boxShadow: [
 //                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.1),
+//                     color: Colors.black.withValues(alpha:0.1),
 //                     blurRadius: 8,
 //                     offset: const Offset(0, 2),
 //                   ),
@@ -83,7 +83,7 @@ import 'package:pick_u/utils/theme/mcolors.dart';
 //                         width: 8,
 //                         height: 8,
 //                         decoration: BoxDecoration(
-//                           color: Colors.green,
+//                           color: MColor.primaryNavy,
 //                           borderRadius: BorderRadius.circular(4),
 //                         ),
 //                       ),
@@ -93,7 +93,7 @@ import 'package:pick_u/utils/theme/mcolors.dart';
 //                         style: TextStyle(
 //                           fontSize: 10,
 //                           fontWeight: FontWeight.bold,
-//                           color: Colors.green,
+//                           color: MColor.primaryNavy,
 //                         ),
 //                       ),
 //                     ],

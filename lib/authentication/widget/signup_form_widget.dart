@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/controllers/signup_controller.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class SignUpFormWidget extends GetView<SignUpController> {
   const SignUpFormWidget({
@@ -25,21 +26,21 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 borderSide: BorderSide(
                   color: controller.fullNameError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.fullNameError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.fullNameError.value.isEmpty
                       ? Colors.blue
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               label: Text(
@@ -47,19 +48,19 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 style: TextStyle(
                   color: controller.fullNameError.value.isEmpty
                       ? Colors.grey[700]
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               prefixIcon: Icon(
                 LineAwesomeIcons.user,
                 color: controller.fullNameError.value.isEmpty
                     ? Colors.grey[600]
-                    : Colors.red,
+                    : MColor.danger,
               ),
               errorText: controller.fullNameError.value.isEmpty
                   ? null
                   : controller.fullNameError.value,
-              errorStyle: const TextStyle(color: Colors.red),
+              errorStyle: TextStyle(color: MColor.danger),
             ),
             onChanged: (value) {
               // Clear error when user starts typing
@@ -80,21 +81,21 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 borderSide: BorderSide(
                   color: controller.emailError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.emailError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.emailError.value.isEmpty
                       ? Colors.blue
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               label: Text(
@@ -102,19 +103,19 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 style: TextStyle(
                   color: controller.emailError.value.isEmpty
                       ? Colors.grey[700]
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               prefixIcon: Icon(
                 LineAwesomeIcons.envelope,
                 color: controller.emailError.value.isEmpty
                     ? Colors.grey[600]
-                    : Colors.red,
+                    : MColor.danger,
               ),
               errorText: controller.emailError.value.isEmpty
                   ? null
                   : controller.emailError.value,
-              errorStyle: const TextStyle(color: Colors.red),
+              errorStyle: TextStyle(color: MColor.danger),
             ),
             onChanged: (value) {
               // Clear error when user starts typing
@@ -135,21 +136,21 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 borderSide: BorderSide(
                   color: controller.phoneError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.phoneError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.phoneError.value.isEmpty
                       ? Colors.blue
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               label: Text(
@@ -157,19 +158,19 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 style: TextStyle(
                   color: controller.phoneError.value.isEmpty
                       ? Colors.grey[700]
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               prefixIcon: Icon(
                 LineAwesomeIcons.phone_solid,
                 color: controller.phoneError.value.isEmpty
                     ? Colors.grey[600]
-                    : Colors.red,
+                    : MColor.danger,
               ),
               errorText: controller.phoneError.value.isEmpty
                   ? null
                   : controller.phoneError.value,
-              errorStyle: const TextStyle(color: Colors.red),
+              errorStyle: TextStyle(color: MColor.danger),
             ),
             onChanged: (value) {
               // Clear error when user starts typing
@@ -190,21 +191,21 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 borderSide: BorderSide(
                   color: controller.passwordError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.passwordError.value.isEmpty
                       ? Colors.grey
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: controller.passwordError.value.isEmpty
                       ? Colors.blue
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               label: Text(
@@ -212,19 +213,19 @@ class SignUpFormWidget extends GetView<SignUpController> {
                 style: TextStyle(
                   color: controller.passwordError.value.isEmpty
                       ? Colors.grey[700]
-                      : Colors.red,
+                      : MColor.danger,
                 ),
               ),
               prefixIcon: Icon(
                 LineAwesomeIcons.lock_solid,
                 color: controller.passwordError.value.isEmpty
                     ? Colors.grey[600]
-                    : Colors.red,
+                    : MColor.danger,
               ),
               errorText: controller.passwordError.value.isEmpty
                   ? null
                   : controller.passwordError.value,
-              errorStyle: const TextStyle(color: Colors.red),
+              errorStyle: TextStyle(color: MColor.danger),
             ),
             onChanged: (value) {
               // Clear error when user starts typing

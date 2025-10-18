@@ -68,7 +68,7 @@ class WaitingForDriverWidget extends StatelessWidget {
           Text(
             'Please wait while we find the best driver for your ride',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha:0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -85,7 +85,7 @@ class WaitingForDriverWidget extends StatelessWidget {
                 height: 8,
                 width: 8,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.6),
+                  color: theme.colorScheme.primary.withValues(alpha:0.6),
                   shape: BoxShape.circle,
                 ),
               );

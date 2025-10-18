@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
 
 class ScheduledRideHistoryResponse {
   final List<ScheduledRideItem> items;
@@ -71,12 +72,12 @@ class ScheduledRideItem {
   Color get statusColor {
     switch (status.toLowerCase()) {
       case 'completed':
-        return Colors.green;
+        return MColor.primaryNavy;
       case 'cancelled':
       case 'canceled':
-        return Colors.red;
+        return MColor.danger;
       case 'pending':
-        return Colors.orange;
+        return MColor.warning;
       case 'ongoing':
         return Colors.blue;
       default:

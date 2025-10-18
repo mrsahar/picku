@@ -35,7 +35,7 @@ Widget driverInfoWidget(BuildContext context) {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha:0.08),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -61,7 +61,7 @@ Widget driverInfoWidget(BuildContext context) {
               CircleAvatar(
                 radius: 14,
                 backgroundColor:
-                _getStatusColor(controller.rideStatus.value).withOpacity(0.15),
+                _getStatusColor(controller.rideStatus.value).withValues(alpha:0.15),
                 child: Icon(
                   _getStatusIcon(controller.rideStatus.value),
                   size: 14,
@@ -77,11 +77,11 @@ Widget driverInfoWidget(BuildContext context) {
                   ),
                 ),
               ),
-              Icon(Icons.navigation, size: 14, color: Colors.green),
+              Icon(Icons.navigation, size: 14, color: MColor.primaryNavy),
               const SizedBox(width: 4),
               Text(
                 controller.getFormattedDistanceToDriver(),
-                style: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                style: TextStyle(fontSize: 12, color: MColor.primaryNavy),
               ),
             ],
           ),
@@ -126,7 +126,7 @@ Widget driverInfoWidget(BuildContext context) {
               const SizedBox(width: 8),
               _buildCompactButton(
                 icon: Icons.call_outlined,
-                color: Colors.green,
+                color: MColor.primaryNavy,
                 onPressed: () => _makePhoneCall(
                   controller.driverPhone.value,
                   controller.driverName.value,
@@ -147,7 +147,7 @@ Widget driverInfoWidget(BuildContext context) {
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: controller.rideStatus.value == RideStatus.tripCompleted
-                      ? Colors.green
+                      ? MColor.primaryNavy
                       : theme.primaryColor,
                 ),
               ),
@@ -164,7 +164,7 @@ Widget driverInfoWidget(BuildContext context) {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -194,7 +194,7 @@ Widget _buildDriverAvatar(ThemeData theme, RideBookingController controller) {
     children: [
       CircleAvatar(
         radius: 24,
-        backgroundColor: theme.primaryColor.withOpacity(0.1),
+        backgroundColor: theme.primaryColor.withValues(alpha:0.1),
         child: Text(
           controller.driverName.value.isNotEmpty
               ? controller.driverName.value[0].toUpperCase()
@@ -203,31 +203,6 @@ Widget _buildDriverAvatar(ThemeData theme, RideBookingController controller) {
             color: theme.primaryColor,
             fontSize: 18,
             fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      Positioned(
-        bottom: 0,
-        right: 0,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.amber,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.star, size: 10, color: Colors.white),
-              const SizedBox(width: 2),
-              Text(
-                "4.5",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -246,9 +221,9 @@ Widget _buildCompactButton({
     child: Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withValues(alpha:0.2), width: 1),
       ),
       child: Icon(icon, color: color, size: 18),
     ),
@@ -262,12 +237,12 @@ Color _getStatusColor(RideStatus status) {
       return Colors.blue;
     case RideStatus.driverAssigned:
     case RideStatus.driverNear:
-      return Colors.orange;
+      return MColor.warning;
     case RideStatus.tripCompleted:
     case RideStatus.driverArrived:
-      return Colors.green;
+      return MColor.primaryNavy;
     case RideStatus.cancelled:
-      return Colors.red;
+      return MColor.danger;
     case RideStatus.waiting:
       return Colors.amber;
     default:
@@ -388,21 +363,21 @@ Widget _buildCompactRideActionButton(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
+          color: MColor.primaryNavy.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green.withOpacity(0.2)),
+          border: Border.all(color: MColor.primaryNavy.withValues(alpha:0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 20),
+            Icon(Icons.check_circle, color: MColor.primaryNavy, size: 20),
             const SizedBox(width: 8),
             Text(
               'Trip Completed Successfully',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.green,
+                color: MColor.primaryNavy,
               ),
             ),
           ],
@@ -447,7 +422,7 @@ Widget _buildCompactRideActionButton(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.1),
+          color: theme.colorScheme.primary.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -479,21 +454,21 @@ Widget _buildCompactRideActionButton(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
+          color: MColor.danger.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.withOpacity(0.2)),
+          border: Border.all(color: MColor.danger.withValues(alpha:0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cancel, color: Colors.red, size: 20),
+            Icon(Icons.cancel, color: MColor.danger, size: 20),
             const SizedBox(width: 8),
             Text(
               'Ride Cancelled',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.red,
+                color: MColor.danger,
               ),
             ),
           ],
@@ -505,7 +480,7 @@ Widget _buildCompactRideActionButton(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.1),
+          color: theme.colorScheme.primary.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -571,7 +546,7 @@ Future<void> _makePhoneCall(String phoneNumber, String driverName) async {
       'Error',
       'Driver phone number not available',
       snackPosition: SnackPosition.TOP,
-      backgroundColor: MColor.primaryNavy.withOpacity(0.8),
+      backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
       colorText: Colors.white,
     );
     return;
@@ -588,9 +563,9 @@ Future<void> _makePhoneCall(String phoneNumber, String driverName) async {
         'Calling',
         'Calling $driverName...',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.withOpacity(0.8),
+        backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
         colorText: Colors.white,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       );
     } else {
       throw 'Could not launch phone dialer';
@@ -600,7 +575,7 @@ Future<void> _makePhoneCall(String phoneNumber, String driverName) async {
       'Error',
       'Unable to make call. Please try again.',
       snackPosition: SnackPosition.TOP,
-      backgroundColor: MColor.primaryNavy.withOpacity(0.8),
+      backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
       colorText: Colors.white,
     );
   }
@@ -614,7 +589,7 @@ Widget _buildSearchingDriverCard(ThemeData theme) {
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.08),
+          color: Colors.black.withValues(alpha:0.08),
           blurRadius: 8,
           offset: const Offset(0, 4),
         ),
@@ -648,12 +623,12 @@ Widget _buildCancelledCard(ThemeData theme) {
     margin: const EdgeInsets.all(12),
     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
     decoration: BoxDecoration(
-      color: Colors.red.withOpacity(0.08),
+      color: MColor.danger.withValues(alpha:0.08),
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.red.withOpacity(0.2)),
+      border: Border.all(color: MColor.danger.withValues(alpha:0.2)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha:0.05),
           blurRadius: 6,
           offset: const Offset(0, 3),
         ),
@@ -661,15 +636,15 @@ Widget _buildCancelledCard(ThemeData theme) {
     ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Icon(Icons.cancel, color: Colors.red, size: 20),
+      children: [
+        Icon(Icons.cancel, color: MColor.danger, size: 20),
         SizedBox(width: 8),
         Text(
           'Ride Cancelled',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.red,
+            color: MColor.danger,
           ),
         ),
       ],

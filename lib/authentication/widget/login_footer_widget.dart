@@ -49,7 +49,7 @@ class LoginFooterWidget extends StatelessWidget {
           const SizedBox(height: 30 - 20),
           TextButton(
             onPressed: () {
-              Get.toNamed(AppRoutes.SIGNUP_SCREEN);
+              Get.toNamed(AppRoutes.signupScreen);
               //Get.to(() => const SignupScreen());
             },
             child: Text.rich(

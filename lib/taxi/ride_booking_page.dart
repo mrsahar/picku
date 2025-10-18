@@ -71,7 +71,7 @@ class RideBookingPage extends StatelessWidget {
                     onChanged: (value) {
                       controller.toggleScheduling();
                     },
-                    activeColor: theme.colorScheme.primary,
+                    activeThumbColor: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -314,7 +314,7 @@ class RideBookingPage extends StatelessWidget {
                           ),
                           IconButton(
                             onPressed: () => controller.removeStop(index),
-                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            icon: Icon(Icons.remove_circle, color: MColor.danger),
                           ),
                         ],
                       ),
@@ -664,7 +664,7 @@ class RideBookingPage extends StatelessWidget {
         Get.snackbar('Error', 'Could not get current location');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to get current location: $e');
+      //Get.snackbar('Error', 'Failed to get current location: $e');
     }
   }
 
