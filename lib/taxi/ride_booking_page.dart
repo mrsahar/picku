@@ -227,9 +227,7 @@ class RideBookingPage extends StatelessWidget {
             }
             return const SizedBox.shrink();
           }),
-
           const SizedBox(height: 16),
-
           // Pickup Location
           Text(
             'Pickup Location',

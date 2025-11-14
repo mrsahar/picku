@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -591,7 +592,7 @@ class RideBookingController extends GetxController {
   }
 
   // FIXED: Start ride with proper API structure
-  Future<void> startRide() async {
+  Future<void> startRide([String? paymentToken]) async {
     print(' SAHArSAHAr startRide() called');
 
     if (!isRideBooked.value) {
@@ -671,6 +672,7 @@ class RideBookingController extends GetxController {
         "scheduledTime": scheduledDateTime.toIso8601String(),
         "passengerCount": passengerCount.value,
         "fareEstimate": fareEstimate.value,
+        "paymentToken": paymentToken,
         "stops": allStops,
       };
 
@@ -913,7 +915,7 @@ class RideBookingController extends GetxController {
     Get.snackbar('Trip Completed', 'Your trip has ended successfully!');
   }
 
-  void _showPaymentDialog(Map<String, dynamic> tripData) {
+  Future<void> _showPaymentDialog(Map<String, dynamic> tripData) async {
     print(' SAHArSAHAr Showing payment dialog with data: $tripData');
     prevRideId.value = tripData['rideId'];
     String rideId = tripData['rideId'] ?? currentRideId.value;
@@ -926,15 +928,24 @@ class RideBookingController extends GetxController {
     // Update estimated price with actual final fare from API
     estimatedPrice.value = finalFare;
 
+    double price =  await calculatePrice(finalFare);
+
     _showPaymentPopup(
       rideId: rideId,
-      finalFare: finalFare,
+      finalFare: price,
       distance: distance,
       duration: duration,
       rideStartTime: rideStartTime,
       rideEndTime: rideEndTime,
     );
   }
+  Future<double> calculatePrice(double finalFare) async {
+    String? balanceStr = await SharedPrefsService.getUserBalance();
+    double balance = double.tryParse(balanceStr ?? "0") ?? 0;
+
+    return finalFare - balance;
+  }
+
 
   // Enhanced payment methods with better UI
   void _showPaymentPopup({
@@ -1473,7 +1484,6 @@ class RideBookingController extends GetxController {
     }
   }
 
-
   Future<String?> _processStripePayment(double amount) async {
     try {
       print('SAHAr: Starting _processStripePayment with amount: $amount');
@@ -1537,4 +1547,64 @@ class RideBookingController extends GetxController {
   String get routeDistance => _mapService.routeDistance.value;
   String get routeDuration => _mapService.routeDuration.value;
   bool get isLoadingRoute => _mapService.isLoadingRoute.value;
+
+  /// process payment first, then start the ride (book/find driver or schedule)
+  Future<void> startRideWithPayment() async {
+    print(' SAHAr startRideWithPayment() called');
+
+    // Same validations as startRide()
+    if (!isRideBooked.value) {
+      print(' SAHAr Ride not booked yet (startRideWithPayment)');
+      Get.snackbar('Error', 'Please book a ride first');
+      return;
+    }
+
+    if (pickupLocation.value == null || dropoffLocation.value == null) {
+      print(' SAHAr Missing pickup or dropoff location (startRideWithPayment)');
+      Get.snackbar('Error', 'Please set pickup and dropoff locations');
+      return;
+    }
+
+    if (isScheduled.value) {
+      if (scheduledDate.value == null || scheduledTime.value == null) {
+        Get.snackbar('Incomplete Schedule', 'Please set both date and time');
+        return;
+      }
+
+      DateTime scheduledDateTime = getScheduledDateTime()!;
+      if (scheduledDateTime.isBefore(DateTime.now())) {
+        Get.snackbar('Invalid Schedule', 'Scheduled time cannot be in the past');
+        return;
+      }
+    }
+
+    try {
+      isLoading.value = true;
+
+      // Use the estimated fare for pre-payment if available, fall back to estimatedPrice
+      double amountToCharge = (estimatedFare.value > 0) ? estimatedFare.value : estimatedPrice.value;
+      print(' SAHAr startRideWithPayment: charging amount: $amountToCharge');
+
+      String? paymentToken = await _processStripePayment(amountToCharge);
+      if (paymentToken == null) {
+        print(' SAHAr Payment cancelled or failed (startRideWithPayment)');
+        // _processStripePayment already shows a snackbar on errors
+        return;
+      }
+
+      // Optionally: send a prepayment record to backend here if required. For now we proceed to start the ride.
+      print(' SAHAr Payment succeeded, proceeding to startRide()');
+
+      // Call existing startRide which handles booking and further flow
+      await SharedPrefsService.saveUserBalance(amountToCharge.toString());
+      await startRide(paymentToken);
+    } catch (e) {
+      print(' SAHAr Exception in startRideWithPayment: $e');
+      Get.snackbar('Error', 'Failed to process payment/start ride: $e');
+    } finally {
+      isLoading.value = false;
+      print(' SAHAr startRideWithPayment completed - isLoading false');
+    }
+  }
+
 }

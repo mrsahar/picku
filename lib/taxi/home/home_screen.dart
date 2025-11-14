@@ -669,7 +669,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 flex: 3,
                 child: ElevatedButton(
-                  onPressed: controller.startRide,
+                  onPressed: controller.startRideWithPayment,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
@@ -687,7 +687,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : Text(
                             controller.isScheduled.value
                                 ? 'Schedule It'
-                                : 'Find Driver',
+                                : 'Pay for Ride',
                           ),
                   ),
                 ),
@@ -698,6 +698,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+
 
   void toggleLocationWidget() {
     setState(() {
