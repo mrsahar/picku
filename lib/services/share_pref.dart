@@ -86,6 +86,16 @@ class SharedPrefsService {
     }
   }
 
+  static Future<void> removeUserBalance() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_balance');
+      print(' SAHArSAHAr 💾 User balance removed from SharedPreferences successfully');
+    } catch (e) {
+      print(' SAHArSAHAr 💥 Error removing user balance from SharedPreferences: $e');
+    }
+  }
+
   // Get user token
   static Future<String?> getUserToken() async {
     try {

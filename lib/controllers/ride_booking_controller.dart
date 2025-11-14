@@ -993,7 +993,10 @@ class RideBookingController extends GetxController {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Total Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('\$${finalFare.toStringAsFixed(2)}',
+                  Text(
+                    finalFare <= 0
+                        ? "0.00"
+                        : "\$${finalFare.toStringAsFixed(2)}",
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
                       ],
                     ),
@@ -1020,7 +1023,9 @@ class RideBookingController extends GetxController {
                     Get.back();
                     _completePayment(finalFare);
                   },
-                  child: Text('Pay \$${finalFare.toStringAsFixed(2)}',
+                  child: Text(finalFare <= 0
+                      ? "0.00"
+                      : "\$${finalFare.toStringAsFixed(2)}",
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
@@ -1035,7 +1040,7 @@ class RideBookingController extends GetxController {
                   ),
                   onPressed: () {
                     Get.back();
-                    _showTipDialog(finalFare);
+                    _showTipDialog(finalFare <= 0 ? 0 : finalFare);
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1065,6 +1070,11 @@ class RideBookingController extends GetxController {
   }
 
   void _showTipDialog(double finalFare) {
+    // Ensure finalFare is never negative
+    if (finalFare < 0) {
+      finalFare = 0.0;
+    }
+
     RxDouble selectedTip = 0.0.obs;
     List<double> tipOptions = AppConstants.tipPercentages;
 
