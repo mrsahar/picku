@@ -390,9 +390,12 @@ class RideBookingPage extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 2,
                               ),
-                              subtitle: prediction.types.isNotEmpty
+                              subtitle: (prediction.types.isNotEmpty &&
+                                  prediction.types.first.replaceAll('_', ' ')
+                                      .toUpperCase() != "GEOCODE")
                                   ? Text(
-                                prediction.types.first.replaceAll('_', ' ').toUpperCase(),
+                                prediction.types.first.replaceAll('_', ' ')
+                                    .toUpperCase(),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey[600],

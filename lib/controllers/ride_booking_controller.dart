@@ -28,6 +28,7 @@ class ApiEndpoints {
   static const String submitTip = '/api/Tip';
   static const String processPayment = '/api/Payment/customer-payments';
   static const String fareEstimate = '/api/Ride/fare-estimate';
+  static const String submitFeedback = '/api/Feedback';
 }
 
 class AppConstants {
@@ -97,6 +98,7 @@ class RideBookingController extends GetxController {
   var estimatedPrice = 0.0.obs;
   var vehicle = ''.obs;
   var vehicleColor = ''.obs;
+  var rating = 0.0.obs;
 
   // Driver location tracking
   final driverLatitude = 0.0.obs;
@@ -867,6 +869,7 @@ class RideBookingController extends GetxController {
           vehicle.value = rideData['vehicleColor'] ?? '';
           estimatedPrice.value = (rideData['estimatedPrice'] ?? 0.0).toDouble();
           rideStatus.value = RideStatus.driverAssigned;
+          rating.value = (rideData['driverAverageRating'] ?? 0.0).toDouble();
 
           // Set up SignalR subscription for ride updates
           if (currentRideId.value.isNotEmpty) {
@@ -995,8 +998,8 @@ class RideBookingController extends GetxController {
                         Text('Total Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   Text(
                     finalFare <= 0
-                        ? "0.00"
-                        : "\$${finalFare.toStringAsFixed(2)}",
+                        ? "No Extra Charges"
+                      : "\$${finalFare.toStringAsFixed(2)}",
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
                       ],
                     ),
@@ -1011,25 +1014,6 @@ class RideBookingController extends GetxController {
           // Payment buttons
           Column(
             children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MColor.primaryNavy,
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    Get.back();
-                    _completePayment(finalFare);
-                  },
-                  child: Text(finalFare <= 0
-                      ? "0.00"
-                      : "\$${finalFare.toStringAsFixed(2)}",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                ),
-              ),
-              SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -1050,6 +1034,30 @@ class RideBookingController extends GetxController {
                     ],
                   ),
                 ),
+              ),
+              SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MColor.primaryNavy,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Get.back();
+                    _completePayment(finalFare);
+                  },
+                  child: Text(
+                    finalFare <= 0 ? "Complete Ride" : "\$${finalFare.toStringAsFixed(2)}",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+                ,
               ),
             ],
           ),
@@ -1181,14 +1189,24 @@ class RideBookingController extends GetxController {
             onPressed: () async {
               Get.back();
               double totalAmount = finalFare + selectedTip.value;
+
               if (selectedTip.value > 0) {
                 await _submitTip(selectedTip.value, finalFare, totalAmount);
               }
+
               await _completePayment(totalAmount);
             },
-            child: Text('Pay \$${(finalFare + selectedTip.value).toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          )),
+            child: Text(
+              (finalFare + selectedTip.value) <= 0
+                  ? "Complete Ride"
+                  : "Pay \$${(finalFare + selectedTip.value).toStringAsFixed(2)}",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+          ),
         ],
       ),
       barrierDismissible: false,
@@ -1239,6 +1257,166 @@ class RideBookingController extends GetxController {
     } catch (e) {
       print(' SAHArSAHAr 🔥 Exception during tip submission: $e');
       Get.snackbar('Error', 'Failed to process tip: $e');
+    } finally {
+      isLoading.value = false;
+      print(' SAHArSAHAr ✅ isLoading set to false');
+    }
+  }
+
+  // Show review/feedback dialog
+  void _showReviewDialog() {
+    RxInt selectedRating = 0.obs;
+    TextEditingController commentController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.star, color: MColor.trackingOrange, size: 28),
+            SizedBox(width: 8),
+            Text('Rate Your Rider',
+              style: TextStyle(
+                color: MColor.primaryNavy,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              )
+            ),
+          ],
+        ),
+        content: Container(
+          width: Get.width * 0.8,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'How was your ride with ${driverName.value}?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 20),
+
+              // Star rating
+              Obx(() => FittedBox(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      icon: Icon(
+                        index < selectedRating.value ? Icons.star : Icons.star_border,
+                        size: 24,
+                        color: MColor.trackingOrange,
+                      ),
+                      onPressed: () {
+                        selectedRating.value = index + 1;
+                      },
+                    );
+                  }),
+                ),
+              )),
+
+              SizedBox(height: 20),
+
+              // Comment field
+              TextField(
+                controller: commentController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Share your experience (optional)',
+                  filled: true,
+                  fillColor: MColor.lightGrey,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: MColor.lightGrey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: MColor.primaryNavy, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+              clearBooking();
+            },
+            child: Text('Skip', style: TextStyle(color: MColor.mediumGrey)),
+          ),
+          Obx(() => ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MColor.primaryNavy,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: selectedRating.value > 0 ? () async {
+              Get.back();
+              await _submitFeedback(
+                selectedRating.value,
+                commentController.text.trim()
+              );
+              clearBooking();
+            } : null,
+            child: Text(
+              'Submit Review',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          )),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  // Submit feedback to API
+  Future<void> _submitFeedback(int rating, String comments) async {
+    print(' SAHArSAHAr 🟡 _submitFeedback() called');
+    print(' SAHArSAHAr ⭐ Rating: $rating');
+    print(' SAHArSAHAr 💬 Comments: $comments');
+
+    try {
+      isLoading.value = true;
+      print(' SAHArSAHAr ⏳ isLoading set to true');
+
+      var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
+
+      Map<String, dynamic> feedbackData = {
+        "rideId": prevRideId.value,
+        "userId": userId,
+        "driverId": driverId.value,
+        "rating": rating,
+        "comments": comments.isEmpty ? null : comments,
+        "createdAt": DateTime.now().toIso8601String(),
+        "feedbackFrom": "User",
+        "driverName": driverName.value,
+      };
+
+      print(' SAHArSAHAr 📦 Feedback Payload: $feedbackData');
+
+      Response response = await _apiProvider.postData(ApiEndpoints.submitFeedback, feedbackData);
+      print(' SAHArSAHAr 📥 API Response: ${response.body}');
+
+      if (response.isOk) {
+        print(' SAHArSAHAr ✅ Feedback submitted successfully');
+        Get.snackbar(
+          'Thank You!',
+          'Your feedback has been submitted successfully!',
+          duration: Duration(seconds: 3),
+          backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
+          colorText: Colors.white,
+        );
+      } else {
+        print(' SAHArSAHAr ❌ Feedback submission failed: ${response.statusText}');
+        Get.snackbar('Error', 'Failed to submit feedback: ${response.statusText}');
+      }
+    } catch (e) {
+      print(' SAHArSAHAr 🔥 Exception during feedback submission: $e');
+      Get.snackbar('Error', 'Failed to submit feedback: $e');
     } finally {
       isLoading.value = false;
       print(' SAHArSAHAr ✅ isLoading set to false');
@@ -1439,29 +1617,38 @@ class RideBookingController extends GetxController {
       print('SAHAr: Starting _completePayment with amount: $amount');
       isLoading.value = true;
 
-      var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
+      var userId = await SharedPrefsService. getUserId() ?? AppConstants.defaultUserId;
       print('SAHAr: Retrieved userId: $userId');
 
       double tipAmount = amount - estimatedPrice.value;
       print('SAHAr: Calculated tipAmount: $tipAmount');
 
-      String? paymentToken = await _processStripePayment(amount);
-      print('SAHAr: Stripe payment token: $paymentToken');
+      String? paymentToken;
 
-      if (paymentToken == null) {
-        print('SAHAr: Stripe payment failed, aborting backend call');
-        Get.snackbar('Payment Failed', 'Card payment was not processed');
-        return;
+      // Only process Stripe payment if amount is greater than 0
+      if (amount > 0) {
+        paymentToken = await _processStripePayment(amount);
+        print('SAHAr: Stripe payment token: $paymentToken');
+
+        if (paymentToken == null) {
+          print('SAHAr: Stripe payment failed, aborting backend call');
+          Get.snackbar('Payment Failed', 'Card payment was not processed');
+          return;
+        }
+      } else {
+        // Use dummy token for zero or negative amounts (no Stripe processing)
+        paymentToken = 'NO_PAYMENT_REQUIRED';
+        print('SAHAr: Amount is <= 0, skipping Stripe payment processing, using dummy token');
       }
 
-      // New payment data structure
+      // Payment data structure
       Map<String, dynamic> paymentData = {
         "rideId": prevRideId.value,
-        "paidAmount": estimatedPrice.value,
+        "paidAmount": estimatedPrice. value,
         "tipAmount": tipAmount,
         "driverId": driverId.value,
         "userId": userId,
-        "paymentToken": paymentToken
+        "paymentToken": paymentToken // Will be dummy token when amount <= 0
       };
 
       print('SAHAr: Sending paymentData to backend: $paymentData');
@@ -1471,16 +1658,28 @@ class RideBookingController extends GetxController {
       if (response.isOk) {
         print('SAHAr: Payment recorded successfully: ${response.body}');
 
+        String message;
+
+        if (amount <= 0) {
+          message = "Ride completed successfully!\nNo payment required.";
+        } else {
+          message = "Payment of \$${amount.toStringAsFixed(2)} completed successfully!";
+
+          if (tipAmount > 0) {
+            message += "\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!";
+          }
+        }
+
         Get.snackbar(
-          'Payment Successful!',
-          'Payment of \$${amount.toStringAsFixed(2)} completed successfully!${tipAmount > 0 ? '\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!' : ''}',
-          backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
+          amount <= 0 ? 'Ride Completed!' : 'Payment Successful!',
+          message,
+          backgroundColor: MColor.primaryNavy.withValues(alpha: 0.8),
           colorText: Colors.white,
           duration: const Duration(seconds: 5),
         );
 
-        print('SAHAr: Clearing booking');
-        clearBooking();
+        // Show review dialog before clearing booking
+        _showReviewDialog();
       } else {
         print('SAHAr: Failed to record payment: ${response.statusText}');
         Get.snackbar('Recording Failed', 'Payment processed but failed to record: ${response.statusText}');
@@ -1489,7 +1688,7 @@ class RideBookingController extends GetxController {
       print('SAHAr: Error in _completePayment: $e');
       Get.snackbar('Payment Error', 'Failed to process payment: $e');
     } finally {
-      isLoading.value = false;
+      isLoading. value = false;
       print('SAHAr: isLoading set to false');
     }
   }

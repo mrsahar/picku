@@ -92,10 +92,11 @@ Widget driverInfoWidget(BuildContext context) {
           Row(
             children: [
               _buildDriverAvatar(theme, controller),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       controller.driverName.value.isNotEmpty
@@ -103,34 +104,74 @@ Widget driverInfoWidget(BuildContext context) {
                           : "Driver",
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
+                        fontSize: 16,
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      controller.vehicle.value.isNotEmpty
-                          ? "${controller.vehicle.value} ${controller.vehicleColor.value}"
-                          : "Vehicle info",
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.hintColor,
-                      ),
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (controller.rating.value > 0) ...[
+                          const Text("⭐", style: TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
+                          Text(
+                            controller.rating.value.toStringAsFixed(1),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: theme.hintColor.withOpacity(0.4),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: Text(
+                            controller.vehicle.value.isNotEmpty
+                                ? "${controller.vehicle.value} ${controller.vehicleColor.value}"
+                                : controller.rating.value > 0
+                                ? "Vehicle info"
+                                : "No ratings • Vehicle info",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.hintColor,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              _buildCompactButton(
-                icon: Icons.message_outlined,
-                color: theme.primaryColor,
-                onPressed: () => _handleChatNavigation(controller),
-              ),
-              const SizedBox(width: 8),
-              _buildCompactButton(
-                icon: Icons.call_outlined,
-                color: MColor.primaryNavy,
-                onPressed: () => _makePhoneCall(
-                  controller.driverPhone.value,
-                  controller.driverName.value,
-                ),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCompactButton(
+                    icon: Icons.message_outlined,
+                    color: theme.primaryColor,
+                    onPressed: () => _handleChatNavigation(controller),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildCompactButton(
+                    icon: Icons.call_outlined,
+                    color: MColor.primaryNavy,
+                    onPressed: () => _makePhoneCall(
+                      controller.driverPhone.value,
+                      controller.vehicleColor.value,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -318,8 +359,8 @@ Widget _buildCompactRideActionButton(
                       await Get.dialog<bool>(
                         AlertDialog(
                           title: const Text('End Ride'),
-                          content: Text(
-                            'End this trip?\n\nEstimated: \$${controller.estimatedPrice.value.toStringAsFixed(2)}',
+                          content: const Text(
+                            'Are you sure you want to end this ride?',
                           ),
                           actions: [
                             TextButton(
