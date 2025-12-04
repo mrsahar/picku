@@ -404,7 +404,6 @@ class RideBookingPage extends StatelessWidget {
                                   : null,
                               onTap: () async {
                                 await _selectSuggestion(prediction);
-                                // Auto-calculate when dropoff or stop is selected
                                 await _handleLocationSelectionAutoCalculate();
                               },
                             );
@@ -472,17 +471,21 @@ class RideBookingPage extends StatelessWidget {
                     if (controller.additionalStops.isNotEmpty)
                       Text('✓ ${controller.additionalStops.length} additional stop(s) added'),
                     Obx(() {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        controller.getFareEstimate(); // Safe after first frame
-                      });
-                      if (_mapService.routeDistance.value.isNotEmpty && _mapService.routeDuration.value.isNotEmpty) {
+                      // Recalculate fare whenever distance changes
+                      String currentDistance = _mapService.routeDistance.value;
+                      if (currentDistance.isNotEmpty && _mapService.routeDuration.value.isNotEmpty) {
+                        // Trigger fare calculation on distance change
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          controller.getFareEstimate();
+                        });
+
                         return Row(
                             children: [
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('✓ Distance: ${_mapService.routeDistance.value}'),
+                                    Text('✓ Distance: $currentDistance'),
                                     Text('✓ Duration: ${_mapService.routeDuration.value}'),
                                     Text('✓ Estimated Fare: \$${controller.estimatedFare.value}'),
                                   ],

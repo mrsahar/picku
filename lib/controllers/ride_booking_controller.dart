@@ -79,6 +79,8 @@ class RideBookingController extends GetxController {
   var fareMessage = ''.obs;
   var fareCurrency = 'CAD'.obs;
   var isLoadingFare = false.obs;
+  String _lastFareEstimateKey = ''; // Track last fare estimate request
+  bool _hasShownServiceUnavailable = false; // Prevent duplicate snackbars
 
   var isScheduled = false.obs;
   var scheduledDate = Rx<DateTime?>(null);
@@ -552,6 +554,10 @@ class RideBookingController extends GetxController {
       if (currentLocationData != null) {
         pickupController.text = currentLocationData.address;
         pickupLocation.value = currentLocationData;
+
+        // Reset fare estimation tracking when pickup location changes
+        _lastFareEstimateKey = '';
+        _hasShownServiceUnavailable = false;
       } else {
         //Get.snackbar('Error', 'Could not get current location');
       }
@@ -583,7 +589,6 @@ class RideBookingController extends GetxController {
         'Route calculated!\nDistance: ${_mapService.routeDistance.value}\nDuration: ${_mapService.routeDuration.value}$scheduleInfo',
         duration: const Duration(seconds: 5),
       );
-
       Get.back();
     } catch (e) {
       Get.snackbar('Error', 'Booking failed: $e');
@@ -596,6 +601,7 @@ class RideBookingController extends GetxController {
   // FIXED: Start ride with proper API structure
   Future<void> startRide([String? paymentToken]) async {
     print(' SAHArSAHAr startRide() called');
+
 
     if (!isRideBooked.value) {
       print(' SAHArSAHAr Ride not booked yet');
@@ -808,6 +814,28 @@ class RideBookingController extends GetxController {
         print('SAHArSAHAr Fare estimate response: ${response.body}');
 
         var responseBody = response.body;
+        
+        // Check if fare contains error message
+        if (responseBody['fare'] is String && 
+            responseBody['fare'].toString().contains('Fare settings not found')) {
+          print('SAHArSAHAr Fare settings not found for this location');
+          estimatedFare.value = 0.0;
+
+          // Only show snackbar if we haven't shown it for this location
+          if (!_hasShownServiceUnavailable) {
+            _hasShownServiceUnavailable = true;
+            Get.snackbar(
+              'Service Unavailable',
+              'Service is unavailable in your area',
+              snackPosition: SnackPosition.TOP,
+              backgroundColor: Colors.red.withValues(alpha: 0.8),
+              colorText: Colors.white,
+              duration: const Duration(seconds: 5),
+            );
+          }
+          return;
+        }
+        
         var fareData = responseBody['fare'] is String
             ? json.decode(responseBody['fare'])
             : responseBody['fare'];
@@ -1384,6 +1412,7 @@ class RideBookingController extends GetxController {
       print(' SAHArSAHAr ⏳ isLoading set to true');
 
       var userId = await SharedPrefsService.getUserId() ?? AppConstants.defaultUserId;
+      var userName = await SharedPrefsService.getUserFullName() ?? AppConstants.defaultUserName;
 
       Map<String, dynamic> feedbackData = {
         "rideId": prevRideId.value,
@@ -1394,6 +1423,7 @@ class RideBookingController extends GetxController {
         "createdAt": DateTime.now().toIso8601String(),
         "feedbackFrom": "User",
         "driverName": driverName.value,
+        "userName": userName,
       };
 
       print(' SAHArSAHAr 📦 Feedback Payload: $feedbackData');
@@ -1494,6 +1524,10 @@ class RideBookingController extends GetxController {
       longitude: placeDetails.location.longitude,
       stopOrder: 0,
     );
+
+    // Reset fare estimation tracking when pickup location changes
+    _lastFareEstimateKey = '';
+    _hasShownServiceUnavailable = false;
   }
 
   void _setDropoffLocation(PlaceDetails placeDetails) {
