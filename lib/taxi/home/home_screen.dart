@@ -476,15 +476,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        controller.pickupController.text,
+                      child: Obx(() => Text(
+                        controller.pickupLocation.value?.address ??
+                        controller.pickupText.value,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: MColor.primaryNavy.withValues(alpha: 0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
-                      ),
+                      )),
                     ),
                   ],
                 ),
@@ -505,15 +506,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        controller.dropoffController.text,
+                      child: Obx(() => Text(
+                        controller.dropoffLocation.value?.address ??
+                        controller.dropoffText.value,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: MColor.primaryNavy.withValues(alpha: 0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
-                      ),
+                      )),
                     ),
                   ],
                 ),

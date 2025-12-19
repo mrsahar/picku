@@ -6,6 +6,7 @@ import 'package:pick_u/models/login_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:pick_u/controllers/ride_booking_controller.dart';
 
 class LoginController extends GetxController {
 
@@ -250,6 +251,13 @@ class LoginController extends GetxController {
       // Clear form
       clearForm();
 
+      // Delete non-permanent controllers to ensure fresh state on next login
+      try {
+        Get.delete<RideBookingController>(force: true);
+      } catch (e) {
+        print(' SAHArSAHAr 🧹 RideBookingController not found: $e');
+      }
+
       // Navigate to login screen
       Get.offAllNamed(AppRoutes.loginScreen);
 
@@ -272,13 +280,5 @@ class LoginController extends GetxController {
     emailController.clear();
     passwordController.clear();
     isPasswordVisible.value = false;
-  }
-}
-
-// Updated LoginBinding to ensure proper initialization
-class LoginBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<LoginController>(() => LoginController());
   }
 }

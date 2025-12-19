@@ -4,6 +4,7 @@ import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 import 'package:pick_u/authentication/profile_screen.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/services/share_pref.dart';
+import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/taxi/home/driver_screen.dart';
 import 'package:pick_u/taxi/home/home_screen.dart';
 import 'package:pick_u/taxi/wallet/wallet_screen.dart';
@@ -180,9 +181,8 @@ class _MainMapState extends State<MainMap> {
             ),
             TextButton(
               onPressed: () => Get.back(result: true),
-              child: Text('Logout', style: TextStyle(color: MColor.danger)),
-            ),
-          ],
+              child: Text('Logout', style: TextStyle(color: MColor.danger))),
+            ],
         ),
       );
 
@@ -190,13 +190,31 @@ class _MainMapState extends State<MainMap> {
         // Clear user data from SharedPreferences
         await SharedPrefsService.clearUserData();
 
-        // Navigate to login screen and remove all previous routes
-        Get.offAllNamed('/login');
+        // Clear GlobalVariables
+        final globalVars = GlobalVariables.instance;
+        globalVars.setLoginStatus(false);
+        globalVars.setUserToken('');
+        globalVars.setUserEmail('');
 
-        Get.snackbar('Success', 'Logged out successfully');
+        // Navigate to login screen and remove all previous routes
+        Get.offAllNamed(AppRoutes.loginScreen);
+
+        Get.snackbar(
+          'Success',
+          'Logged out successfully',
+          backgroundColor: MColor.primaryNavy,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to logout: ${e.toString()}');
+      Get.snackbar(
+        'Error',
+        'Failed to logout: ${e.toString()}',
+        backgroundColor: MColor.danger,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
     }
   }
 }

@@ -63,6 +63,10 @@ class RideBookingController extends GetxController {
   final dropoffController = TextEditingController();
   var stopControllers = <TextEditingController>[].obs;
 
+  // Reactive text values for UI updates
+  var pickupText = ''.obs;
+  var dropoffText = ''.obs;
+
   // Core ride data
   var pickupLocation = Rx<LocationData?>(null);
   var dropoffLocation = Rx<LocationData?>(null);
@@ -125,6 +129,19 @@ class RideBookingController extends GetxController {
     super.onInit();
     _initializeServices();
     _setupLocationListener();
+    _setupTextControllerListeners();
+  }
+
+  void _setupTextControllerListeners() {
+    // Listen to pickup text controller changes
+    pickupController.addListener(() {
+      pickupText.value = pickupController.text;
+    });
+
+    // Listen to dropoff text controller changes
+    dropoffController.addListener(() {
+      dropoffText.value = dropoffController.text;
+    });
   }
 
   Future<void> _initializeServices() async {

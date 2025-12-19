@@ -10,6 +10,7 @@ import 'package:pick_u/bindings/chat_binding.dart';
 import 'package:pick_u/bindings/edit_profile_binding.dart';
 import 'package:pick_u/bindings/forgot_password_binding.dart';
 import 'package:pick_u/bindings/login_binding.dart';
+import 'package:pick_u/bindings/main_map_binding.dart';
 import 'package:pick_u/bindings/otp_binding.dart';
 import 'package:pick_u/bindings/profile_binding.dart';
 import 'package:pick_u/bindings/reset_password_binding.dart';
@@ -65,6 +66,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.mainMap,
       page: () => const MainMap(),
+      binding: MainMapBinding(),
     ),
     GetPage(
       name: AppRoutes.forgotPasswordScreen,
