@@ -238,7 +238,6 @@ class ChatBackgroundService extends GetxService {
       if (!isFromCurrentUser) {
         _showChatNotification(messageWithUserFlag);
       }
-
       print(' SAHAr 📨 Received message: ${chatMessage.message}');
     } catch (e) {
       print(' SAHAr ❌ Error handling received message: $e');

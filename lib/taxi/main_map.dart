@@ -85,34 +85,34 @@ class _MainMapState extends State<MainMap> {
                 ),
                 _ModernMenuTile(
                   icon: LineAwesomeIcons.comment,
-                  title: 'Pre-Booked',
+                  title: 'Schedule Ride',
                   isDark: isDark,
                   onTap: () => Get.toNamed(AppRoutes.scheduledRideHistory),
                 ),
                 _ModernMenuTile(
                   icon: LineAwesomeIcons.bell_solid,
-                  title: 'Notification',
+                  title: 'Notifications',
                   isDark: isDark,
                   onTap: () => Get.toNamed(AppRoutes.notificationScreen),
                 ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Financial Section
-            _buildMenuSection(
-              title: 'FINANCIAL',
-              isDark: isDark,
-              children: [
-                _ModernMenuTile(
-                  icon: LineAwesomeIcons.wallet_solid,
-                  title: 'Wallet',
-                  isDark: isDark,
-                  onTap: () {},
-                ),
-              ],
-            ),
+            // _buildMenuSection(
+            //   title: 'FINANCIAL',
+            //   isDark: isDark,
+            //   children: [
+            //     _ModernMenuTile(
+            //       icon: LineAwesomeIcons.wallet_solid,
+            //       title: 'Wallet',
+            //       isDark: isDark,
+            //       onTap: () {},
+            //     ),
+            //   ],
+            // ),
 
             const SizedBox(height: 16),
 
@@ -281,13 +281,13 @@ class _MainMapState extends State<MainMap> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.local_taxi_rounded,
+                              Icons.verified_user,
                               size: 12,
                               color: MColor.trackingOrange,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Rider',
+                              'Passenger',
                               style: TextStyle(
                                 color: MColor.trackingOrange,
                                 fontSize: 11,

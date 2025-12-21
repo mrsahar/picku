@@ -80,6 +80,7 @@ class MapService extends GetxService {
   Future<void> createRouteMarkersAndPolylines({
     required LocationData? pickupLocation,
     required LocationData? dropoffLocation,
+    required List<LocationData> additionalStops,
   }) async {
     markers.clear();
     polylines.clear();
@@ -87,6 +88,7 @@ class MapService extends GetxService {
 
     try {
       List<LatLng> routePoints = [];
+      List<LatLng> waypoints = [];
 
       // Create pickup marker
       if (pickupLocation != null) {
@@ -103,6 +105,27 @@ class MapService extends GetxService {
         ));
 
         routePoints.add(pickupLatLng);
+      }
+
+      // Create additional stop markers
+      for (int i = 0; i < additionalStops.length; i++) {
+        final stop = additionalStops[i];
+        if (stop.address.isNotEmpty && stop.latitude != 0 && stop.longitude != 0) {
+          LatLng stopLatLng = LatLng(stop.latitude, stop.longitude);
+
+          markers.add(Marker(
+            markerId: MarkerId('stop_$i'),
+            position: stopLatLng,
+            icon: _pointsMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+            infoWindow: InfoWindow(
+              title: 'Stop ${i + 1}',
+              snippet: stop.address,
+            ),
+          ));
+
+          waypoints.add(stopLatLng);
+          routePoints.add(stopLatLng);
+        }
       }
 
       // Create dropoff marker
@@ -125,7 +148,7 @@ class MapService extends GetxService {
 
       // Create route polylines
       if (routePoints.length >= 2 && dropoffLatLng != null) {
-        await _createRoutePolylines(routePoints, dropoffLatLng);
+        await _createRoutePolylines(routePoints, waypoints, dropoffLatLng);
       }
 
     } catch (e) {
@@ -139,6 +162,7 @@ class MapService extends GetxService {
   /// Create route polylines using Google Directions API
   Future<void> _createRoutePolylines(
       List<LatLng> routePoints,
+      List<LatLng> waypoints,
       LatLng destination
       ) async {
     try {
@@ -148,7 +172,7 @@ class MapService extends GetxService {
       List<LatLng> routeCoordinates = await GoogleDirectionsService.getRoutePoints(
         origin: origin,
         destination: destination,
-        waypoints: [],
+        waypoints: waypoints,
       );
 
       // Store the route polyline for car rotation calculations
@@ -159,7 +183,7 @@ class MapService extends GetxService {
       Map<String, dynamic> routeInfo = await GoogleDirectionsService.getRouteInfo(
         origin: origin,
         destination: destination,
-        waypoints: [],
+        waypoints: waypoints,
       );
 
       // Update route info

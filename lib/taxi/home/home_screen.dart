@@ -25,7 +25,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
+  Completer<GoogleMapController>();
 
   // Inject services
   late RideBookingController bookingController;
@@ -262,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ];
 
             // Show clear button only if ride is booked AND not in restricted statuses
-            if (bookingController.isRideBooked.value && 
+            if (bookingController.isRideBooked.value &&
                 !hideClearButtonStatuses.contains(bookingController.rideStatus.value)) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -309,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ];
 
             // Check if clear button is hidden
-            final isClearButtonHidden = bookingController.isRideBooked.value && 
+            final isClearButtonHidden = bookingController.isRideBooked.value &&
                 hideClearButtonStatuses.contains(bookingController.rideStatus.value);
 
             // Animate position based on clear button visibility
@@ -402,9 +402,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Enhanced method using MapService
   Future<void> _centerMapToLocation(
-    LatLng location, {
-    double zoom = 16.0,
-  }) async {
+      LatLng location, {
+        double zoom = 16.0,
+      }) async {
     await mapService.animateToLocation(location, zoom: zoom);
     print(' SAHAr Map centered to: $location with zoom: $zoom');
   }
@@ -421,9 +421,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRideActionButtons(
-    BuildContext context,
-    RideBookingController controller,
-  ) {
+      BuildContext context,
+      RideBookingController controller,
+      ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -478,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: Obx(() => Text(
                         controller.pickupLocation.value?.address ??
-                        controller.pickupText.value,
+                            controller.pickupText.value,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -508,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: Obx(() => Text(
                         controller.dropoffLocation.value?.address ??
-                        controller.dropoffText.value,
+                            controller.dropoffText.value,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -519,6 +519,45 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                if (controller.additionalStops.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _showAdditionalStopsDialog(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MColor.primaryNavy.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: MColor.primaryNavy.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.flag,
+                            size: 12,
+                            color: MColor.primaryNavy.withValues(alpha: 0.8),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${controller.additionalStops.where((stop) => stop.address.isNotEmpty).length} additional stop(s)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: MColor.primaryNavy.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
 
                 // Route info with enhanced styling
                 Obx(() {
@@ -638,20 +677,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     foregroundColor: Colors.white,
                   ),
                   child: Obx(
-                    () => controller.isLoading.value
+                        () => controller.isLoading.value
                         ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                         : Text(
-                            controller.isScheduled.value
-                                ? 'Schedule It'
-                                : 'Pay for Ride',
-                          ),
+                      controller.isScheduled.value
+                          ? 'Schedule It'
+                          : 'Pay for Ride',
+                    ),
                   ),
                 ),
               ),
@@ -670,5 +709,153 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _showAdditionalStopsDialog(BuildContext context) {
+    final controller = bookingController;
 
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Row(
+                  children: [
+                    Icon(Icons.alt_route, color: MColor.primaryNavy, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Stops Details",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: MColor.primaryNavy,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Divider(color: Colors.grey.shade300, height: 1),
+
+                const SizedBox(height: 12),
+
+                // Content
+                Expanded(
+                  child: Obx(() {
+                    if (controller.additionalStops.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No additional stops added.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: controller.additionalStops.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final stop = controller.additionalStops[index];
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: MColor.primaryNavy.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: MColor.primaryNavy.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: MColor.primaryNavy.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: Icon(
+                                  Icons.flag,
+                                  size: 18,
+                                  color: MColor.primaryNavy,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  stop.address,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: MColor.primaryNavy,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: MColor.primaryNavy.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "Stop ${stop.stopOrder - 1}",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: MColor.primaryNavy,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 16),
+                // Actions
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: MColor.primaryNavy,
+                    ),
+                    label: Text(
+                      "Close",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: MColor.primaryNavy,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

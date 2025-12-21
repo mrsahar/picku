@@ -100,9 +100,14 @@ class DriverAdminChatController extends GetxController {
     try {
       final messageData = args[0] as Map<String, dynamic>;
       final newMessage = ChatMessage.fromJson(messageData);
-      messages.add(newMessage);
+
+      // Mark if message is from current driver
+      final isFromCurrentUser = newMessage.senderId == driverId;
+      final messageWithFlag = newMessage.copyWith(isFromCurrentUser: isFromCurrentUser);
+
+      messages.add(messageWithFlag);
       _scrollToBottom();
-      print('📨 New message received: ${newMessage.message}');
+      print('📨 New message received: ${newMessage.message} (From current user: $isFromCurrentUser)');
     } catch (e) {
       print('Error handling message: $e');
     }
@@ -117,7 +122,12 @@ class DriverAdminChatController extends GetxController {
 
       for (var item in historyList) {
         final message = ChatMessage.fromJson(item as Map<String, dynamic>);
-        messages.add(message);
+
+        // Mark if message is from current driver
+        final isFromCurrentUser = message.senderId == driverId;
+        final messageWithFlag = message.copyWith(isFromCurrentUser: isFromCurrentUser);
+
+        messages.add(messageWithFlag);
       }
 
       _scrollToBottom();

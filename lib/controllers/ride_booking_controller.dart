@@ -61,6 +61,7 @@ class RideBookingController extends GetxController {
   // Text Controllers
   final pickupController = TextEditingController();
   final dropoffController = TextEditingController();
+  var stopControllers = <TextEditingController>[].obs;
 
   // Reactive text values for UI updates
   var pickupText = ''.obs;
@@ -69,9 +70,11 @@ class RideBookingController extends GetxController {
   // Core ride data
   var pickupLocation = Rx<LocationData?>(null);
   var dropoffLocation = Rx<LocationData?>(null);
+  var additionalStops = <LocationData>[].obs;
   var passengerCount = 1.obs;
   var rideType = 'standard'.obs;
   var fareEstimate = 0.0.obs;
+  var isMultiStopRide = false.obs;
 
   // Scheduling variables
   // Fare estimation variables
@@ -115,8 +118,8 @@ class RideBookingController extends GetxController {
   final hasShownApproachingNotification = false.obs;
   final hasShownArrivedNotification = false.obs;
 
-  // SignalR Service (use singleton)
-  SignalRService get signalRService => SignalRService.to;
+  // SignalR Service
+  late SignalRService signalRService;
 
   // Audio player for notifications
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -124,6 +127,7 @@ class RideBookingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _initializeServices();
     _setupLocationListener();
     _setupTextControllerListeners();
   }
@@ -140,6 +144,10 @@ class RideBookingController extends GetxController {
     });
   }
 
+  Future<void> _initializeServices() async {
+    signalRService = Get.put(SignalRService());
+    await signalRService.initializeConnection();
+  }
 
   void _setupLocationListener() {
     // Listen to user location changes to update distance to destination when trip is started
@@ -169,6 +177,9 @@ class RideBookingController extends GetxController {
   void onClose() {
     pickupController.dispose();
     dropoffController.dispose();
+    for (var controller in stopControllers) {
+      controller.dispose();
+    }
     super.onClose();
   }
 
@@ -513,6 +524,43 @@ class RideBookingController extends GetxController {
   }
 
   // FIXED: Multi-stop management - using proper observable updates
+  void addStop() {
+    final controller = TextEditingController();
+    stopControllers.add(controller);
+
+    additionalStops.add(LocationData(
+      address: '',
+      latitude: 0,
+      longitude: 0,
+      stopOrder: additionalStops.length + 2,
+    ));
+
+    // Force UI update
+    stopControllers.refresh();
+    additionalStops.refresh();
+    print(' SAHArSAHAr Stop added. Total stops: ${additionalStops.length}');
+  }
+
+  void removeStop(int index) {
+    if (index >= 0 && index < stopControllers.length) {
+      stopControllers[index].dispose();
+      stopControllers.removeAt(index);
+
+      if (index < additionalStops.length) {
+        additionalStops.removeAt(index);
+      }
+
+      // Force UI update
+      stopControllers.refresh();
+      additionalStops.refresh();
+      print(' SAHArSAHAr Stop removed at index $index');
+    }
+  }
+
+  void setRideType(String type) {
+    rideType.value = type;
+    isMultiStopRide.value = type == 'Multi-Stop Ride';
+  }
 
   // Delegate to LocationService
   Future<void> setPickupToCurrentLocation() async {
@@ -530,7 +578,7 @@ class RideBookingController extends GetxController {
         //Get.snackbar('Error', 'Could not get current location');
       }
     } catch (e) {
-     // Get.snackbar('Error', 'Failed to get current location: $e');
+      // Get.snackbar('Error', 'Failed to get current location: $e');
     }
   }
 
@@ -545,6 +593,7 @@ class RideBookingController extends GetxController {
       await _mapService.createRouteMarkersAndPolylines(
         pickupLocation: pickupLocation.value,
         dropoffLocation: dropoffLocation.value,
+        additionalStops: additionalStops,
       );
 
       isRideBooked.value = true;
@@ -611,6 +660,19 @@ class RideBookingController extends GetxController {
       });
       print(' SAHArSAHAr Added pickup: ${pickupLocation.value!.address}');
 
+      // Additional stops
+      for (int i = 0; i < additionalStops.length; i++) {
+        final stop = additionalStops[i];
+        if (stop.address.isNotEmpty) {
+          allStops.add({
+            "stopOrder": i + 1,
+            "location": stop.address,
+            "latitude": stop.latitude,
+            "longitude": stop.longitude,
+          });
+          print(' SAHArSAHAr Added stop ${i + 1}: ${stop.address}');
+        }
+      }
 
       // Dropoff
       allStops.add({
@@ -768,9 +830,9 @@ class RideBookingController extends GetxController {
         print('SAHArSAHAr Fare estimate response: ${response.body}');
 
         var responseBody = response.body;
-        
+
         // Check if fare contains error message
-        if (responseBody['fare'] is String && 
+        if (responseBody['fare'] is String &&
             responseBody['fare'].toString().contains('Fare settings not found')) {
           print('SAHArSAHAr Fare settings not found for this location');
           estimatedFare.value = 0.0;
@@ -789,7 +851,7 @@ class RideBookingController extends GetxController {
           }
           return;
         }
-        
+
         var fareData = responseBody['fare'] is String
             ? json.decode(responseBody['fare'])
             : responseBody['fare'];
@@ -978,10 +1040,10 @@ class RideBookingController extends GetxController {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Total Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text(
-                    finalFare <= 0
-                        ? "No Extra Charges"
-                      : "\$${finalFare.toStringAsFixed(2)}",
+                        Text(
+                            finalFare <= 0
+                                ? "No Extra Charges"
+                                : "\$${finalFare.toStringAsFixed(2)}",
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
                       ],
                     ),
@@ -1258,11 +1320,11 @@ class RideBookingController extends GetxController {
             Icon(Icons.star, color: MColor.trackingOrange, size: 28),
             SizedBox(width: 8),
             Text('Rate Your Rider',
-              style: TextStyle(
-                color: MColor.primaryNavy,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              )
+                style: TextStyle(
+                  color: MColor.primaryNavy,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                )
             ),
           ],
         ),
@@ -1336,16 +1398,16 @@ class RideBookingController extends GetxController {
             onPressed: selectedRating.value > 0 ? () async {
               Get.back();
               await _submitFeedback(
-                selectedRating.value,
-                commentController.text.trim()
+                  selectedRating.value,
+                  commentController.text.trim()
               );
               clearBooking();
             } : null,
             child: Text(
               'Submit Review',
               style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
               ),
             ),
           )),
@@ -1458,6 +1520,8 @@ class RideBookingController extends GetxController {
         _setPickupLocation(placeDetails);
       } else if (activeField == 'dropoff') {
         _setDropoffLocation(placeDetails);
+      } else if (activeField.startsWith('stop_')) {
+        _setStopLocation(activeField, placeDetails);
       }
 
       _searchService.activeSearchField.value = '';
@@ -1490,6 +1554,26 @@ class RideBookingController extends GetxController {
       longitude: placeDetails.location.longitude,
       stopOrder: 1,
     );
+  }
+
+  void _setStopLocation(String activeField, PlaceDetails placeDetails) {
+    int stopIndex = int.parse(activeField.split('_')[1]);
+    if (stopIndex < stopControllers.length) {
+      stopControllers[stopIndex].text = placeDetails.formattedAddress;
+
+      LocationData stopData = LocationData(
+        address: placeDetails.formattedAddress,
+        latitude: placeDetails.location.latitude,
+        longitude: placeDetails.location.longitude,
+        stopOrder: stopIndex + 2,
+      );
+
+      if (stopIndex < additionalStops.length) {
+        additionalStops[stopIndex] = stopData;
+      } else {
+        additionalStops.add(stopData);
+      }
+    }
   }
 
   // Scheduling
@@ -1538,6 +1622,11 @@ class RideBookingController extends GetxController {
   void resetForm() {
     pickupController.clear();
     dropoffController.clear();
+    for (var controller in stopControllers) {
+      controller.dispose();
+    }
+    stopControllers.clear();
+    additionalStops.clear();
     pickupLocation.value = null;
     dropoffLocation.value = null;
     passengerCount.value = 1;

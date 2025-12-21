@@ -283,7 +283,53 @@ class RideBookingPage extends StatelessWidget {
           ),
 
           // Additional Stops
+          Obx(() {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (controller.stopControllers.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Additional Stops',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...controller.stopControllers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final stopController = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildLocationTextField(
+                              controller: stopController,
+                              hintText: 'Stop ${index + 1}',
+                              icon: Icons.add_location,
+                              iconColor: MAppTheme.primaryNavyColor,
+                              onChanged: (value) => _searchService.searchLocation(value, 'stop_$index'),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => controller.removeStop(index),
+                            icon: Icon(Icons.remove_circle, color: MColor.danger),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ],
+            );
+          }),
 
+          // Add Stop Button
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: controller.addStop,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Stop'),
+          ),
           // Search Suggestions - Updated to use SearchService directly
           Obx(() {
             if (_searchService.searchSuggestions.isNotEmpty || _searchService.isSearching.value) {
@@ -421,6 +467,8 @@ class RideBookingPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     const Text('✓ Pickup & Drop-off selected'),
+                    if (controller.additionalStops.isNotEmpty)
+                      Text('✓ ${controller.additionalStops.length} additional stop(s) added'),
                     Obx(() {
                       // Recalculate fare whenever distance changes
                       String currentDistance = _mapService.routeDistance.value;
@@ -650,6 +698,25 @@ class RideBookingPage extends StatelessWidget {
           longitude: placeDetails.location.longitude,
           stopOrder: 1,
         );
+      }
+      else if (activeField.startsWith('stop_')) {
+        int stopIndex = int.parse(activeField.split('_')[1]);
+        if (stopIndex < controller.stopControllers.length) {
+          controller.stopControllers[stopIndex].text = placeDetails.formattedAddress;
+
+          LocationData stopData = LocationData(
+            address: placeDetails.formattedAddress,
+            latitude: placeDetails.location.latitude,
+            longitude: placeDetails.location.longitude,
+            stopOrder: stopIndex + 2,
+          );
+
+          if (stopIndex < controller.additionalStops.length) {
+            controller.additionalStops[stopIndex] = stopData;
+          } else {
+            controller.additionalStops.add(stopData);
+          }
+        }
       }
 
       _searchService.activeSearchField.value = '';
