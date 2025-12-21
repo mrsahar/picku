@@ -7,6 +7,7 @@ import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/services/map_service.dart';
 import 'package:pick_u/services/search_location_service.dart';
+import 'package:pick_u/services/signalr_service.dart';
 import 'package:pick_u/providers/api_provider.dart';
 
 class InitialBinding extends Bindings {
@@ -15,6 +16,7 @@ class InitialBinding extends Bindings {
     // Core services
     Get.put(GlobalVariables(), permanent: true);
     Get.put<ApiProvider>(ApiProvider(), permanent: true);
+    Get.put<SignalRService>(SignalRService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
     Get.put<RideController>(RideController(), permanent: true);
     Get.put<SearchService>(SearchService(), permanent: true);

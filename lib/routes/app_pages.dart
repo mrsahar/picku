@@ -9,9 +9,12 @@ import 'package:pick_u/authentication/signup_screen.dart';
 import 'package:pick_u/bindings/chat_binding.dart';
 import 'package:pick_u/bindings/edit_profile_binding.dart';
 import 'package:pick_u/bindings/forgot_password_binding.dart';
+import 'package:pick_u/bindings/help_center_binding.dart';
 import 'package:pick_u/bindings/login_binding.dart';
 import 'package:pick_u/bindings/main_map_binding.dart';
+import 'package:pick_u/bindings/notification_binding.dart';
 import 'package:pick_u/bindings/otp_binding.dart';
+import 'package:pick_u/bindings/privacy_policy_binding.dart';
 import 'package:pick_u/bindings/profile_binding.dart';
 import 'package:pick_u/bindings/reset_password_binding.dart';
 import 'package:pick_u/bindings/ride_history_binding.dart';
@@ -93,6 +96,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.notificationScreen,
       page: () => const NotificationScreen(),
+      binding: NotificationBinding(),
     ),
     GetPage(
       name: AppRoutes.settingsScreen,
@@ -101,10 +105,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.helpCenterScreen,
       page: () => const HelpCenterScreen(),
+      binding: HelpCenterBinding(),
     ),
     GetPage(
       name: AppRoutes.privacyPolicy,
       page: () => const PrivacyPolicyScreen(),
+      binding: PrivacyPolicyBinding(),
     ),
     GetPage(
       name: AppRoutes.chatScreen,

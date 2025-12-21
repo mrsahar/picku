@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/services/map_service.dart';
+import 'package:pick_u/services/global_variables.dart';
 import 'package:signalr_core/signalr_core.dart';
 
 enum SignalRConnectionStatus {
@@ -16,7 +17,9 @@ enum SignalRConnectionStatus {
 }
 
 class SignalRService extends GetxService {
-  static const String hubUrl = 'http://pickurides.com/rideHub';
+  static SignalRService get to => Get.find<SignalRService>();
+
+  static const String hubUrl = 'http://pickurides.com/ridechathub';
   static const Duration retryInterval = Duration(seconds: 5);
 
   HubConnection? _connection;
@@ -25,6 +28,9 @@ class SignalRService extends GetxService {
   Timer? _retryTimer;
   int _retryAttempts = 0;
   static const int maxRetryAttempts = 10; // Maximum retry attempts before backing off
+
+  // Public getter for connection (used by ChatBackgroundService)
+  HubConnection? get connection => _connection;
 
   // Connection status observable
   final connectionStatus = SignalRConnectionStatus.disconnected.obs;
@@ -37,6 +43,9 @@ class SignalRService extends GetxService {
 
   // Get MapService instance
   MapService get _mapService => Get.find<MapService>();
+
+  // Get GlobalVariables instance for JWT token
+  GlobalVariables get _globalVars => GlobalVariables.instance;
 
   @override
   void onInit() {
@@ -59,8 +68,18 @@ class SignalRService extends GetxService {
     try {
       connectionStatus.value = SignalRConnectionStatus.connecting;
 
+      // Get JWT token from GlobalVariables
+      final token = _globalVars.userToken;
+
+      // Build connection with JWT authorization
       _connection = HubConnectionBuilder()
-          .withUrl(hubUrl)
+          .withUrl(
+            hubUrl,
+            HttpConnectionOptions(
+              accessTokenFactory: () async => token,
+              logging: (level, message) => print(' SAHAr SignalR Log: $message'),
+            ),
+          )
           .withAutomaticReconnect([1000, 2000, 5000, 10000, 30000]) // Built-in retry with backoff
           .build();
 

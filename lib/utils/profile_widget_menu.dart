@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
+import 'package:flutter/material.dart';
+import 'package:pick_u/utils/theme/mcolors.dart';
+
 class ProfileMenuWidget extends StatelessWidget {
   const ProfileMenuWidget({
     super.key,
@@ -22,12 +25,12 @@ class ProfileMenuWidget extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Define colors for dark and light themes
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.grey[50];
+    //final bgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFF9F2);
     final defaultTextColor = isDark ? Colors.white : Colors.black;
-    final iconColor = isDark ? MColor.warning : Colors.black;
+    final iconColor = isDark ? Colors.orange : Colors.black;
 
     return Material(
-      color: bgColor, // Set background color for ripple effect
+      // color: bgColor, // Set background color for ripple effect
       child: InkWell(
         onTap: onPress,
         splashColor: iconColor.withValues(alpha:0.2), // Customize ripple color

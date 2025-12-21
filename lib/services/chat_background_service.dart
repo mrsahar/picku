@@ -4,17 +4,19 @@ import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/models/message_screen_model.dart';
 import 'package:pick_u/services/notification_service.dart';
+import 'package:pick_u/services/signalr_service.dart';
 import 'package:signalr_core/signalr_core.dart';
 
 class ChatBackgroundService extends GetxService {
   static ChatBackgroundService get to => Get.find();
 
-  // SignalR Connection
-  HubConnection? hubConnection;
+  // Use shared SignalR connection
+  SignalRService get _signalRService => SignalRService.to;
+  HubConnection? get hubConnection => _signalRService.connection;
 
   // Observables
   final RxList<ChatMessage> messages = <ChatMessage>[].obs;
-  final RxBool isConnected = false.obs;
+  RxBool get isConnected => _signalRService.connectionStatus.value == SignalRConnectionStatus.connected ? true.obs : false.obs;
   final RxBool isLoadingMessages = false.obs;
 
   // Required variables
@@ -24,8 +26,6 @@ class ChatBackgroundService extends GetxService {
   final RxString currentUserId = ''.obs;
   final Rx<RideStatus> currentRideStatus = RideStatus.pending.obs;
 
-  // Hub URL
-  final String hubUrl = "http://pickurides.com/ridechathub";
 
   // Service active flag
   final RxBool isServiceActive = false.obs;
@@ -127,11 +127,8 @@ class ChatBackgroundService extends GetxService {
       print(' SAHAr 🛑 Stopping ChatBackgroundService...');
       isServiceActive.value = false;
 
-      await hubConnection?.stop();
-      hubConnection = null;
-      isConnected.value = false;
-
-      // Clear messages
+      // Don't stop the shared SignalR connection, just clear chat messages
+      // The shared connection is used by other services too
       messages.clear();
 
       print(' SAHAr ✅ ChatBackgroundService stopped');
@@ -145,12 +142,20 @@ class ChatBackgroundService extends GetxService {
     try {
       isLoadingMessages.value = true;
 
-      hubConnection = HubConnectionBuilder()
-          .withUrl(hubUrl)
-          .build();
+      // Use shared SignalR connection - ensure it's connected
+      if (!_signalRService.isConnected) {
+        print(' SAHAr 🔄 Waiting for SignalR connection...');
+        await _signalRService.initializeConnection();
+      }
+
+      // Register chat-specific event handlers on shared connection
+      final connection = _signalRService.connection;
+      if (connection == null) {
+        throw Exception('SignalR connection not available');
+      }
 
       // Listen for incoming messages
-      hubConnection?.on('ReceiveMessage', (List<Object?>? arguments) {
+      connection.on('ReceiveMessage', (List<Object?>? arguments) {
         if (arguments != null && arguments.isNotEmpty) {
           final messageData = arguments[0] as Map<String, dynamic>;
           _handleReceivedMessage(messageData);
@@ -158,7 +163,7 @@ class ChatBackgroundService extends GetxService {
       });
 
       // Listen for chat history
-      hubConnection?.on('ReceiveRideChatHistory', (List<Object?>? arguments) {
+      connection.on('ReceiveRideChatHistory', (List<Object?>? arguments) {
         print(' SAHAr 📜 ReceiveRideChatHistory event triggered');
         if (arguments != null && arguments.isNotEmpty) {
           final historyData = arguments[0] as List<dynamic>;
@@ -167,32 +172,7 @@ class ChatBackgroundService extends GetxService {
         }
       });
 
-      // Handle connection events
-      hubConnection?.onclose((error) {
-        print(' SAHAr 🔌 SignalR connection closed: $error');
-        isConnected.value = false;
-
-        // Attempt to reconnect if service is still active
-        if (isServiceActive.value) {
-          _attemptReconnect();
-        }
-      });
-
-      hubConnection?.onreconnecting((error) {
-        print(' SAHAr 🔄 SignalR reconnecting: $error');
-        isConnected.value = false;
-      });
-
-      hubConnection?.onreconnected((connectionId) {
-        print(' SAHAr ✅ SignalR reconnected: $connectionId');
-        isConnected.value = true;
-        _joinRideChat();
-      });
-
-      // Start connection
-      await hubConnection?.start();
-      isConnected.value = true;
-      print(' SAHAr ✅ Connected to SignalR hub');
+      print(' SAHAr ✅ Chat event handlers registered on shared SignalR connection');
 
       // Join ride chat group
       await _joinRideChat();
@@ -409,7 +389,7 @@ class ChatBackgroundService extends GetxService {
       return false;
     }
 
-    if (hubConnection == null || !isConnected.value) {
+    if (hubConnection == null || !_signalRService.isConnected) {
       print(' SAHAr ❌ Not connected to chat service');
       return false;
     }
@@ -436,7 +416,7 @@ class ChatBackgroundService extends GetxService {
 
   /// Refresh chat history manually
   Future<void> refreshChatHistory() async {
-    if (isConnected.value) {
+    if (_signalRService.isConnected) {
       await _loadChatHistory();
     } else {
       print(' SAHAr ⚠️ Cannot refresh - not connected to chat service');
@@ -445,7 +425,9 @@ class ChatBackgroundService extends GetxService {
 
   @override
   void onClose() {
-    hubConnection?.stop();
+    // Don't stop the shared SignalR connection
+    // Just clear local chat data
+    messages.clear();
     super.onClose();
   }
 }
