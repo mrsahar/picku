@@ -356,8 +356,8 @@ class SettingsController extends GetxController {
     Get.snackbar(
       'Refreshed',
       'Location accuracy updated',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
+      snackPosition: SnackPosition.TOP,
+      duration: const Duration(seconds: 5),
     );
   }
 
