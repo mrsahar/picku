@@ -8,6 +8,7 @@ import 'package:pick_u/bindings/initial_binding.dart';
 import 'package:pick_u/routes/app_pages.dart';
 import 'package:pick_u/services/notification_service.dart';
 import 'package:pick_u/controllers/auth_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/global_variables.dart';
 
@@ -35,16 +36,40 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
   @override
   void initState() {
     super.initState();
     initialState();
-
+    _loadThemeMode();
   }
 
   void initialState() async{
     await Future.delayed(const Duration(seconds: 3));
     FlutterNativeSplash.remove();
+  }
+
+  Future<void> _loadThemeMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedTheme = prefs.getString('theme_mode') ?? 'system';
+
+      setState(() {
+        switch (savedTheme) {
+          case 'light':
+            _themeMode = ThemeMode.light;
+            break;
+          case 'dark':
+            _themeMode = ThemeMode.dark;
+            break;
+          default:
+            _themeMode = ThemeMode.system;
+        }
+      });
+    } catch (e) {
+      print('Error loading theme mode: $e');
+    }
   }
 
   @override
@@ -54,7 +79,7 @@ class _MyAppState extends State<MyApp> {
       title: 'PickU',
       theme: MAppTheme.lightTheme,
       darkTheme: MAppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       initialBinding: InitialBinding(),
       navigatorObservers: [AppPages.routeObserver],
       initialRoute: AppPages.INITIAL, // Keep this
