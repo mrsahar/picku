@@ -227,7 +227,7 @@ class RideBookingController extends GetxController {
     }
 
     print('SAHAr Driver distance: ${distance.round()}m');
-    hasShownArrivedNotification.value = false;
+
     // Show "Driver has arrived" notification (10m or less)
     if (distance <= 10 && !hasShownArrivedNotification.value) {
       print('SAHAr Showing arrived dialog - Distance: ${distance.round()}m');
