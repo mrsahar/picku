@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:pick_u/controllers/privacy_policy_controller.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 import 'package:pick_u/widget/picku_appbar.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -275,15 +276,48 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Content Text
-                  SelectableText(
-                    policy.content ?? '',
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: MColor.darkGrey,
-                      letterSpacing: 0.2,
-                    ),
+                  // Content Text - Render HTML
+                  Html(
+                    data: policy.content ?? '',
+                    style: {
+                      "body": Style(
+                        fontSize: FontSize(15),
+                        lineHeight: LineHeight(1.6),
+                        color: MColor.darkGrey,
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                      ),
+                      "*": Style(
+                        fontSize: FontSize(15),
+                        color: MColor.darkGrey,
+                      ),
+                      "h1": Style(
+                        fontSize: FontSize(24),
+                        fontWeight: FontWeight.bold,
+                        color: MColor.primaryNavy,
+                        margin: Margins.only(bottom: 16, top: 8),
+                      ),
+                      "h2": Style(
+                        fontSize: FontSize(20),
+                        fontWeight: FontWeight.bold,
+                        color: MColor.primaryNavy,
+                        margin: Margins.only(bottom: 12, top: 8),
+                      ),
+                      "h3": Style(
+                        fontSize: FontSize(18),
+                        fontWeight: FontWeight.w600,
+                        color: MColor.primaryNavy,
+                        margin: Margins.only(bottom: 8, top: 8),
+                      ),
+                      "p": Style(
+                        fontSize: FontSize(15),
+                        lineHeight: LineHeight(1.6),
+                        margin: Margins.only(bottom: 12),
+                      ),
+                      "div": Style(
+                        margin: Margins.zero,
+                      ),
+                    },
                   ),
                 ],
               ),
