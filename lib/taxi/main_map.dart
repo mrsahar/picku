@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
-import 'package:pick_u/authentication/profile_screen.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/services/global_variables.dart';
-import 'package:pick_u/taxi/home/driver_screen.dart';
-import 'package:pick_u/taxi/home/home_screen.dart';
-import 'package:pick_u/taxi/wallet/wallet_screen.dart';
-import 'package:pick_u/utils/profile_widget_menu.dart';
 
 import '../utils/theme/mcolors.dart';
+import 'home/home_screen.dart';
 
 class MainMap extends StatefulWidget {
   const MainMap({super.key});
@@ -20,15 +16,6 @@ class MainMap extends StatefulWidget {
 }
 
 class _MainMapState extends State<MainMap> {
-  final _currentIndex = 0;
-
-  List<Widget> pageList = [
-    HomeScreen(),
-    const DriverScreen(),
-    const WalletScreen(),
-    const ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     var isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -37,16 +24,35 @@ class _MainMapState extends State<MainMap> {
       drawer: buildModernDrawer(context, isDark),
       body: Stack(
         children: [
-          pageList.elementAt(_currentIndex),
-          Builder(
-            builder: (context) => Positioned(
-              top: 40,
-              left: 10,
-              child: IconButton(
-                icon: const Icon(LineAwesomeIcons.bars_solid),
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
+          const HomeScreen(),
+          Positioned(
+            top: 45, // space from top
+            left: 20,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Builder(
+                    builder: (context) => IconButton(
+                        icon: const Icon(LineAwesomeIcons.bars_solid),
+                        onPressed: () {
+                          Scaffold.of(context).openDrawer();
+                        },
+                      ),
+                  ),
+                ),
               ),
             ),
           ),

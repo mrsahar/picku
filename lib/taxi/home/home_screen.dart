@@ -25,7 +25,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final Completer<GoogleMapController> _controller =
-  Completer<GoogleMapController>();
+      Completer<GoogleMapController>();
 
   // Inject services
   late RideBookingController bookingController;
@@ -263,7 +263,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Show clear button only if ride is booked AND not in restricted statuses
             if (bookingController.isRideBooked.value &&
-                !hideClearButtonStatuses.contains(bookingController.rideStatus.value)) {
+                !hideClearButtonStatuses.contains(
+                  bookingController.rideStatus.value,
+                )) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Container(
@@ -309,8 +311,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ];
 
             // Check if clear button is hidden
-            final isClearButtonHidden = bookingController.isRideBooked.value &&
-                hideClearButtonStatuses.contains(bookingController.rideStatus.value);
+            final isClearButtonHidden =
+                bookingController.isRideBooked.value &&
+                hideClearButtonStatuses.contains(
+                  bookingController.rideStatus.value,
+                );
 
             // Animate position based on clear button visibility
             final targetTop = isClearButtonHidden ? 40.0 : 90.0;
@@ -334,7 +339,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.my_location, color: Colors.blue, size: 22),
+                    icon: const Icon(
+                      Icons.my_location,
+                      color: Colors.blue,
+                      size: 22,
+                    ),
                     onPressed: () => mapService.showPickupLocationWithZoom(
                       bookingController.pickupLocation.value,
                     ),
@@ -390,7 +399,10 @@ class _HomeScreenState extends State<HomeScreen> {
           }),
         ),
 
-        Positioned.fill(
+        Positioned(
+          top: 45, // space from top
+          left: 0,
+          right: 0,
           child: Align(
             alignment: Alignment.topCenter,
             child: SignalRStatusWidget(),
@@ -402,9 +414,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Enhanced method using MapService
   Future<void> _centerMapToLocation(
-      LatLng location, {
-        double zoom = 16.0,
-      }) async {
+    LatLng location, {
+    double zoom = 16.0,
+  }) async {
     await mapService.animateToLocation(location, zoom: zoom);
     print(' SAHAr Map centered to: $location with zoom: $zoom');
   }
@@ -421,9 +433,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRideActionButtons(
-      BuildContext context,
-      RideBookingController controller,
-      ) {
+    BuildContext context,
+    RideBookingController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -476,16 +488,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Obx(() => Text(
-                        controller.pickupLocation.value?.address ??
-                            controller.pickupText.value,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: MColor.primaryNavy.withValues(alpha: 0.9),
+                      child: Obx(
+                        () => Text(
+                          controller.pickupLocation.value?.address ??
+                              controller.pickupText.value,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: MColor.primaryNavy.withValues(alpha: 0.9),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      )),
+                      ),
                     ),
                   ],
                 ),
@@ -506,16 +520,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Obx(() => Text(
-                        controller.dropoffLocation.value?.address ??
-                            controller.dropoffText.value,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: MColor.primaryNavy.withValues(alpha: 0.9),
+                      child: Obx(
+                        () => Text(
+                          controller.dropoffLocation.value?.address ??
+                              controller.dropoffText.value,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: MColor.primaryNavy.withValues(alpha: 0.9),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      )),
+                      ),
                     ),
                   ],
                 ),
@@ -580,7 +596,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(
                                 Icons.straighten,
                                 size: 14,
-                                color: MColor.primaryNavy.withValues(alpha: 0.7),
+                                color: MColor.primaryNavy.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -603,7 +621,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(
                                 Icons.payments_outlined,
                                 size: 14,
-                                color: MColor.primaryNavy.withValues(alpha: 0.7),
+                                color: MColor.primaryNavy.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -626,7 +646,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(
                                 Icons.access_time,
                                 size: 14,
-                                color: MColor.primaryNavy.withValues(alpha: 0.7),
+                                color: MColor.primaryNavy.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -677,20 +699,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     foregroundColor: Colors.white,
                   ),
                   child: Obx(
-                        () => controller.isLoading.value
+                    () => controller.isLoading.value
                         ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : Text(
-                      controller.isScheduled.value
-                          ? 'Schedule It'
-                          : 'Pay for Ride',
-                    ),
+                            controller.isScheduled.value
+                                ? 'Schedule It'
+                                : 'Pay for Ride',
+                          ),
                   ),
                 ),
               ),
@@ -700,8 +722,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-
 
   void toggleLocationWidget() {
     setState(() {
@@ -810,7 +830,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: MColor.primaryNavy.withValues(alpha: 0.15),
+                                  color: MColor.primaryNavy.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
