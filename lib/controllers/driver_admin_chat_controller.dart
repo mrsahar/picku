@@ -43,7 +43,7 @@ class DriverAdminChatController extends GetxController {
         Get.snackbar(
           'Error',
           'Driver ID not found. Please login again.',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.red[100],
           colorText: Colors.red[900],
         );
@@ -58,7 +58,7 @@ class DriverAdminChatController extends GetxController {
       Get.snackbar(
         'Connection Error',
         'Failed to initialize chat',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
       );
@@ -163,7 +163,7 @@ class DriverAdminChatController extends GetxController {
       Get.snackbar(
         'Not Connected',
         'Please wait for connection',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.orange[100],
         colorText: Colors.orange[900],
       );
@@ -188,7 +188,7 @@ class DriverAdminChatController extends GetxController {
       Get.snackbar(
         'Send Failed',
         'Could not send message',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
       );

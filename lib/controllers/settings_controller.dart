@@ -91,7 +91,7 @@ class SettingsController extends GetxController {
       Get.snackbar(
         'Theme Changed',
         'Theme mode updated to ${themeString.toUpperCase()}',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
@@ -144,7 +144,7 @@ class SettingsController extends GetxController {
       Get.snackbar(
         'Error',
         'Could not open location settings',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     }
   }
@@ -157,13 +157,13 @@ class SettingsController extends GetxController {
         Get.snackbar(
           'Permission Granted',
           'Location permission enabled',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
         );
       } else if (permission.isPermanentlyDenied) {
         Get.snackbar(
           'Permission Denied',
           'Please enable location permission in settings',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
         );
         await openAppSettings();
       }
@@ -196,7 +196,7 @@ class SettingsController extends GetxController {
       Get.snackbar(
         'Error',
         'Could not open notification settings',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     }
   }
@@ -300,7 +300,7 @@ class SettingsController extends GetxController {
       Get.snackbar(
         'Success',
         'Cache cleared successfully',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
@@ -310,7 +310,7 @@ class SettingsController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to clear cache',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -395,7 +395,7 @@ class SettingsController extends GetxController {
         Get.snackbar(
           'Not Available',
           'Rating is not available on this platform',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
         );
         return;
       }
@@ -407,7 +407,7 @@ class SettingsController extends GetxController {
         Get.snackbar(
           'Error',
           'Could not open app store',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
         );
       }
     } catch (e) {
@@ -415,7 +415,7 @@ class SettingsController extends GetxController {
       Get.snackbar(
         'Error',
         'Could not open app store',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     }
   }

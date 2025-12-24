@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:pick_u/controllers/notification_controller.dart';
 import 'package:pick_u/models/audit_log_model.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
@@ -175,6 +176,12 @@ class NotificationScreen extends StatelessWidget {
   }
 
   Widget _buildNotificationCard(AuditLogDto notification) {
+    // Extract message from responseData if available
+    String? message;
+    if (notification.responseData != null && notification.responseData!.containsKey('message')) {
+      message = notification.responseData!['message'].toString();
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -189,44 +196,21 @@ class NotificationScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon with status badge
-              Stack(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: MColor.primaryNavy.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Center(
-                      child: Text(
-                        notification.actionIcon,
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                    ),
+              // Status Icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _getStatusColor(notification.status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Center(
+                  child: Icon(
+                    _getStatusIcon(notification.status),
+                    color: _getStatusColor(notification.status),
+                    size: 24,
                   ),
-                  // Status badge
-                  if (notification.status != null)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: MColor.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            notification.statusBadge,
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
               const SizedBox(width: 12),
 
@@ -235,90 +219,37 @@ class NotificationScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
-                    Text(
-                      notification.notificationTitle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: MColor.primaryNavy,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Description
-                    Text(
-                      notification.notificationSubtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: MColor.darkGrey,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Metadata chips
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        if (notification.action != null)
-                          _buildChip(
-                            notification.action!,
-                            Icons.label,
-                            MColor.primaryNavy,
-                          ),
-                        if (notification.entityType != null)
-                          _buildChip(
-                            notification.entityType!,
-                            Icons.category,
-                            MColor.trackingOrange,
-                          ),
-                        if (notification.userType != null)
-                          _buildChip(
-                            notification.userType!,
-                            Icons.person,
-                            MColor.warning,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Time and duration
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: MColor.mediumGrey,
+                    // Status
+                    if (notification.status != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(notification.status).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          notification.relativeTime,
+                        child: Text(
+                          notification.status!,
                           style: TextStyle(
                             fontSize: 12,
-                            color: MColor.mediumGrey,
+                            fontWeight: FontWeight.w600,
+                            color: _getStatusColor(notification.status),
                           ),
                         ),
-                        if (notification.duration != null) ...[
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.timer,
-                            size: 14,
-                            color: MColor.mediumGrey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            notification.formattedDuration,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: MColor.mediumGrey,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+                    const SizedBox(height: 8),
+
+                    // Message
+                    if (message != null)
+                      Text(
+                        message,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: MColor.darkGrey,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                   ],
                 ),
               ),
@@ -335,31 +266,32 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(String label, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+  Color _getStatusColor(String? status) {
+    if (status == null) return MColor.mediumGrey;
+    switch (status.toLowerCase()) {
+      case 'success':
+        return MColor.primaryNavy; // Green
+      case 'failed':
+      case 'error':
+        return MColor.danger;
+      default:
+        return MColor.primaryNavy;
+    }
   }
+
+  IconData _getStatusIcon(String? status) {
+    if (status == null) return Icons.info_outline;
+    switch (status.toLowerCase()) {
+      case 'success':
+        return Icons.check_circle_outline;
+      case 'failed':
+      case 'error':
+        return Icons.error_outline;
+      default:
+        return Icons.info_outline;
+    }
+  }
+
 
   Widget _buildEmptyView() {
     return Center(
@@ -557,6 +489,9 @@ class NotificationScreen extends StatelessWidget {
   }
 
   void _showNotificationDetails(AuditLogDto notification) {
+    // Extract data from responseData if available
+    Map<String, dynamic>? responseData = notification.responseData;
+
     Get.bottomSheet(
       Container(
         decoration: BoxDecoration(
@@ -569,55 +504,16 @@ class NotificationScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
+              // Header with Status
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: MColor.primaryNavy.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    child: Center(
-                      child: Text(
-                        notification.actionIcon,
-                        style: const TextStyle(fontSize: 28),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                notification.notificationTitle,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: MColor.primaryNavy,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              notification.statusBadge,
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          notification.relativeTime,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: MColor.mediumGrey,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'Notification Details',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: MColor.primaryNavy,
                     ),
                   ),
                   IconButton(
@@ -628,156 +524,128 @@ class NotificationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Status
+              // Status Badge
               if (notification.status != null)
-                _buildDetailRow('Status', notification.status!),
-
-              // User Type
-              if (notification.userType != null)
-                _buildDetailRow('User Type', notification.userType!),
-
-              // Action
-              if (notification.action != null)
-                _buildDetailRow('Action', notification.action!),
-
-              // Entity Type
-              if (notification.entityType != null)
-                _buildDetailRow('Entity Type', notification.entityType!),
-
-              // Entity ID
-              if (notification.entityId != null)
-                _buildDetailRow('Entity ID', notification.entityId!),
-
-              // Duration
-              if (notification.duration != null)
-                _buildDetailRow('Duration', notification.formattedDuration),
-
-              // IP Address
-              if (notification.ipAddress != null)
-                _buildDetailRow('IP Address', notification.ipAddress!),
-
-              // Timestamp
-              if (notification.timestamp != null)
-                _buildDetailRow('Date & Time', notification.formattedTimestamp),
-
-              // Error Message
-              if (notification.errorMessage != null && notification.errorMessage!.isNotEmpty) ...[
-                const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: MColor.danger.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: MColor.danger.withOpacity(0.3)),
+                    color: _getStatusColor(notification.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _getStatusColor(notification.status).withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.error_outline, color: MColor.danger, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Error Message',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: MColor.danger,
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        _getStatusIcon(notification.status),
+                        color: _getStatusColor(notification.status),
+                        size: 32,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        notification.errorMessage!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: MColor.darkGrey,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Status',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: MColor.mediumGrey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              notification.status!,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: _getStatusColor(notification.status),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-              ],
+              const SizedBox(height: 20),
 
-              // Old Values
-              if (notification.oldValues != null && notification.oldValues!.isNotEmpty) ...[
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'Old Values',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: MColor.primaryNavy,
-                  ),
+              // Message
+              if (responseData != null && responseData.containsKey('message'))
+                _buildDetailCard(
+                  icon: Icons.message,
+                  title: 'Message',
+                  content: responseData['message'].toString(),
+                  color: MColor.primaryNavy,
                 ),
-                const SizedBox(height: 12),
-                ...notification.oldValues!.entries.map((entry) =>
-                  _buildDetailRow(entry.key, entry.value.toString()),
-                ),
-              ],
 
-              // New Values
-              if (notification.newValues != null && notification.newValues!.isNotEmpty) ...[
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'New Values',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: MColor.primaryNavy,
-                  ),
+              // Full Name
+              if (responseData != null && responseData.containsKey('fullName'))
+                _buildDetailCard(
+                  icon: Icons.person,
+                  title: 'Full Name',
+                  content: responseData['fullName'].toString(),
+                  color: MColor.primaryNavy,
                 ),
-                const SizedBox(height: 12),
-                ...notification.newValues!.entries.map((entry) =>
-                  _buildDetailRow(entry.key, entry.value.toString()),
-                ),
-              ],
 
-              // Request Data
-              if (notification.requestData != null && notification.requestData!.isNotEmpty) ...[
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'Request Data',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: MColor.primaryNavy,
-                  ),
+              // Email
+              if (responseData != null && responseData.containsKey('email'))
+                _buildDetailCard(
+                  icon: Icons.email,
+                  title: 'Email',
+                  content: responseData['email'].toString(),
+                  color: MColor.primaryNavy,
                 ),
-                const SizedBox(height: 12),
-                ...notification.requestData!.entries.map((entry) =>
-                  _buildDetailRow(entry.key, entry.value.toString()),
-                ),
-              ],
 
-              // Response Data
-              if (notification.responseData != null && notification.responseData!.isNotEmpty) ...[
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'Response Data',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: MColor.primaryNavy,
-                  ),
+              // Expires Time
+              if (responseData != null && responseData.containsKey('expires'))
+                _buildDetailCard(
+                  icon: Icons.schedule,
+                  title: 'Token Expires',
+                  content: _formatExpiryTime(responseData['expires'].toString()),
+                  color: MColor.warning,
                 ),
-                const SizedBox(height: 12),
-                ...notification.responseData!.entries.map((entry) =>
-                  _buildDetailRow(entry.key, entry.value.toString()),
-                ),
-              ],
 
-              // User Agent
-              if (notification.userAgent != null && notification.userAgent!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _buildDetailRow('User Agent', notification.userAgent!),
-              ],
+              const SizedBox(height: 16),
+
+              // Timestamp
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: MColor.lightGrey,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: MColor.mediumGrey,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      notification.relativeTime,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: MColor.darkGrey,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (notification.timestamp != null)
+                      Text(
+                        notification.formattedTimestamp,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: MColor.mediumGrey,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -786,30 +654,91 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
+  Widget _buildDetailCard({
+    required IconData icon,
+    required String title,
+    required String content,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MColor.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: MColor.lightGrey,
+          width: 1,
+        ),
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: MColor.mediumGrey,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: MColor.darkGrey,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: MColor.mediumGrey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  content,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: MColor.darkGrey,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  String _formatExpiryTime(String expiryString) {
+    try {
+      final DateTime expiryTime = DateTime.parse(expiryString);
+      final now = DateTime.now();
+      final difference = expiryTime.difference(now);
+
+      String formattedDate = DateFormat('MMM dd, yyyy • hh:mm a').format(expiryTime);
+
+      if (difference.isNegative) {
+        return '$formattedDate (Expired)';
+      } else if (difference.inDays > 0) {
+        return '$formattedDate (${difference.inDays} days remaining)';
+      } else if (difference.inHours > 0) {
+        return '$formattedDate (${difference.inHours} hours remaining)';
+      } else if (difference.inMinutes > 0) {
+        return '$formattedDate (${difference.inMinutes} minutes remaining)';
+      } else {
+        return '$formattedDate (Expires soon)';
+      }
+    } catch (e) {
+      return expiryString;
+    }
+  }
+
 }
+

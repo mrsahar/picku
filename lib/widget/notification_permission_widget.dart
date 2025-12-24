@@ -180,7 +180,7 @@ class NotificationSettingsButton extends StatelessWidget {
               Get.snackbar(
                 'Permission Required',
                 'Please enable notifications in device settings to receive chat messages.',
-                snackPosition: SnackPosition.BOTTOM,
+                snackPosition: SnackPosition.TOP,
                 backgroundColor: MColor.warning,
                 colorText: MColor.warning,
                 duration: const Duration(seconds: 5),
@@ -195,7 +195,7 @@ class NotificationSettingsButton extends StatelessWidget {
             Get.snackbar(
               'Notifications Enabled',
               'You\'re all set to receive chat notifications!',
-              snackPosition: SnackPosition.BOTTOM,
+              snackPosition: SnackPosition.TOP,
               backgroundColor: MColor.primaryNavy,
               colorText: MColor.primaryNavy,
               icon: Icon(Icons.check_circle, color: MColor.primaryNavy),

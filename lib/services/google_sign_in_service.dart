@@ -63,7 +63,7 @@ class GoogleSignInService extends GetxService {
       Get.snackbar(
         'Sign-In Error',
         'Failed to sign in with Google. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
       return null;
     } finally {

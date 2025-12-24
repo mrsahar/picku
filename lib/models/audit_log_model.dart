@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:intl/intl.dart';
 
 /// Request model for audit log pagination and filtering
@@ -98,6 +99,7 @@ class AuditLogDto {
   final String? errorMessage;
   final DateTime? timestamp;
   final int? duration;
+  final int? timespan; // New field for API response time in milliseconds
 
   AuditLogDto({
     this.auditLogId,
@@ -116,6 +118,7 @@ class AuditLogDto {
     this.errorMessage,
     this.timestamp,
     this.duration,
+    this.timespan,
   });
 
   factory AuditLogDto.fromJson(Map<String, dynamic> json) {
@@ -138,15 +141,28 @@ class AuditLogDto {
           ? DateTime.parse(json['timestamp'])
           : null,
       duration: json['duration'] as int?,
+      timespan: json['timespan'] as int?,
     );
   }
 
-  /// Helper method to parse JSON strings that might be nested
+  /// Helper method to parse JSON strings that might be nested or stringified
   static Map<String, dynamic>? _parseJsonString(dynamic value) {
     if (value == null) return null;
     if (value is Map<String, dynamic>) return value;
     if (value is Map) {
       return Map<String, dynamic>.from(value);
+    }
+    // Handle JSON string
+    if (value is String) {
+      try {
+        final decoded = json.decode(value);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } catch (e) {
+        // If parsing fails, return null
+        return null;
+      }
     }
     return null;
   }
@@ -264,14 +280,15 @@ class AuditLogDto {
 
   /// Format duration in a readable way
   String get formattedDuration {
-    if (duration == null) return 'N/A';
+    final durationValue = timespan ?? duration;
+    if (durationValue == null) return 'N/A';
 
-    if (duration! < 1000) {
-      return '${duration}ms';
-    } else if (duration! < 60000) {
-      return '${(duration! / 1000).toStringAsFixed(2)}s';
+    if (durationValue < 1000) {
+      return '${durationValue}ms';
+    } else if (durationValue < 60000) {
+      return '${(durationValue / 1000).toStringAsFixed(2)}s';
     } else {
-      return '${(duration! / 60000).toStringAsFixed(2)}m';
+      return '${(durationValue / 60000).toStringAsFixed(2)}m';
     }
   }
 

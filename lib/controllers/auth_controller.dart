@@ -60,7 +60,7 @@ class AuthController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to sign in. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     } finally {
       _isLoading.value = false;
@@ -79,7 +79,7 @@ class AuthController extends GetxController {
       Get.snackbar(
         'Signed Out',
         'You have been signed out successfully',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
 
       // Navigate back to login screen

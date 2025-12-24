@@ -1,69 +1,74 @@
 /// Privacy Policy Model
 class PrivacyPolicyResponse {
-  final String? id;
+  final String? policyId;
+  final String? policyType;
   final String? title;
   final String? content;
-  final String? version;
-  final DateTime? effectiveDate;
-  final DateTime? lastUpdated;
+  final int? version;
   final bool? isActive;
-  final String? language;
-  final Map<String, dynamic>? metadata;
+  final String? createdBy;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   PrivacyPolicyResponse({
-    this.id,
+    this.policyId,
+    this.policyType,
     this.title,
     this.content,
     this.version,
-    this.effectiveDate,
-    this.lastUpdated,
     this.isActive,
-    this.language,
-    this.metadata,
+    this.createdBy,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory PrivacyPolicyResponse.fromJson(Map<String, dynamic> json) {
+    print('PrivacyPolicyResponse.fromJson: Parsing response...');
+    print('  - policyId: ${json['policyId']}');
+    print('  - title: ${json['title']}');
+    print('  - content length: ${json['content']?.toString().length ?? 0}');
+
     return PrivacyPolicyResponse(
-      id: json['id']?.toString(),
+      policyId: json['policyId']?.toString(),
+      policyType: json['policyType']?.toString(),
       title: json['title']?.toString(),
       content: json['content']?.toString(),
-      version: json['version']?.toString(),
-      effectiveDate: json['effectiveDate'] != null
-          ? DateTime.parse(json['effectiveDate'])
-          : null,
-      lastUpdated: json['lastUpdated'] != null
-          ? DateTime.parse(json['lastUpdated'])
-          : null,
+      version: json['version'] as int?,
       isActive: json['isActive'] as bool?,
-      language: json['language']?.toString() ?? 'en',
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      createdBy: json['createdBy']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'policyId': policyId,
+      'policyType': policyType,
       'title': title,
       'content': content,
       'version': version,
-      'effectiveDate': effectiveDate?.toIso8601String(),
-      'lastUpdated': lastUpdated?.toIso8601String(),
       'isActive': isActive,
-      'language': language,
-      'metadata': metadata,
+      'createdBy': createdBy,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
-  /// Get formatted effective date
-  String get formattedEffectiveDate {
-    if (effectiveDate == null) return 'N/A';
-    return '${effectiveDate!.day}/${effectiveDate!.month}/${effectiveDate!.year}';
+  /// Get formatted created date
+  String get formattedCreatedAt {
+    if (createdAt == null) return 'N/A';
+    return '${createdAt!.day}/${createdAt!.month}/${createdAt!.year}';
   }
 
   /// Get formatted last updated date
-  String get formattedLastUpdated {
-    if (lastUpdated == null) return 'N/A';
-    return '${lastUpdated!.day}/${lastUpdated!.month}/${lastUpdated!.year}';
+  String get formattedUpdatedAt {
+    if (updatedAt == null) return 'N/A';
+    return '${updatedAt!.day}/${updatedAt!.month}/${updatedAt!.year}';
   }
 
   /// Check if content is available

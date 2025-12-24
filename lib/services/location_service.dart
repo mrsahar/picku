@@ -136,7 +136,7 @@ class LocationService extends GetxService {
       Get.snackbar(
         'Error',
         'Could not open location settings. Please enable GPS manually.',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     }
   }

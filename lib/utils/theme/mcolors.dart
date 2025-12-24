@@ -13,6 +13,7 @@ class MColor {
   // Muted amber — darker tone for dark backgrounds
   static Color get warning => const Color(0xFFFFB300); // Deep amber / gold
   static Color get danger => const Color(0xFFB71C1C); // Dark crimson red
+  static Color get success => const Color(0xFF2E7D32); // Dark green for success states
 
   // Additional colors for better theme support
   static Color get white => const Color(0xFFFFFFFF);

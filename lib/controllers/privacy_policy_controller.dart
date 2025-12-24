@@ -3,7 +3,7 @@ import 'package:pick_u/models/privacy_policy_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 
 class PrivacyPolicyController extends GetxController {
-  final ApiProvider _apiProvider = Get.find<ApiProvider>();
+  late final ApiProvider _apiProvider;
 
   // Observable variables
   final _privacyPolicy = Rxn<PrivacyPolicyResponse>();
@@ -20,6 +20,14 @@ class PrivacyPolicyController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    try {
+      _apiProvider = Get.find<ApiProvider>();
+      print('PrivacyPolicyController: ApiProvider found successfully');
+    } catch (e) {
+      print('PrivacyPolicyController: Error finding ApiProvider: $e');
+      _errorMessage.value = 'Failed to initialize: ApiProvider not found';
+      return;
+    }
     fetchPrivacyPolicy();
   }
 
@@ -29,33 +37,38 @@ class PrivacyPolicyController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
+      print('PrivacyPolicyController: Starting to fetch privacy policy...');
+
       final endpoint = '/api/Policy/get-privacy-policy';
-      print(' SAHArSAHAr MRSAHAr: Fetching privacy policy from $endpoint');
+      print('PrivacyPolicyController: Fetching from $endpoint');
 
       final response = await _apiProvider.postData(endpoint, {});
 
-      print(' SAHArSAHAr MRSAHAr: response.statusCode = ${response.statusCode}');
-      print(' SAHArSAHAr MRSAHAr: response.body = ${response.body}');
+      print('PrivacyPolicyController: response.statusCode = ${response.statusCode}');
+      print('PrivacyPolicyController: response.body = ${response.body}');
 
       if (response.statusCode == 200) {
         final policyResponse = PrivacyPolicyResponse.fromJson(response.body);
         _privacyPolicy.value = policyResponse;
-        print(' SAHArSAHAr MRSAHAr: Privacy policy loaded successfully');
+        print('PrivacyPolicyController: Privacy policy loaded successfully');
+        print('PrivacyPolicyController: Has content: ${policyResponse.hasContent}');
       } else if (response.statusCode == 401) {
         _errorMessage.value = 'Unauthorized. Please login again.';
-        print(' SAHArSAHAr MRSAHAr: 401 Unauthorized');
+        print('PrivacyPolicyController: 401 Unauthorized');
       } else if (response.statusCode == 404) {
         _errorMessage.value = 'Privacy policy not found.';
-        print(' SAHArSAHAr MRSAHAr: 404 Not Found');
+        print('PrivacyPolicyController: 404 Not Found');
       } else {
         _errorMessage.value = 'Failed to load privacy policy: ${response.statusText}';
-        print(' SAHArSAHAr MRSAHAr: Failed with status ${response.statusCode}');
+        print('PrivacyPolicyController: Failed with status ${response.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _errorMessage.value = 'Error loading privacy policy: $e';
-      print(' SAHArSAHAr MRSAHAr: Exception = $e');
+      print('PrivacyPolicyController: Exception = $e');
+      print('PrivacyPolicyController: StackTrace = $stackTrace');
     } finally {
       _isLoading.value = false;
+      print('PrivacyPolicyController: Loading finished. isLoading=${_isLoading.value}');
     }
   }
 
