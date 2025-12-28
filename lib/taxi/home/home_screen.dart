@@ -283,6 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: IconButton(
                     icon: Icon(Icons.clear, color: MColor.danger, size: 22),
                     onPressed: () {
+                      bookingController.cancelRideAndRefund();
                       bookingController.clearBooking();
                       Get.snackbar('Cleared', 'Ride booking cleared');
                     },

@@ -92,23 +92,52 @@ class ChatController extends GetxController {
   Future<void> sendMessage() async {
     final messageText = messageController.text.trim();
 
+    print('📱 ChatController.sendMessage() called');
+    print('   Message text: "$messageText"');
+    print('   Text length: ${messageText.length}');
+
     if (messageText.isEmpty) {
+      print('⚠️ Message is empty, not sending');
       return;
     }
 
+    print('📊 Current state:');
+    print('   RideId: ${_chatService.rideId.value}');
+    print('   SenderId: ${_chatService.currentUserId.value}');
+    print('   DriverId: ${_chatService.driverId.value}');
+    print('   IsConnected: ${_chatService.isConnected.value}');
+
     try {
       isSending.value = true;
+      print('🔄 Calling _chatService.sendMessage...');
 
       final success = await _chatService.sendMessage(messageText);
+
+      print('✅ Service returned: $success');
 
       if (success) {
         messageController.clear();
         _scrollToBottom();
+        print('✅ Message sent successfully and cleared input');
       } else {
-        //Get.snackbar('Error', 'Failed to send message');
+        print('❌ Failed to send message - service returned false');
+        Get.snackbar(
+          'Error',
+          'Failed to send message. Please check your connection.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
+    } catch (e, stackTrace) {
+      print('❌ Exception in sendMessage: $e');
+      print('Stack trace: $stackTrace');
+      Get.snackbar(
+        'Error',
+        'Error sending message: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isSending.value = false;
+      print('🏁 isSending set to false');
     }
   }
 

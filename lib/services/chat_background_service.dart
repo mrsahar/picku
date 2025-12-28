@@ -397,11 +397,13 @@ class ChatBackgroundService extends GetxService {
       print(' SAHAr 📤 Sending message via SignalR: $messageText');
       print(' SAHAr    RideId: ${rideId.value}');
       print(' SAHAr    SenderId: ${currentUserId.value}');
+      print(' SAHAr    SenderRole: Rider');
 
       await hubConnection?.invoke('SendMessage', args: [
         rideId.value,
         currentUserId.value,
         messageText,
+        'Rider', // Add senderRole parameter
       ]);
 
       print(' SAHAr ✅ Message sent successfully via SignalR');
