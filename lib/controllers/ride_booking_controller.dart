@@ -28,6 +28,9 @@ class ApiEndpoints {
   static const String processPayment = '/api/Payment/customer-payments';
   static const String fareEstimate = '/api/Ride/fare-estimate';
   static const String submitFeedback = '/api/Feedback';
+  static const String saveHeldPayment = '/api/Payment/held-payments';
+  static const String completeTransaction = '/api/Payment/complete-transaction';
+  static const String cancelRide = '/api/Payment/cancel-ride';
 }
 
 class AppConstants {
@@ -104,11 +107,15 @@ class RideBookingController extends GetxController {
   var vehicle = ''.obs;
   var vehicleColor = ''.obs;
   var rating = 0.0.obs;
+  var driverStripeAccountId = ''.obs; // Driver's Stripe Connected Account ID
 
   // Driver location tracking
   final driverLatitude = 0.0.obs;
   final driverLongitude = 0.0.obs;
   final isDriverLocationActive = false.obs;
+
+  // Store payment intent ID when ride is booked
+  RxString heldPaymentIntentId = ''. obs;
 
   // Distance tracking for destination (when trip started)
   final distanceToDestination = 0.0.obs;
@@ -915,6 +922,18 @@ class RideBookingController extends GetxController {
           rideStatus.value = RideStatus.driverAssigned;
           rating.value = (rideData['driverAverageRating'] ?? 0.0).toDouble();
 
+          // IMPORTANT: Extract driver's Stripe Connected Account ID
+          driverStripeAccountId.value = rideData['driverStripeAccount'] ?? rideData['driverStripeAccount'] ?? '';
+
+          print(' SAHArSAHAr ✅ Driver found!');
+          print(' SAHArSAHAr Driver ID: ${driverId.value}');
+          print(' SAHArSAHAr Driver Name: ${driverName.value}');
+          print(' SAHArSAHAr Driver Stripe Account: ${driverStripeAccountId.value}');
+
+          if (driverStripeAccountId.value.isEmpty) {
+            print(' SAHArSAHAr ⚠️ WARNING: Driver does not have Stripe account!');
+          }
+
           // Set up SignalR subscription for ride updates
           if (currentRideId.value.isNotEmpty) {
             signalRService.subscribeToRide(currentRideId.value);
@@ -1662,112 +1681,107 @@ class RideBookingController extends GetxController {
     distanceToDestination.value = 0.0;
   }
 
-  Future<void> _completePayment(double amount) async {
+  /// STEP 1: Hold payment first, then start the ride (book/find driver or schedule)
+  Future<void> startRideWithPayment() async {
+    print('SAHAr: startRideWithPayment() called');
+
+    // Validations
+    if (! isRideBooked. value) {
+      print('SAHAr: Ride not booked yet');
+      Get.snackbar('Error', 'Please book a ride first');
+      return;
+    }
+
+    if (pickupLocation.value == null || dropoffLocation.value == null) {
+      print('SAHAr: Missing pickup or dropoff location');
+      Get.snackbar('Error', 'Please set pickup and dropoff locations');
+      return;
+    }
+
+    if (isScheduled.value) {
+      if (scheduledDate.value == null || scheduledTime.value == null) {
+        Get.snackbar('Incomplete Schedule', 'Please set both date and time');
+        return;
+      }
+
+      DateTime scheduledDateTime = getScheduledDateTime()! ;
+      if (scheduledDateTime.isBefore(DateTime.now())) {
+        Get.snackbar('Invalid Schedule', 'Scheduled time cannot be in the past');
+        return;
+      }
+    }
+
     try {
-      print('SAHAr: Starting _completePayment with amount: $amount');
       isLoading.value = true;
 
-      var userId = await SharedPrefsService. getUserId() ?? AppConstants.defaultUserId;
-      print('SAHAr: Retrieved userId: $userId');
+      // Use the estimated fare for payment hold
+      double amountToHold = (estimatedFare.value > 0)
+          ? estimatedFare. value
+          : estimatedPrice.value;
 
-      double tipAmount = amount - estimatedPrice.value;
-      print('SAHAr: Calculated tipAmount: $tipAmount');
+      print('SAHAr: Holding payment amount: $amountToHold');
 
-      String? paymentToken;
+      // HOLD the payment (not capture yet)
+      bool paymentHeld = await _holdStripePayment(amountToHold);
 
-      // Only process Stripe payment if amount is greater than 0
-      if (amount > 0) {
-        paymentToken = await _processStripePayment(amount);
-        print('SAHAr: Stripe payment token: $paymentToken');
-
-        if (paymentToken == null) {
-          print('SAHAr: Stripe payment failed, aborting backend call');
-          Get.snackbar('Payment Failed', 'Card payment was not processed');
-          return;
-        }
-      } else {
-        // Use dummy token for zero or negative amounts (no Stripe processing)
-        paymentToken = 'NO_PAYMENT_REQUIRED';
-        print('SAHAr: Amount is <= 0, skipping Stripe payment processing, using dummy token');
+      if (!paymentHeld) {
+        print('SAHAr: Payment hold failed or cancelled');
+        return; // Error already shown in _holdStripePayment
       }
 
-      // Payment data structure
-      Map<String, dynamic> paymentData = {
-        "rideId": prevRideId.value,
-        "paidAmount": estimatedPrice. value,
-        "tipAmount": tipAmount,
-        "driverId": driverId.value,
-        "userId": userId,
-        "paymentToken": paymentToken // Will be dummy token when amount <= 0
-      };
+      print('SAHAr: ✅ Payment held successfully! ');
+      print('SAHAr: Payment Intent ID: ${heldPaymentIntentId.value}');
 
-      print('SAHAr: Sending paymentData to backend: $paymentData');
+      // Save held payment info to backend
+      await _saveHeldPaymentToBackend();
 
-      Response response = await _apiProvider.postData(ApiEndpoints.processPayment, paymentData);
+      // Now proceed to start the ride (find driver)
+      await startRide(heldPaymentIntentId.value); // Pass payment intent as token
 
-      if (response.isOk) {
-        print('SAHAr: Payment recorded successfully: ${response.body}');
-
-        String message;
-
-        if (amount <= 0) {
-          message = "Ride completed successfully!\nNo payment required.";
-        } else {
-          message = "Payment of \$${amount.toStringAsFixed(2)} completed successfully!";
-
-          if (tipAmount > 0) {
-            message += "\nTip of \$${tipAmount.toStringAsFixed(2)} added for ${driverName.value}!";
-          }
-        }
-
-        Get.snackbar(
-          amount <= 0 ? 'Ride Completed!' : 'Payment Successful!',
-          message,
-          backgroundColor: MColor.primaryNavy.withValues(alpha: 0.8),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 5),
-        );
-
-        // Show review dialog before clearing booking
-        _showReviewDialog();
-      } else {
-        print('SAHAr: Failed to record payment: ${response.statusText}');
-        Get.snackbar('Recording Failed', 'Payment processed but failed to record: ${response.statusText}');
-      }
     } catch (e) {
-      print('SAHAr: Error in _completePayment: $e');
-      Get.snackbar('Payment Error', 'Failed to process payment: $e');
+      print('SAHAr: Exception in startRideWithPayment:  $e');
+      Get.snackbar('Error', 'Failed to process payment/start ride: $e');
     } finally {
-      isLoading. value = false;
-      print('SAHAr: isLoading set to false');
+      isLoading.value = false;
+      print('SAHAr: startRideWithPayment completed');
     }
   }
 
-  Future<String?> _processStripePayment(double amount) async {
+  /// HOLD payment (authorize without capturing)
+  Future<bool> _holdStripePayment(double amount) async {
     try {
-      print('SAHAr: Starting _processStripePayment with amount: $amount');
+      print('SAHAr: Starting _holdStripePayment with amount: $amount');
+
+      if (amount <= 0) {
+        print('SAHAr:  Amount is 0 or negative, no payment hold needed');
+        heldPaymentIntentId.value = 'NO_PAYMENT_REQUIRED';
+        return true;
+      }
 
       int amountInCents = (amount * 100).round();
-      print('SAHAr: Converted amount to cents: $amountInCents');
+      print('SAHAr:  Converted amount to cents: $amountInCents');
 
-      Map<String, dynamic>? paymentIntent = await PaymentService.createPaymentIntent(
-        amount: amountInCents.toString(),
+      // Create payment intent with HOLD (manual capture)
+      Map<String, dynamic>? paymentIntent =
+      await PaymentService.createPaymentIntentWithHold(
+        amount: amountInCents. toString(),
         currency: 'cad',
+        description: 'Ride payment - On Hold',
       );
 
       if (paymentIntent == null) {
-        print('SAHAr: Failed to create payment intent');
-        throw Exception('Failed to create payment intent');
+        print('SAHAr:  Failed to create payment intent');
+        Get.snackbar('Error', 'Failed to create payment hold');
+        return false;
       }
 
       print('SAHAr: Received paymentIntent: $paymentIntent');
-
-      // Extract the payment intent ID
       String paymentIntentId = paymentIntent['id'] ?? '';
       print('SAHAr: Payment Intent ID: $paymentIntentId');
 
-      var userName = await SharedPrefsService.getUserFullName() ?? AppConstants.defaultUserName;
-      print('SAHAr: Retrieved userName for merchantDisplayName: $userName');
+      // Show Stripe payment sheet to authorize payment
+      var userName = await SharedPrefsService.getUserFullName() ??
+          AppConstants.defaultUserName;
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
@@ -1782,18 +1796,310 @@ class RideBookingController extends GetxController {
       await Stripe.instance.presentPaymentSheet();
       print('SAHAr: Payment sheet presented successfully');
 
-      // Return the payment intent ID as the token
-      return paymentIntentId;
+      // Save payment intent ID
+      heldPaymentIntentId.value = paymentIntentId;
+
+      print('SAHAr: ✅ Payment authorized and held! ');
+      return true;
 
     } on StripeException catch (e) {
-      print('SAHAr: StripeException: ${e.error.localizedMessage}');
-      Get.snackbar('Payment Cancelled', 'Payment was cancelled or failed');
-      return null;
+      print('SAHAr:  StripeException: ${e. error.localizedMessage}');
+      Get.snackbar('Payment Cancelled', 'Payment authorization was cancelled');
+      return false;
     } catch (e) {
-      print('SAHAr: General error in _processStripePayment: $e');
-      Get.snackbar('Payment Error', 'Failed to process payment: $e');
-      return null;
+      print('SAHAr: Error in _holdStripePayment:  $e');
+      Get.snackbar('Payment Error', 'Failed to authorize payment: $e');
+      return false;
     }
+  }
+
+  /// Save held payment info to backend
+  Future<void> _saveHeldPaymentToBackend() async {
+    try {
+      var userId = await SharedPrefsService.getUserId() ??
+          AppConstants.defaultUserId;
+
+      Map<String, dynamic> holdData = {
+        "rideId": prevRideId.value,
+        "userId": userId,
+        "paymentIntentId": heldPaymentIntentId.value,
+        "heldAmount": (estimatedFare.value > 0 ? estimatedFare.value :  estimatedPrice.value),
+        "status": "held",
+        "createdAt":  DateTime.now().toIso8601String(),
+      };
+
+      print('SAHAr: Saving held payment to backend: $holdData');
+
+      Response response = await _apiProvider.postData(
+        ApiEndpoints. saveHeldPayment, // Backend endpoint
+        holdData,
+      );
+
+      if (response.isOk) {
+        print('SAHAr:  Held payment saved successfully');
+      } else {
+        print('SAHAr: Failed to save held payment:  ${response.statusText}');
+      }
+    } catch (e) {
+      print('SAHAr:  Error saving held payment:  $e');
+    }
+  }
+
+  /// STEP 2: When driver is found, save driver's Stripe ID
+  void onDriverFound(Map<String, dynamic> driverData) {
+    driverId.value = driverData['driverId'] ?? '';
+    driverName.value = driverData['driverName'] ?? '';
+
+    // IMPORTANT: Get driver's Stripe Connected Account ID
+    driverStripeAccountId.value = driverData['driverStripeId'] ?? '';
+
+    print('SAHAr: Driver found! ');
+    print('SAHAr: Driver ID: ${driverId.value}');
+    print('SAHAr: Driver Name: ${driverName.value}');
+    print('SAHAr: Driver Stripe Account:  ${driverStripeAccountId. value}');
+
+    if (driverStripeAccountId. value.isEmpty) {
+      print('SAHAr: ⚠️ WARNING: Driver does not have Stripe account! ');
+    }
+  }
+
+  /// STEP 3: Complete payment when ride ends (capture + transfer)
+  Future<void> _completePayment(double totalAmountWithTip) async {
+    try {
+      print('SAHAr: Starting _completePayment');
+      print('SAHAr: Total amount (including tip): $totalAmountWithTip');
+      isLoading.value = true;
+
+      var userId = await SharedPrefsService.getUserId() ??
+          AppConstants.defaultUserId;
+
+      // Calculate tip amount from total (total = fare + tip)
+      double fareAmount = estimatedPrice.value;
+      double tipAmount =0;
+      if(totalAmountWithTip > 0){
+        tipAmount = totalAmountWithTip - fareAmount;
+      }
+      print('SAHAr: Fare amount: $fareAmount');
+      print('SAHAr: Tip amount: $tipAmount');
+      print('SAHAr: Total amount: $totalAmountWithTip');
+
+      // Check if we have held payment
+      if (heldPaymentIntentId.value.isEmpty ||
+          heldPaymentIntentId.value == 'NO_PAYMENT_REQUIRED') {
+
+        if (totalAmountWithTip <= 0) {
+          // No payment required
+          await _recordNoPaymentRide();
+          _showRideCompletedMessage(0, 0);
+          _showReviewDialog();
+          return;
+        } else {
+          Get.snackbar('Error', 'No held payment found');
+          return;
+        }
+      }
+
+      // Check driver's Stripe account
+      if (driverStripeAccountId.value.isEmpty) {
+        Get.snackbar('Error', 'Driver payment details not available');
+        print('SAHAr: ⚠️ Driver Stripe account missing!');
+        return;
+      }
+
+      int totalAmountCents = (totalAmountWithTip * 100).round();
+      int tipAmountCents = (tipAmount * 100).round();
+
+      print('SAHAr: 💳 Capturing and transferring payment...');
+      print('SAHAr: Payment Intent: ${heldPaymentIntentId.value}');
+      print('SAHAr: Driver Stripe ID: ${driverStripeAccountId.value}');
+
+      // CAPTURE payment and TRANSFER to driver
+      final result = await PaymentService.captureAndTransferPayment(
+        paymentIntentId: heldPaymentIntentId.value,
+        driverStripeAccountId: driverStripeAccountId.value,
+        totalAmountCents: totalAmountCents,
+        tipAmountCents: tipAmountCents,
+      );
+
+      if (result != null && result['success'] == true) {
+        print('SAHAr: ✅ Payment completed successfully!');
+
+        // Save transaction to backend
+        await _saveCompletedTransaction(result, userId, tipAmount);
+
+        // Show success message
+        double driverAmount = result['driver_amount'] / 100;
+        double platformFee = result['platform_fee'] / 100;
+
+        _showRideCompletedMessage(driverAmount, platformFee);
+
+        // Show review dialog
+        _showReviewDialog();
+
+        // Clear payment data
+        _clearPaymentData();
+
+      } else {
+        print('SAHAr: ❌ Payment completion failed');
+        Get.snackbar('Payment Failed', 'Failed to complete payment');
+      }
+
+    } catch (e) {
+      print('SAHAr: ❌ Error in _completePayment: $e');
+      Get.snackbar('Payment Error', 'Failed to process payment: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Save completed transaction to backend
+  Future<void> _saveCompletedTransaction(
+      Map<String, dynamic> result,
+      String userId,
+      double tipAmount
+      ) async {
+    try {
+      Map<String, dynamic> paymentData = {
+        "rideId": prevRideId. value,
+        "userId": userId,
+        "driverId": driverId.value,
+        "paymentIntentId": result['payment_intent_id'],
+        "transferId": result['transfer_id'],
+        "totalAmount": result['total_amount'] / 100, // Convert to dollars
+        "rideAmount": estimatedPrice.value,
+        "tipAmount": tipAmount,
+        "driverAmount": result['driver_amount'] / 100,
+        "platformFee": result['platform_fee'] / 100,
+        "status": "completed",
+        "completedAt": DateTime.now().toIso8601String(),
+      };
+
+      print('SAHAr: Saving completed transaction:  $paymentData');
+
+      Response response = await _apiProvider.postData(
+        ApiEndpoints. completeTransaction, // Backend endpoint
+        paymentData,
+      );
+
+      if (response.isOk) {
+        print('SAHAr: Transaction saved successfully');
+      } else {
+        print('SAHAr: Failed to save transaction: ${response.statusText}');
+      }
+    } catch (e) {
+      print('SAHAr: Error saving transaction: $e');
+    }
+  }
+
+  /// Record ride with no payment (for free rides)
+  Future<void> _recordNoPaymentRide() async {
+    try {
+      var userId = await SharedPrefsService. getUserId() ??
+          AppConstants.defaultUserId;
+
+      Map<String, dynamic> data = {
+        "rideId": prevRideId.value,
+        "userId": userId,
+        "driverId": driverId.value,
+        "amount": 0,
+        "status": "completed_no_payment",
+        "completedAt": DateTime.now().toIso8601String(),
+      };
+
+      await _apiProvider.postData(ApiEndpoints.completeTransaction, data);
+      print('SAHAr: No-payment ride recorded');
+    } catch (e) {
+      print('SAHAr: Error recording no-payment ride:  $e');
+    }
+  }
+
+  /// Show ride completed message
+  void _showRideCompletedMessage(double driverAmount, double platformFee) {
+    String message;
+
+    if (driverAmount == 0 && platformFee == 0) {
+      message = "Ride completed successfully!\nNo payment required.";
+    } else {
+      double totalAmount = estimatedPrice.value + (driverAmount > 0 ? (estimatedPrice.value * 0.2) : 0);
+      message = "Payment of \$${totalAmount.toStringAsFixed(2)} completed!\n"
+          "Driver received: \$${driverAmount. toStringAsFixed(2)}\n"
+          "Service fee: \$${platformFee.toStringAsFixed(2)}";
+    }
+
+    Get.snackbar(
+      driverAmount == 0 ? 'Ride Completed!' : 'Payment Successful!',
+      message,
+      backgroundColor:  MColor.primaryNavy.withValues(alpha: 0.8),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 5),
+    );
+  }
+
+  /// Cancel held payment (if ride is cancelled)
+  Future<void> cancelRideAndRefund() async {
+    try {
+      if (heldPaymentIntentId.value.isNotEmpty &&
+          heldPaymentIntentId.value != 'NO_PAYMENT_REQUIRED') {
+
+        print('SAHAr:  Cancelling held payment...');
+
+        bool cancelled = await PaymentService.cancelHeldPayment(
+            heldPaymentIntentId.value
+        );
+
+        if (cancelled) {
+          print('SAHAr: ✅ Payment hold cancelled successfully');
+
+          // Update backend
+          await _updateCancelledRideInBackend();
+
+          Get.snackbar(
+            'Ride Cancelled',
+            'Payment hold has been released. No charges applied.',
+            backgroundColor: Colors.orange. withValues(alpha: 0.8),
+            colorText: Colors.white,
+          );
+        } else {
+          print('SAHAr: ❌ Failed to cancel payment hold');
+        }
+
+        _clearPaymentData();
+      }
+    } catch (e) {
+      print('SAHAr: Error cancelling ride: $e');
+    }
+  }
+
+  /// Update cancelled ride in backend
+  Future<void> _updateCancelledRideInBackend() async {
+    try {
+      await _apiProvider.postData(
+        ApiEndpoints.cancelRide,
+        {
+          "rideId": prevRideId. value,
+          "paymentIntentId": heldPaymentIntentId.value,
+          "status": "cancelled",
+          "cancelledAt": DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      print('SAHAr: Error updating cancelled ride: $e');
+    }
+  }
+
+  /// Clear payment data
+  void _clearPaymentData() {
+    heldPaymentIntentId.value = '';
+    driverStripeAccountId.value = '';
+    print('SAHAr: Payment data cleared');
+  }
+
+  /// OLD METHOD - Remove or deprecate
+  @Deprecated('Use _holdStripePayment and _completePayment instead')
+  Future<String?> _processStripePayment(double amount) async {
+    // This method is no longer used
+    // Keep for backward compatibility if needed
+    return null;
   }
 
 
@@ -1807,63 +2113,5 @@ class RideBookingController extends GetxController {
   String get routeDuration => _mapService.routeDuration.value;
   bool get isLoadingRoute => _mapService.isLoadingRoute.value;
 
-  /// process payment first, then start the ride (book/find driver or schedule)
-  Future<void> startRideWithPayment() async {
-    print(' SAHAr startRideWithPayment() called');
-
-    // Same validations as startRide()
-    if (!isRideBooked.value) {
-      print(' SAHAr Ride not booked yet (startRideWithPayment)');
-      Get.snackbar('Error', 'Please book a ride first');
-      return;
-    }
-
-    if (pickupLocation.value == null || dropoffLocation.value == null) {
-      print(' SAHAr Missing pickup or dropoff location (startRideWithPayment)');
-      Get.snackbar('Error', 'Please set pickup and dropoff locations');
-      return;
-    }
-
-    if (isScheduled.value) {
-      if (scheduledDate.value == null || scheduledTime.value == null) {
-        Get.snackbar('Incomplete Schedule', 'Please set both date and time');
-        return;
-      }
-
-      DateTime scheduledDateTime = getScheduledDateTime()!;
-      if (scheduledDateTime.isBefore(DateTime.now())) {
-        Get.snackbar('Invalid Schedule', 'Scheduled time cannot be in the past');
-        return;
-      }
-    }
-
-    try {
-      isLoading.value = true;
-
-      // Use the estimated fare for pre-payment if available, fall back to estimatedPrice
-      double amountToCharge = (estimatedFare.value > 0) ? estimatedFare.value : estimatedPrice.value;
-      print(' SAHAr startRideWithPayment: charging amount: $amountToCharge');
-
-      String? paymentToken = await _processStripePayment(amountToCharge);
-      if (paymentToken == null) {
-        print(' SAHAr Payment cancelled or failed (startRideWithPayment)');
-        // _processStripePayment already shows a snackbar on errors
-        return;
-      }
-
-      // Optionally: send a prepayment record to backend here if required. For now we proceed to start the ride.
-      print(' SAHAr Payment succeeded, proceeding to startRide()');
-
-      // Call existing startRide which handles booking and further flow
-      await SharedPrefsService.saveUserBalance(amountToCharge.toString());
-      await startRide(paymentToken);
-    } catch (e) {
-      print(' SAHAr Exception in startRideWithPayment: $e');
-      Get.snackbar('Error', 'Failed to process payment/start ride: $e');
-    } finally {
-      isLoading.value = false;
-      print(' SAHAr startRideWithPayment completed - isLoading false');
-    }
-  }
 
 }
