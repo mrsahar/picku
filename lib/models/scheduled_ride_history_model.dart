@@ -95,10 +95,10 @@ class ScheduledRideItem {
     return parts.length > 2 ? '${parts[0]}, ${parts[1]}...' : dropoffLocation;
   }
 
-  // For sorting - pending rides with latest scheduled time first
+  // For sorting - pending rides with earliest scheduled time first (upcoming)
   int compareTo(ScheduledRideItem other) {
     if (status.toLowerCase() == 'pending' && other.status.toLowerCase() == 'pending') {
-      return other.scheduledTime.compareTo(scheduledTime); // Latest first
+      return scheduledTime.compareTo(other.scheduledTime); // Earliest/upcoming first
     } else if (status.toLowerCase() == 'pending') {
       return -1; // Pending first
     } else if (other.status.toLowerCase() == 'pending') {

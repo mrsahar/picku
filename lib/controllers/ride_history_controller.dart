@@ -60,6 +60,8 @@ class RideHistoryController extends GetxController {
 
       if (response.statusCode == 200) {
         final historyResponse = RideHistoryResponse.fromJson(response.body);
+        // Sort rides by createdAt in descending order (latest first)
+        historyResponse.items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         _rideHistory.value = historyResponse;
         print(' SAHArSAHAr MRSAHAr: ride history loaded successfully');
       } else if (response.statusCode == 405) {

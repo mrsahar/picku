@@ -104,6 +104,7 @@ class RideBookingController extends GetxController {
   var driverName = ''.obs;
   var driverPhone = ''.obs;
   var estimatedPrice = 0.0.obs;
+  var actualFareBeforeBalance = 0.0.obs; // Store actual fare before balance deduction
   var vehicle = ''.obs;
   var vehicleColor = ''.obs;
   var rating = 0.0.obs;
@@ -991,6 +992,9 @@ class RideBookingController extends GetxController {
     String rideEndTime = tripData['rideEndTime'] ?? '';
     String duration = tripData['duration'] ?? tripData['totalWaitingTime'] ?? '';
 
+    // Store actual fare before balance deduction
+    actualFareBeforeBalance.value = finalFare;
+
     // Update estimated price with actual final fare from API
     estimatedPrice.value = finalFare;
 
@@ -1251,13 +1255,12 @@ class RideBookingController extends GetxController {
             ),
             onPressed: () async {
               Get.back();
-              double totalAmount = finalFare + selectedTip.value;
 
               if (selectedTip.value > 0) {
-                await _submitTip(selectedTip.value, finalFare, totalAmount);
+                await _submitTip(selectedTip.value, finalFare, finalFare + selectedTip.value);
               }
 
-              await _completePayment(totalAmount);
+              await _completePayment(finalFare, tipAmount: selectedTip.value);
             },
             child: Text(
               (finalFare + selectedTip.value) <= 0
@@ -1864,39 +1867,44 @@ class RideBookingController extends GetxController {
   }
 
   /// STEP 3: Complete payment when ride ends (capture + transfer)
-  Future<void> _completePayment(double totalAmountWithTip) async {
+  Future<void> _completePayment(double fareAfterBalance, {double tipAmount = 0.0}) async {
+    double totalAmountWithTip = fareAfterBalance + tipAmount;
+
     try {
       print('SAHAr: Starting _completePayment');
+      print('SAHAr: Fare after balance: $fareAfterBalance');
+      print('SAHAr: Tip amount: $tipAmount');
       print('SAHAr: Total amount (including tip): $totalAmountWithTip');
       isLoading.value = true;
 
       var userId = await SharedPrefsService.getUserId() ??
           AppConstants.defaultUserId;
 
-      // Calculate tip amount from total (total = fare + tip)
-      double fareAmount = estimatedPrice.value;
-      double tipAmount =0;
-      if(totalAmountWithTip > 0){
-        tipAmount = totalAmountWithTip - fareAmount;
-      }
-      print('SAHAr: Fare amount: $fareAmount');
-      print('SAHAr: Tip amount: $tipAmount');
-      print('SAHAr: Total amount: $totalAmountWithTip');
+      print('SAHAr: 📱 Retrieved user ID: $userId');
 
-      // Check if we have held payment
+      // If balance covers the full fare (no card charge needed)
+      if (totalAmountWithTip <= 0) {
+        print('SAHAr: 💰 User balance covers the full fare - no card charge needed');
+
+        // Cancel held payment if it exists
+        if (heldPaymentIntentId.value.isNotEmpty &&
+            heldPaymentIntentId.value != 'NO_PAYMENT_REQUIRED') {
+          print('SAHAr: Canceling held payment: ${heldPaymentIntentId.value}');
+          await PaymentService.cancelHeldPayment(heldPaymentIntentId.value);
+        }
+
+        // Record as balance-paid ride (with actual fare amount)
+        await _recordNoPaymentRide(fareAmount: actualFareBeforeBalance.value);
+        _showRideCompletedMessage(0, 0, paidFromBalance: true);
+        _showReviewDialog();
+        return;
+      }
+
+      // Check if we have held payment for card charge
       if (heldPaymentIntentId.value.isEmpty ||
           heldPaymentIntentId.value == 'NO_PAYMENT_REQUIRED') {
-
-        if (totalAmountWithTip <= 0) {
-          // No payment required
-          await _recordNoPaymentRide();
-          _showRideCompletedMessage(0, 0);
-          _showReviewDialog();
-          return;
-        } else {
-          Get.snackbar('Error', 'No held payment found');
-          return;
-        }
+        Get.snackbar('Error', 'No held payment found');
+        return;
       }
 
       // Check driver's Stripe account
@@ -1991,8 +1999,8 @@ class RideBookingController extends GetxController {
     }
   }
 
-  /// Record ride with no payment (for free rides)
-  Future<void> _recordNoPaymentRide() async {
+  /// Record ride with no payment (for free rides or balance-paid rides)
+  Future<void> _recordNoPaymentRide({double fareAmount = 0.0}) async {
     try {
       var userId = await SharedPrefsService. getUserId() ??
           AppConstants.defaultUserId;
@@ -2001,24 +2009,29 @@ class RideBookingController extends GetxController {
         "rideId": prevRideId.value,
         "userId": userId,
         "driverId": driverId.value,
-        "amount": 0,
-        "status": "completed_no_payment",
+        "amount": fareAmount, // Record actual fare (paid from balance)
+        "status": fareAmount > 0 ? "completed_balance_paid" : "completed_no_payment",
         "completedAt": DateTime.now().toIso8601String(),
       };
 
       await _apiProvider.postData(ApiEndpoints.completeTransaction, data);
-      print('SAHAr: No-payment ride recorded');
+      print('SAHAr: ${fareAmount > 0 ? "Balance-paid" : "No-payment"} ride recorded (Amount: \$${fareAmount.toStringAsFixed(2)})');
     } catch (e) {
       print('SAHAr: Error recording no-payment ride:  $e');
     }
   }
 
   /// Show ride completed message
-  void _showRideCompletedMessage(double driverAmount, double platformFee) {
+  void _showRideCompletedMessage(double driverAmount, double platformFee, {bool paidFromBalance = false}) {
     String message;
 
     if (driverAmount == 0 && platformFee == 0) {
-      message = "Ride completed successfully!\nNo payment required.";
+      if (paidFromBalance && actualFareBeforeBalance.value > 0) {
+        message = "Ride completed successfully!\n"
+            "Fare of \$${actualFareBeforeBalance.value.toStringAsFixed(2)} paid from your balance.";
+      } else {
+        message = "Ride completed successfully!\nNo payment required.";
+      }
     } else {
       double totalAmount = estimatedPrice.value + (driverAmount > 0 ? (estimatedPrice.value * 0.2) : 0);
       message = "Payment of \$${totalAmount.toStringAsFixed(2)} completed!\n"
@@ -2102,7 +2115,6 @@ class RideBookingController extends GetxController {
     return null;
   }
 
-
   // Getters that delegate to services
   List<AutocompletePrediction> get searchSuggestions => _searchService.searchSuggestions;
   bool get isSearching => _searchService.isSearching.value;
@@ -2112,6 +2124,4 @@ class RideBookingController extends GetxController {
   String get routeDistance => _mapService.routeDistance.value;
   String get routeDuration => _mapService.routeDuration.value;
   bool get isLoadingRoute => _mapService.isLoadingRoute.value;
-
-
 }

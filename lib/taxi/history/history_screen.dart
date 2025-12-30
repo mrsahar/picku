@@ -38,7 +38,6 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: MColor.primaryNavy.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
@@ -217,7 +216,6 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: MColor.primaryNavy.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
@@ -250,7 +248,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                 ),
               )
                   : SliverPadding(
-                padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                padding: EdgeInsets.zero,
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                         (context, index) {

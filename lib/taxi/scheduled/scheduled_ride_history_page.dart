@@ -215,7 +215,6 @@ class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
                           color: MColor.primaryNavy.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
@@ -248,7 +247,7 @@ class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
                 ),
               )
                   : SliverPadding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                padding: EdgeInsets.zero,
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                         (context, index) {
