@@ -10,6 +10,64 @@ class PaymentService {
   // Admin platform fee percentage (e.g., 20%)
   static const double platformFeePercent = 0.20;
 
+  /// Create Payment Intent with IMMEDIATE CAPTURE (for additional payments)
+  /// This will capture the payment immediately when confirmed
+  static Future<Map<String, dynamic>?> createPaymentIntentWithImmediateCapture({
+    required String amount, // amount in cents
+    required String currency,
+    String? customerId,
+    String? description,
+  }) async {
+    try {
+      print('Creating payment intent with IMMEDIATE CAPTURE');
+      print('Amount: $amount cents, Currency: $currency');
+
+      final url = Uri.parse('https://api.stripe.com/v1/payment_intents');
+
+      final headers = {
+        'Authorization': 'Bearer $secretKey',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Stripe-Version': '2023-10-16',
+      };
+
+      // capture_method = automatic (immediate capture)
+      final Map<String, String> requestBody = {
+        'amount': amount,
+        'currency': currency.toLowerCase(),
+        'capture_method': 'automatic', // Immediate capture
+        'automatic_payment_methods[enabled]': 'true',
+      };
+
+      if (customerId != null && customerId.isNotEmpty) {
+        requestBody['customer'] = customerId;
+      }
+
+      requestBody['description'] = description ?? 'Additional payment';
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: requestBody,
+      );
+
+      print('Stripe API Response Status: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        print('Payment intent created with IMMEDIATE CAPTURE');
+        print('Payment Intent ID: ${responseData['id']}');
+        return responseData;
+      } else {
+        final errorData = json.decode(response.body);
+        print('Stripe API Error: ${errorData['error']['message']}');
+        return null;
+      }
+    } catch (e) {
+      print('Exception in createPaymentIntentWithImmediateCapture: $e');
+      return null;
+    }
+  }
+
   /// Step 1: Create Payment Intent with HOLD (capture_method:  manual)
   /// This will authorize/hold the amount but NOT capture it yet
   static Future<Map<String, dynamic>?> createPaymentIntentWithHold({
@@ -115,7 +173,7 @@ class PaymentService {
       // Last resort: Retrieve the payment intent to get charge ID
       else {
         print('⚠️ Charge ID not in capture response, retrieving payment intent...');
-        final retrievedPI = await _retrievePaymentIntent(paymentIntentId);
+        final retrievedPI = await retrievePaymentIntent(paymentIntentId);
         if (retrievedPI != null) {
           if (retrievedPI['latest_charge'] != null) {
             chargeId = retrievedPI['latest_charge'];
@@ -252,8 +310,8 @@ class PaymentService {
     }
   }
 
-  /// Retrieve a payment intent to get charge information
-  static Future<Map<String, dynamic>?> _retrievePaymentIntent(String paymentIntentId) async {
+  /// Retrieve a payment intent to get charge information (public method)
+  static Future<Map<String, dynamic>?> retrievePaymentIntent(String paymentIntentId) async {
     try {
       final url = Uri.parse('https://api.stripe.com/v1/payment_intents/$paymentIntentId');
 
@@ -333,6 +391,48 @@ class PaymentService {
       }
     } catch (e) {
       print('❌ Exception in _createTransfer: $e');
+      return null;
+    }
+  }
+
+  /// Transfer additional amount (for excess tip) to driver
+  static Future<Map<String, dynamic>?> transferAdditionalAmount({
+    required String chargeId,
+    required String driverStripeAccountId,
+    required int amountCents,
+    required int tipAmountCents,
+  }) async {
+    try {
+      print('=== Transferring Additional Amount ===');
+      print('Charge ID: $chargeId');
+      print('Driver Account: $driverStripeAccountId');
+      print('Amount: $amountCents cents');
+      print('Tip Amount: $tipAmountCents cents');
+
+      // Transfer full amount to driver (100% of tip goes to driver, no platform fee)
+      final transferResult = await _createTransfer(
+        amount: amountCents,
+        destinationAccount: driverStripeAccountId,
+        sourceChargeId: chargeId,
+        description: 'Additional tip payment - Driver share',
+      );
+
+      if (transferResult == null) {
+        print('❌ Failed to transfer additional amount');
+        return {
+          'success': false,
+          'error': 'Transfer failed',
+        };
+      }
+
+      return {
+        'success': true,
+        'transfer_id': transferResult['id'],
+        'amount': amountCents,
+        'tip_amount': tipAmountCents,
+      };
+    } catch (e) {
+      print('❌ Exception in transferAdditionalAmount: $e');
       return null;
     }
   }

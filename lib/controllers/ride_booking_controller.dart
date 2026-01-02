@@ -119,6 +119,12 @@ class RideBookingController extends GetxController {
   RxString heldPaymentIntentId = ''. obs;
   // Store the amount that was held for payment
   double _heldAmount = 0.0;
+  // Store selected tip amount
+  var selectedTipAmount = 0.0.obs;
+  // Store payment dialog data for re-opening
+  Map<String, dynamic>? _paymentDialogData;
+  // Ride duration display for payment popup
+  var rideDurationDisplay = 'Calculating...'.obs;
 
   // Distance tracking for destination (when trip started)
   final distanceToDestination = 0.0.obs;
@@ -1015,6 +1021,18 @@ class RideBookingController extends GetxController {
     print(' SAHArSAHAr 💰 Actual Fare: \$${finalFare.toStringAsFixed(2)}');
     print(' SAHArSAHAr 💳 Held Payment Amount: \$${heldPaymentDifference.toStringAsFixed(2)}');
 
+    // Store payment dialog data for potential re-opening
+    _paymentDialogData = {
+      'rideId': rideId,
+      'finalFare': finalFare,
+      'distance': distance,
+      'duration': duration,
+      'rideStartTime': rideStartTime,
+      'rideEndTime': rideEndTime,
+      'originalHeldAmount': originalHeldAmount,
+      'heldPaymentDifference': heldPaymentDifference,
+    };
+
     _showPaymentPopup(
       rideId: rideId,
       finalFare: finalFare,
@@ -1022,6 +1040,8 @@ class RideBookingController extends GetxController {
       duration: duration,
       rideStartTime: rideStartTime,
       rideEndTime: rideEndTime,
+      originalHeldAmount: originalHeldAmount,
+      heldPaymentDifference: heldPaymentDifference,
     );
   }
 
@@ -1041,8 +1061,72 @@ class RideBookingController extends GetxController {
     required String duration,
     required String rideStartTime,
     required String rideEndTime,
-    String? totalWaitingTime,
+    required double originalHeldAmount,
+    required double heldPaymentDifference,
   }) {
+    // Reset tip amount when payment dialog opens
+    selectedTipAmount.value = 0.0;
+    
+    // Reset ride duration display
+    rideDurationDisplay.value = 'Calculating...';
+    Timer? durationTimer;
+
+    // Function to calculate and format duration
+    String calculateRideDuration() {
+      try {
+        if (rideStartTime.isEmpty || rideEndTime.isEmpty) {
+          return 'N/A';
+        }
+
+        // Try to parse the datetime strings
+        DateTime startTime;
+        DateTime endTime;
+
+        // Try ISO 8601 format first
+        try {
+          startTime = DateTime.parse(rideStartTime);
+          endTime = DateTime.parse(rideEndTime);
+        } catch (e) {
+          // Try other common formats
+          try {
+            startTime = DateFormat("yyyy-MM-ddTHH:mm:ss").parse(rideStartTime);
+            endTime = DateFormat("yyyy-MM-ddTHH:mm:ss").parse(rideEndTime);
+          } catch (e2) {
+            try {
+              startTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(rideStartTime);
+              endTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(rideEndTime);
+            } catch (e3) {
+              return 'N/A';
+            }
+          }
+        }
+
+        Duration difference = endTime.difference(startTime);
+        int hours = difference.inHours;
+        int minutes = difference.inMinutes.remainder(60);
+        int seconds = difference.inSeconds.remainder(60);
+
+        if (hours > 0) {
+          return '${hours}h ${minutes}m ${seconds}s';
+        } else if (minutes > 0) {
+          return '${minutes}m ${seconds}s';
+        } else {
+          return '${seconds}s';
+        }
+      } catch (e) {
+        print('Error calculating ride duration: $e');
+        return 'N/A';
+      }
+    }
+
+    // Initialize duration display
+    rideDurationDisplay.value = calculateRideDuration();
+
+    // Update duration every second if needed (for live updates)
+    durationTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      rideDurationDisplay.value = calculateRideDuration();
+    });
+
     Get.dialog(
       AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1071,21 +1155,34 @@ class RideBookingController extends GetxController {
                     SizedBox(height: 8),
                     _buildSummaryRow('Distance', distance > 0 ? '${distance.toStringAsFixed(2)} km' : 'N/A'),
                     SizedBox(height: 8),
-                    _buildSummaryRow('Duration', totalWaitingTime ?? 'N/A'),
+                    Obx(() => _buildSummaryRow('Duration', rideDurationDisplay.value)),
+                    SizedBox(height: 8),
+                    _buildSummaryRow('Already Paid', originalHeldAmount > 0 ? '\$${originalHeldAmount.toStringAsFixed(2)}' : '\$0.00'),
+                    SizedBox(height: 8),
+                    _buildSummaryRow('Fare', finalFare <= 0 ? '\$0.00' : '\$${finalFare.toStringAsFixed(2)}'),
+                    Obx(() => selectedTipAmount.value > 0 
+                      ? Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: _buildSummaryRow('Tip', '\$${selectedTipAmount.value.toStringAsFixed(2)}'),
+                        )
+                      : SizedBox.shrink()),
                     SizedBox(height: 12),
                     Divider(),
                     SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Total Fare', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text(
-                            finalFare <= 0
-                                ? "No Extra Charges"
-                                : "\$${finalFare.toStringAsFixed(2)}",
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
-                      ],
-                    ),
+                    Obx(() {
+                      double totalAmount = finalFare + selectedTipAmount.value;
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(
+                              totalAmount <= 0
+                                  ? "\$0.00"
+                                  : "\$${totalAmount.toStringAsFixed(2)}",
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1108,13 +1205,16 @@ class RideBookingController extends GetxController {
                     ),
                     onPressed: () {
                       Get.back();
-                      _showTipDialog(finalFare <= 0 ? 0 : finalFare);
+                      _showTipDialog(finalFare <= 0 ? 0 : finalFare, originalHeldAmount);
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(width: 8),
-                        Text('Add Tip', style: TextStyle(color: MColor.primaryNavy, fontWeight: FontWeight.w500)),
+                        Obx(() => Text(
+                          selectedTipAmount.value > 0 ? 'Change Tip' : 'Add Tip',
+                          style: TextStyle(color: MColor.primaryNavy, fontWeight: FontWeight.w500)
+                        )),
                       ],
                     ),
                   ),
@@ -1130,16 +1230,28 @@ class RideBookingController extends GetxController {
                     ),
                     onPressed: () async {
                       // Don't close dialog - let payment completion handle it
-                      await _completePayment(finalFare);
+                      await _completePayment(finalFare, tipAmount: selectedTipAmount.value);
                     },
-                    child: Text(
-                      finalFare <= 0 ? "Complete Ride" : "Pay \$${finalFare.toStringAsFixed(2)}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: Obx(() {
+                      double totalWithTip = finalFare + selectedTipAmount.value;
+                      double amountToPay = totalWithTip - originalHeldAmount;
+                      
+                      String buttonText;
+                      if (amountToPay <= 0) {
+                        buttonText = amountToPay == 0 ? "Complete Ride" : "Complete Ride";
+                      } else {
+                        buttonText = "Pay \$${amountToPay.toStringAsFixed(2)}";
+                      }
+                      
+                      return Text(
+                        buttonText,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      );
+                    }),
                   ),
                 ),
               ] else ...[
@@ -1178,7 +1290,10 @@ class RideBookingController extends GetxController {
         ],
       ),
       barrierDismissible: false,
-    );
+    ).then((_) {
+      // Clean up timer when dialog is closed
+      durationTimer?.cancel();
+    });
   }
 
   Widget _buildSummaryRow(String label, String value) {
@@ -1191,19 +1306,15 @@ class RideBookingController extends GetxController {
     );
   }
 
-  void _showTipDialog(double finalFare) {
+  void _showTipDialog(double finalFare, double originalHeldAmount) {
     // Ensure finalFare is never negative
     if (finalFare < 0) {
       finalFare = 0.0;
     }
 
-    RxDouble selectedTip = 0.0.obs;
+    // Initialize with current selected tip if any
+    RxDouble selectedTip = selectedTipAmount.value.obs;
     List<double> tipOptions = AppConstants.tipPercentages;
-
-    // Calculate maximum tip that can be processed from held amount
-    double heldAmount = estimatedPrice.value;
-    double maxTipFromHeld = heldAmount - finalFare;
-    bool hasTipLimit = maxTipFromHeld < 100; // If max tip is less than $100, show warning
 
     Get.dialog(
       AlertDialog(
@@ -1224,30 +1335,6 @@ class RideBookingController extends GetxController {
                   style: TextStyle(fontSize: 16)),
               SizedBox(height: 20),
 
-              // Warning about tip limit if applicable
-              if (hasTipLimit && maxTipFromHeld > 0)
-                Container(
-                  padding: EdgeInsets.all(12),
-                  margin: EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Maximum tip from held payment: \$${maxTipFromHeld.toStringAsFixed(2)}',
-                          style: TextStyle(fontSize: 12, color: Colors.orange[800]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
               // Tip amount display
               Obx(() => Container(
                 padding: EdgeInsets.all(16),
@@ -1261,9 +1348,6 @@ class RideBookingController extends GetxController {
                     if (selectedTip.value > 0) ...[
                       Text('Tip: \$${selectedTip.value.toStringAsFixed(2)}',
                           style: TextStyle(color: MColor.primaryNavy)),
-                      if (selectedTip.value > maxTipFromHeld && maxTipFromHeld > 0)
-                        Text('(Limited to \$${maxTipFromHeld.toStringAsFixed(2)})',
-                            style: TextStyle(fontSize: 11, color: Colors.orange)),
                     ],
                     Divider(),
                     Text('Total: \$${(finalFare + selectedTip.value).toStringAsFixed(2)}',
@@ -1321,74 +1405,52 @@ class RideBookingController extends GetxController {
           ),
         ),
         actions: [
-          Obx(() => isLoading.value
-            ? Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(MColor.primaryNavy),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Processing payment with tip...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: MColor.primaryNavy,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Please wait, do not close this window',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Get.back();
-                      _completePayment(finalFare);
-                    },
-                    child: Text('Skip Tip', style: TextStyle(color: MColor.primaryNavy)),
-                  ),
-                  Obx(() => ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MColor.primaryNavy,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    onPressed: () async {
-                      // Don't close dialog - let payment completion handle it
-                      if (selectedTip.value > 0) {
-                        await _submitTip(selectedTip.value, finalFare, finalFare + selectedTip.value);
-                      }
-
-                      await _completePayment(finalFare, tipAmount: selectedTip.value);
-                    },
-                    child: Text(
-                      (finalFare + selectedTip.value) <= 0
-                          ? "Complete Ride"
-                          : "Pay \$${(finalFare + selectedTip.value).toStringAsFixed(2)}",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )),
-                ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Get.back();
+                },
+                child: Text('Cancel', style: TextStyle(color: MColor.primaryNavy)),
               ),
+              Obx(() => ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MColor.primaryNavy,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  // Store selected tip and return to payment dialog
+                  selectedTipAmount.value = selectedTip.value;
+                  Get.back();
+                  
+                  // Re-open payment dialog with tip included if we have stored data
+                  if (_paymentDialogData != null) {
+                    _showPaymentPopup(
+                      rideId: _paymentDialogData!['rideId'],
+                      finalFare: _paymentDialogData!['finalFare'],
+                      distance: _paymentDialogData!['distance'],
+                      duration: _paymentDialogData!['duration'],
+                      rideStartTime: _paymentDialogData!['rideStartTime'],
+                      rideEndTime: _paymentDialogData!['rideEndTime'],
+                      originalHeldAmount: _paymentDialogData!['originalHeldAmount'],
+                      heldPaymentDifference: _paymentDialogData!['heldPaymentDifference'],
+                    );
+                  }
+                },
+                child: Text(
+                  selectedTip.value > 0 ? 'Confirm Tip' : 'No Tip',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )),
+            ],
           ),
         ],
       ),
-      barrierDismissible: false,
+      barrierDismissible: true,
     );
   }
 
@@ -2068,119 +2130,119 @@ class RideBookingController extends GetxController {
 
       // CRITICAL: Calculate the actual amount to capture
       // The held amount might be higher than what we need to charge
-      int heldAmountCents = (estimatedPrice.value * 100).round();
+      int heldAmountCents = (_heldAmount * 100).round();
       int fareOnlyCents = (fareAfterBalance * 100).round();
       int tipAmountCents = (tipAmount * 100).round();
       int actualChargeWithTipCents = fareOnlyCents + tipAmountCents;
 
-      // Calculate available space in held amount for tip
-      int availableForTipCents = heldAmountCents - fareOnlyCents;
-
       print('SAHAr: 💳 Held Amount: ${heldAmountCents} cents (\$${(heldAmountCents/100).toStringAsFixed(2)})');
       print('SAHAr: 💳 Fare to Capture: ${fareOnlyCents} cents (\$${(fareOnlyCents/100).toStringAsFixed(2)})');
       print('SAHAr: 💳 Tip Amount: ${tipAmountCents} cents (\$${(tipAmountCents/100).toStringAsFixed(2)})');
-      print('SAHAr: 💳 Available for Tip in Hold: ${availableForTipCents} cents (\$${(availableForTipCents/100).toStringAsFixed(2)})');
+      print('SAHAr: 💳 Total Needed: ${actualChargeWithTipCents} cents (\$${(actualChargeWithTipCents/100).toStringAsFixed(2)})');
 
-      int amountToCapture;
-      int tipIncludedInCapture;
-      int tipToChargeSeperately = 0;
+      Map<String, String>? additionalPaymentInfo;
+      int amountToCaptureFromHeld;
+      int tipInHeldPayment;
+      int additionalAmountNeeded = 0;
 
-      // Verify we're not trying to capture more than was held
+      // Check if total exceeds held amount
       if (actualChargeWithTipCents > heldAmountCents) {
-        print('SAHAr: ⚠️ WARNING: Total needed (\$${(actualChargeWithTipCents/100).toStringAsFixed(2)}) exceeds held amount (\$${(heldAmountCents/100).toStringAsFixed(2)})');
-
-        if (availableForTipCents > 0) {
-          // Capture fare + partial tip from held amount
-          amountToCapture = heldAmountCents;
-          tipIncludedInCapture = availableForTipCents;
-          tipToChargeSeperately = tipAmountCents - availableForTipCents;
-
-          print('SAHAr: 💡 Solution: Capture \$${(amountToCapture/100).toStringAsFixed(2)} (fare + partial tip)');
-          print('SAHAr: 💡 Tip in capture: \$${(tipIncludedInCapture/100).toStringAsFixed(2)}');
-          print('SAHAr: 💡 Additional tip needed: \$${(tipToChargeSeperately/100).toStringAsFixed(2)}');
-
-          // Show user message about tip limitation
-          Get.snackbar(
-            'Tip Adjustment',
-            'Your tip of \$${(tipAmountCents/100).toStringAsFixed(2)} exceeds the held amount.\n'
-            'Only \$${(tipIncludedInCapture/100).toStringAsFixed(2)} can be processed from the held payment.\n'
-            'Please contact support to add the remaining \$${(tipToChargeSeperately/100).toStringAsFixed(2)}.',
-            backgroundColor: Colors.orange.withValues(alpha: 0.8),
-            colorText: Colors.white,
-            duration: const Duration(seconds: 8),
-          );
-        } else {
-          // No room for tip at all
-          amountToCapture = fareOnlyCents;
-          tipIncludedInCapture = 0;
-          tipToChargeSeperately = tipAmountCents;
-
-          print('SAHAr: ⚠️ No room for tip in held amount!');
-          print('SAHAr: 💡 Capturing only fare: \$${(amountToCapture/100).toStringAsFixed(2)}');
-
-          Get.snackbar(
-            'Tip Cannot Be Processed',
-            'Your tip of \$${(tipAmountCents/100).toStringAsFixed(2)} cannot be included in the held payment.\n'
-            'Only the fare of \$${(fareOnlyCents/100).toStringAsFixed(2)} will be charged.\n'
-            'Please contact support to add the tip separately.',
-            backgroundColor: Colors.red.withValues(alpha: 0.8),
-            colorText: Colors.white,
-            duration: const Duration(seconds: 8),
-          );
+        print('SAHAr: ⚠️ Total needed exceeds held amount - creating additional payment intent');
+        additionalAmountNeeded = actualChargeWithTipCents - heldAmountCents;
+        
+        // Create additional payment intent for the excess amount
+        additionalPaymentInfo = await _createAdditionalPaymentIntent(additionalAmountNeeded);
+        
+        if (additionalPaymentInfo == null || additionalPaymentInfo['chargeId'] == null || additionalPaymentInfo['chargeId']!.isEmpty) {
+          print('SAHAr: ❌ Failed to create additional payment intent');
+          Get.snackbar('Payment Error', 'Failed to process additional payment for tip. Please try again.');
+          return;
         }
+        
+        // Capture full held amount (fare + any tip that fits)
+        amountToCaptureFromHeld = heldAmountCents;
+        tipInHeldPayment = heldAmountCents - fareOnlyCents; // Tip that fits in held amount
+        if (tipInHeldPayment < 0) tipInHeldPayment = 0;
+        
+        print('SAHAr: 💡 Capturing held payment: \$${(amountToCaptureFromHeld/100).toStringAsFixed(2)}');
+        print('SAHAr: 💡 Additional payment created: ${additionalPaymentInfo['paymentIntentId']} for \$${(additionalAmountNeeded/100).toStringAsFixed(2)}');
       } else {
         // Normal case: everything fits in held amount
-        amountToCapture = actualChargeWithTipCents;
-        tipIncludedInCapture = tipAmountCents;
+        amountToCaptureFromHeld = actualChargeWithTipCents;
+        tipInHeldPayment = tipAmountCents;
         print('SAHAr: ✅ Total charge fits within held amount');
       }
 
-      print('SAHAr: 💳 Final Amount to Capture: ${amountToCapture} cents (\$${(amountToCapture/100).toStringAsFixed(2)})');
-      print('SAHAr: 💳 Payment Intent: ${heldPaymentIntentId.value}');
-      print('SAHAr: 💳 Driver Stripe ID: ${driverStripeAccountId.value}');
-
-      // CAPTURE payment and TRANSFER to driver
+      // CAPTURE held payment and TRANSFER to driver
       final result = await PaymentService.captureAndTransferPayment(
         paymentIntentId: heldPaymentIntentId.value,
         driverStripeAccountId: driverStripeAccountId.value,
-        totalAmountCents: amountToCapture,
-        tipAmountCents: tipIncludedInCapture,
+        totalAmountCents: amountToCaptureFromHeld,
+        tipAmountCents: tipInHeldPayment,
       );
 
-      if (result != null && result['success'] == true) {
-        print('SAHAr: ✅ Payment completed successfully!');
-
-        // Save transaction to backend (use tip amount from result, not requested amount)
-        double actualTipProcessed = result['tip_amount'] / 100;
-        await _saveCompletedTransaction(result, userId, actualTipProcessed, balanceUsed: balanceUsed);
-
-        // Close the payment dialog now that payment is successful
-        Get.back();
-
-        // Show success message
-        double driverAmount = result['driver_amount'] / 100;
-        double platformFee = result['platform_fee'] / 100;
-
-        _showRideCompletedMessage(driverAmount, platformFee, balanceUsed: balanceUsed);
-
-        // Show review dialog
-        _showReviewDialog();
-
-        // Clear payment data
-        _clearPaymentData();
-
-      } else {
-        print('SAHAr: ❌ Payment completion failed');
-        print('SAHAr: ❌ Result: $result');
-        Get.snackbar(
-          'Payment Failed',
-          'Failed to complete payment. Please try again or contact support.',
-          backgroundColor: Colors.red.withValues(alpha: 0.8),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 5),
-        );
-        // Don't close dialog on failure - user can retry
+      if (result == null || result['success'] != true) {
+        print('SAHAr: ❌ Failed to capture held payment');
+        Get.snackbar('Payment Failed', 'Failed to complete payment. Please try again or contact support.');
+        return;
       }
+
+      // If we have additional payment, transfer it to driver too
+      Map<String, dynamic>? additionalResult;
+      if (additionalPaymentInfo != null && additionalPaymentInfo['chargeId'] != null && additionalAmountNeeded > 0) {
+        print('SAHAr: 💳 Processing additional payment for tip');
+        
+        String additionalChargeId = additionalPaymentInfo['chargeId']!;
+        
+        // Transfer additional tip amount to driver (100% of tip goes to driver)
+        additionalResult = await PaymentService.transferAdditionalAmount(
+          chargeId: additionalChargeId,
+          driverStripeAccountId: driverStripeAccountId.value,
+          amountCents: additionalAmountNeeded,
+          tipAmountCents: additionalAmountNeeded, // Full additional amount is tip
+        );
+        
+        if (additionalResult == null || additionalResult['success'] != true) {
+          print('SAHAr: ⚠️ Warning: Additional payment captured but transfer failed');
+        }
+      }
+
+      print('SAHAr: ✅ Payment completed successfully!');
+
+      // Calculate total tip processed (from held + additional if any)
+      double totalTipProcessed = (tipInHeldPayment / 100.0);
+      if (additionalResult != null && additionalResult['success'] == true) {
+        totalTipProcessed += (additionalAmountNeeded / 100.0);
+      }
+
+      // Save transaction to backend
+      await _saveCompletedTransaction(result, userId, totalTipProcessed, balanceUsed: balanceUsed);
+
+      // Call tip API AFTER successful payment (only if tip > 0)
+      if (tipAmount > 0) {
+        print('SAHAr: 📤 Submitting tip to API after successful payment');
+        await _submitTip(tipAmount, fareAfterBalance, totalAmountWithTip);
+      }
+
+      // Close the payment dialog now that payment is successful
+      Get.back();
+
+      // Show success message
+      double driverAmount = result['driver_amount'] / 100;
+      double platformFee = result['platform_fee'] / 100;
+      
+      // Add additional driver amount if additional payment was processed
+      if (additionalResult != null && additionalResult['success'] == true) {
+        driverAmount += (additionalAmountNeeded / 100.0); // Full tip goes to driver
+      }
+
+      _showRideCompletedMessage(driverAmount, platformFee, balanceUsed: balanceUsed);
+
+      // Show review dialog
+      _showReviewDialog();
+
+      // Clear payment data
+      _clearPaymentData();
 
     } catch (e) {
       print('SAHAr: ❌ Error in _completePayment: $e');
@@ -2345,7 +2407,86 @@ class RideBookingController extends GetxController {
     heldPaymentIntentId.value = '';
     driverStripeAccountId.value = '';
     _heldAmount = 0.0;
+    selectedTipAmount.value = 0.0;
+    _paymentDialogData = null;
     print('SAHAr: Payment data cleared');
+  }
+
+  /// Create additional payment intent for excess tip amount
+  /// Returns map with 'paymentIntentId' and 'chargeId'
+  Future<Map<String, String>?> _createAdditionalPaymentIntent(int amountCents) async {
+    try {
+      print('SAHAr: Creating additional payment intent for ${amountCents} cents');
+      
+      var userName = await SharedPrefsService.getUserFullName() ?? AppConstants.defaultUserName;
+      
+      // Create payment intent with automatic capture for additional amount
+      Map<String, dynamic>? paymentIntent = await PaymentService.createPaymentIntentWithImmediateCapture(
+        amount: amountCents.toString(),
+        currency: 'cad',
+        description: 'Additional tip payment',
+      );
+      
+      if (paymentIntent == null) {
+        print('SAHAr: ❌ Failed to create additional payment intent');
+        return null;
+      }
+      
+      String paymentIntentId = paymentIntent['id'];
+      
+      // Show Stripe payment sheet to authorize and capture additional payment
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentIntent['client_secret'],
+          style: ThemeMode.light,
+          merchantDisplayName: userName,
+        ),
+      );
+      
+      await Stripe.instance.presentPaymentSheet();
+      print('SAHAr: ✅ Additional payment captured');
+      
+      // Retrieve payment intent to get charge ID after capture
+      String? chargeId = await _getChargeIdFromPaymentIntent(paymentIntentId);
+      
+      if (chargeId == null) {
+        print('SAHAr: ⚠️ Warning: Could not get charge ID from additional payment intent');
+        // Still return payment intent ID, we can try to get charge ID later
+      }
+      
+      return {
+        'paymentIntentId': paymentIntentId,
+        'chargeId': chargeId ?? '',
+      };
+    } on StripeException catch (e) {
+      print('SAHAr: ❌ StripeException in additional payment: ${e.error.localizedMessage}');
+      Get.snackbar('Payment Cancelled', 'Additional tip payment was cancelled');
+      return null;
+    } catch (e) {
+      print('SAHAr: ❌ Error creating additional payment intent: $e');
+      Get.snackbar('Payment Error', 'Failed to process additional tip payment: $e');
+      return null;
+    }
+  }
+
+  /// Get charge ID from payment intent
+  Future<String?> _getChargeIdFromPaymentIntent(String paymentIntentId) async {
+    try {
+      final retrievedPI = await PaymentService.retrievePaymentIntent(paymentIntentId);
+      if (retrievedPI != null) {
+        if (retrievedPI['latest_charge'] != null) {
+          return retrievedPI['latest_charge'];
+        } else if (retrievedPI['charges'] != null &&
+                   retrievedPI['charges']['data'] != null &&
+                   retrievedPI['charges']['data'].isNotEmpty) {
+          return retrievedPI['charges']['data'][0]['id'];
+        }
+      }
+      return null;
+    } catch (e) {
+      print('SAHAr: ❌ Error getting charge ID: $e');
+      return null;
+    }
   }
 
   /// OLD METHOD - Remove or deprecate
