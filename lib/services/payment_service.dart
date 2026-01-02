@@ -2,9 +2,6 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PaymentService {
   static String get secretKey => dotenv. env['STRIPE_SECRET_KEY'] ??  '';
@@ -100,6 +97,50 @@ class PaymentService {
 
       print('Payment captured successfully');
 
+      // Get the charge ID from the captured payment intent
+      String? chargeId;
+
+      // Try to get charge ID from capture result
+      if (captureResult['charges'] != null &&
+          captureResult['charges']['data'] != null &&
+          captureResult['charges']['data'].isNotEmpty) {
+        chargeId = captureResult['charges']['data'][0]['id'];
+        print('✅ Charge ID extracted from capture: $chargeId');
+      }
+      // Fallback: Try to get latest_charge directly
+      else if (captureResult['latest_charge'] != null) {
+        chargeId = captureResult['latest_charge'];
+        print('✅ Charge ID extracted from latest_charge: $chargeId');
+      }
+      // Last resort: Retrieve the payment intent to get charge ID
+      else {
+        print('⚠️ Charge ID not in capture response, retrieving payment intent...');
+        final retrievedPI = await _retrievePaymentIntent(paymentIntentId);
+        if (retrievedPI != null) {
+          if (retrievedPI['latest_charge'] != null) {
+            chargeId = retrievedPI['latest_charge'];
+            print('✅ Charge ID extracted from retrieved PI: $chargeId');
+          } else if (retrievedPI['charges'] != null &&
+                     retrievedPI['charges']['data'] != null &&
+                     retrievedPI['charges']['data'].isNotEmpty) {
+            chargeId = retrievedPI['charges']['data'][0]['id'];
+            print('✅ Charge ID extracted from retrieved PI charges: $chargeId');
+          }
+        }
+      }
+
+      if (chargeId == null) {
+        print('❌ ERROR: Could not extract charge ID from payment intent');
+        print('❌ Capture result keys: ${captureResult.keys.toList()}');
+        return {
+          'success': false,
+          'captured': true,
+          'transferred': false,
+          'error': 'Could not extract charge ID for transfer',
+          'payment_intent_id': paymentIntentId,
+        };
+      }
+
       // Step 2b:  Calculate amounts
       int tipAmount = tipAmountCents ??  0;
       int rideAmount = totalAmountCents - tipAmount;
@@ -116,11 +157,11 @@ class PaymentService {
       print('Tip (100% to driver): $tipAmount cents');
       print('Driver Total: $driverAmount cents');
 
-      // Step 2c:  Transfer to driver
+      // Step 2c:  Transfer to driver using charge ID
       final transferResult = await _createTransfer(
         amount: driverAmount,
         destinationAccount: driverStripeAccountId,
-        sourcePaymentIntent: paymentIntentId,
+        sourceChargeId: chargeId,
         description: 'Ride payment - Driver share',
       );
 
@@ -169,8 +210,12 @@ class PaymentService {
       };
 
       final Map<String, String> requestBody = {
-        'amount_to_capture': amountToCapture. toString(),
+        'amount_to_capture': amountToCapture.toString(),
+        'expand[]': 'charges', // Expand charges to get charge ID
       };
+
+      print('Capturing payment intent: $paymentIntentId');
+      print('Amount to capture: $amountToCapture cents');
 
       final response = await http.post(
         url,
@@ -180,15 +225,58 @@ class PaymentService {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print('Payment captured:  ${responseData['id']}');
+        print('✅ Payment captured: ${responseData['id']}');
+        print('Capture status: ${responseData['status']}');
+
+        // Debug: Check if charges are included
+        if (responseData['charges'] != null) {
+          print('✅ Charges data included in response');
+          if (responseData['charges']['data'] != null && responseData['charges']['data'].isNotEmpty) {
+            print('✅ Charge count: ${responseData['charges']['data'].length}');
+          } else {
+            print('⚠️ Charges data is empty');
+          }
+        } else {
+          print('⚠️ No charges data in response');
+        }
+
         return responseData;
       } else {
         final errorData = json.decode(response.body);
-        print('Capture error: ${errorData['error']['message']}');
+        print('❌ Capture error: ${errorData['error']['message']}');
         return null;
       }
     } catch (e) {
-      print('Exception in _capturePaymentIntent:  $e');
+      print('❌ Exception in _capturePaymentIntent: $e');
+      return null;
+    }
+  }
+
+  /// Retrieve a payment intent to get charge information
+  static Future<Map<String, dynamic>?> _retrievePaymentIntent(String paymentIntentId) async {
+    try {
+      final url = Uri.parse('https://api.stripe.com/v1/payment_intents/$paymentIntentId');
+
+      final headers = {
+        'Authorization': 'Bearer $secretKey',
+        'Stripe-Version': '2023-10-16',
+      };
+
+      print('Retrieving payment intent: $paymentIntentId');
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        print('✅ Payment intent retrieved');
+        return responseData;
+      } else {
+        final errorData = json.decode(response.body);
+        print('❌ Retrieve error: ${errorData['error']['message']}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception in _retrievePaymentIntent: $e');
       return null;
     }
   }
@@ -197,7 +285,7 @@ class PaymentService {
   static Future<Map<String, dynamic>?> _createTransfer({
     required int amount,
     required String destinationAccount,
-    required String sourcePaymentIntent,
+    required String sourceChargeId,
     String? description,
   }) async {
     try {
@@ -213,12 +301,17 @@ class PaymentService {
         'amount':  amount.toString(),
         'currency': 'cad',
         'destination': destinationAccount, // Driver's connected account (acct_xxx)
-        'source_transaction': sourcePaymentIntent,
+        'source_transaction': sourceChargeId, // Use charge ID, not payment intent ID
       };
 
       if (description != null) {
         requestBody['description'] = description;
       }
+
+      print('Creating transfer with:');
+      print('  Amount: ${amount} cents');
+      print('  Destination: $destinationAccount');
+      print('  Source Charge: $sourceChargeId');
 
       final response = await http.post(
         url,
@@ -226,17 +319,20 @@ class PaymentService {
         body: requestBody,
       );
 
-      if (response. statusCode == 200) {
-        final responseData = json. decode(response.body);
-        print('Transfer created: ${responseData['id']}');
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        print('✅ Transfer created successfully: ${responseData['id']}');
         return responseData;
       } else {
-        final errorData = json. decode(response.body);
-        print('Transfer error: ${errorData['error']['message']}');
+        final errorData = json.decode(response.body);
+        print('❌ Transfer error: ${errorData['error']['message']}');
+        if (errorData['error']['code'] != null) {
+          print('❌ Error code: ${errorData['error']['code']}');
+        }
         return null;
       }
     } catch (e) {
-      print('Exception in _createTransfer:  $e');
+      print('❌ Exception in _createTransfer: $e');
       return null;
     }
   }

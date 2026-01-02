@@ -3,21 +3,18 @@ import 'package:get/get.dart';
 import 'package:pick_u/controllers/login_controller.dart';
 import 'package:pick_u/routes/app_routes.dart';
 
-class LoginForm extends StatefulWidget {
+class LoginForm extends StatelessWidget {
   const LoginForm({
     super.key,
   });
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
-}
-
-class _LoginFormState extends State<LoginForm> {
-  @override
   Widget build(BuildContext context) {
-    final controller = Get.find<LoginController>();
+    // Add safety check to prevent accessing disposed controller
+    try {
+      final controller = Get.find<LoginController>();
 
-    return Form(
+      return Form(
       key: controller.formKey,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20 - 10),
@@ -87,5 +84,10 @@ class _LoginFormState extends State<LoginForm> {
         ),
       ),
     );
+    } catch (e) {
+      // If controller is not found or has been disposed, return empty widget
+      print('LoginForm Error: Controller not found or disposed - $e');
+      return const SizedBox.shrink();
+    }
   }
 }

@@ -1,6 +1,7 @@
 // Create a new file: services/signalr_service.dart
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
@@ -77,7 +78,7 @@ class SignalRService extends GetxService {
             hubUrl,
             HttpConnectionOptions(
               accessTokenFactory: () async => token,
-              logging: (level, message) => print(' SAHAr SignalR Log: $message'),
+              //logging: (level, message) => print(' SAHAr SignalR Log: $message'),
             ),
           )
           .withAutomaticReconnect([1000, 2000, 5000, 10000, 30000]) // Built-in retry with backoff
@@ -209,59 +210,45 @@ class SignalRService extends GetxService {
       final controller = Get.find<RideBookingController>();
 
       if (rideData is Map<String, dynamic>) {
-        String statusString = rideData['rideStatus']?.toString() ?? '';
-        print(' SAHAr Status string received: $statusString');
+        String statusString = (rideData['status'] ?? rideData['rideStatus'] ?? '').toString();
 
-        // Convert string to RideStatus enum
-        RideStatus status = _parseRideStatus(statusString);
-        controller.rideStatus.value = status;
-
-        if (statusString.toLowerCase() == 'started') {
-          Get.snackbar('Trip Started', 'Your driver has started the trip!');
-        } else if (statusString.toLowerCase() == 'completed') {
-          Get.snackbar('Trip Completed', 'You have reached your destination');
-          unsubscribeFromRide();
+        // Convert string status to RideStatus enum
+        RideStatus status;
+        switch (statusString.toLowerCase()) {
+          case 'pending':
+            status = RideStatus.pending;
+            break;
+          case 'in-progress':
+          case 'inprogress':
+          case 'started':
+            status = RideStatus.tripStarted;
+            controller.rideStatus.value = status;
+            Get.snackbar('Trip Started', 'Your driver has started the trip!',
+                backgroundColor: Colors.green.withValues(alpha: 0.8),
+                colorText: Colors.white);
+            break;
+          case 'completed':
+            status = RideStatus.tripCompleted;
+            controller.rideStatus.value = status;
+            Get.snackbar('Trip Completed', 'You have reached your destination',
+                backgroundColor: Colors.blue.withValues(alpha: 0.8),
+                colorText: Colors.white);
+            unsubscribeFromRide();
+            break;
+          case 'cancelled':
+            status = RideStatus.cancelled;
+            controller.rideStatus.value = status;
+            unsubscribeFromRide();
+            break;
+          default:
+            print(' SAHAr Unknown status: $statusString');
+            return;
         }
+
+        print(' SAHAr Status updated to: $status');
       }
     } catch (e) {
       print(' SAHAr Error handling ride status update: $e');
-    }
-  }
-
-  /// Helper method to parse string status to RideStatus enum
-  RideStatus _parseRideStatus(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return RideStatus.pending;
-      case 'booked':
-        return RideStatus.booked;
-      case 'waiting':
-        return RideStatus.waiting;
-      case 'driverassigned':
-      case 'driver assigned':
-        return RideStatus.driverAssigned;
-      case 'drivernear':
-      case 'driver near':
-        return RideStatus.driverNear;
-      case 'driverarrived':
-      case 'driver arrived':
-        return RideStatus.driverArrived;
-      case 'tripstarted':
-      case 'trip started':
-      case 'started':
-        return RideStatus.tripStarted;
-      case 'tripcompleted':
-      case 'trip completed':
-      case 'completed':
-        return RideStatus.tripCompleted;
-      case 'cancelled':
-        return RideStatus.cancelled;
-      case 'nodriver':
-      case 'no driver':
-        return RideStatus.noDriver;
-      default:
-        print(' SAHAr Warning: Unknown ride status "$status", defaulting to pending');
-        return RideStatus.pending;
     }
   }
 
