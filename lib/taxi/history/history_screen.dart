@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_history_controller.dart';
 import 'package:pick_u/taxi/history/widget/trip_card_widget.dart';
-import 'package:pick_u/taxi/history/widget/trip_summary_widget.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 import 'package:pick_u/widget/picku_appbar.dart';
 
@@ -38,6 +38,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: MColor.primaryNavy.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
@@ -167,7 +168,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildStatCard(
-                              'Cost',
+                              'Earning',
                               '\$${controller.totalFare.toStringAsFixed(2)}',
                               Icons.account_balance_wallet_rounded,
                             ),
@@ -216,6 +217,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
+                        padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
                           color: MColor.primaryNavy.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
@@ -248,16 +250,15 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                 ),
               )
                   : SliverPadding(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                         (context, index) {
                       final ride = controller.rides[index];
                       return GestureDetector(
-                          //onTap: () => _showRideDetailsDialog(context, ride),
-                          onTap: () => {},
-                          child: TripHistoryCard(ride: ride),
-                        );
+                        onTap: () => _showRideDetailsDialog(context, ride),
+                        child: TripHistoryCard(ride: ride),
+                      );
                     },
                     childCount: controller.rides.length,
                   ),
@@ -318,7 +319,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
     );
   }
 
-  /*void _showRideDetailsDialog(BuildContext context, RideItem ride) {
+  void _showRideDetailsDialog(BuildContext context, RideItem ride) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -368,20 +369,43 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Trip Details',
+                          'Ride Details',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade900,
                           ),
                         ),
-                        Text(
-                          'ID: ${ride.rideId.substring(0, 8).toUpperCase()}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                        if (ride.rideId != null && ride.rideId!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () => _copyRideId(context, ride.rideId!),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text("ID:",style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                )),
+                                const SizedBox(width: 4),
+                                Text(
+                                  ride.rideId!.length > 12 
+                                      ? ride.rideId!.substring(ride.rideId!.length - 12)
+                                      : ride.rideId!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 12,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -551,7 +575,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                ride.actualPickupLocation,
+                                ride.pickupLocation,
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey.shade900,
@@ -579,7 +603,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                ride.actualDropoffLocation,
+                                ride.dropoffLocation,
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey.shade900,
@@ -627,22 +651,9 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                       ),
                       child: Column(
                         children: [
-                          _buildInfoRow('Ride Type', ride.rideType.toUpperCase()),
-                          const SizedBox(height: 12),
-                          _buildInfoRow('Passengers', '${ride.passengerCount} Person(s)'),
-                          const SizedBox(height: 12),
                           _buildInfoRow('Distance', '${ride.distance.toStringAsFixed(1)} km'),
-                          if (ride.vehicle != null && ride.vehicle!.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            _buildInfoRow(
-                              'Vehicle',
-                              '${ride.vehicle}${ride.vehicleColor != null ? ' (${ride.vehicleColor})' : ''}',
-                            ),
-                          ],
-                          if (ride.totalWaitingTime != null && ride.totalWaitingTime!.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            _buildInfoRow('Waiting Time', ride.totalWaitingTime!),
-                          ],
+                          const SizedBox(height: 12),
+                          _buildInfoRow('Status', ride.status.toUpperCase()),
                         ],
                       ),
                     ),
@@ -678,72 +689,6 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                       ),
                       child: Column(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Estimated Fare',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ),
-                              Text(
-                                '\$${ride.fareEstimate.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (ride.adminCommission != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Admin Commission',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                ),
-                                Text(
-                                  '\$${ride.adminCommission!.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (ride.driverPayment != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Driver Payment',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                ),
-                                Text(
-                                  '\$${(double.tryParse(ride.driverPayment!) ?? 0.0).toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Divider(
@@ -786,7 +731,28 @@ class RideHistoryPage extends GetView<RideHistoryController> {
       ),
     );
   }
-*/
+
+  void _copyRideId(BuildContext context, String rideId) {
+    Clipboard.setData(ClipboardData(text: rideId));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text('Ride ID copied to clipboard'),
+          ],
+        ),
+        backgroundColor: MColor.primaryNavy,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -904,6 +904,37 @@ class RideBookingController extends GetxController {
       if (responseBody is Map<String, dynamic>) {
         // Handle scheduled rides differently
         if (isScheduled.value) {
+          // Extract rideId from response for scheduled rides
+          String? scheduledRideId;
+          if (responseBody.containsKey('rideId')) {
+            scheduledRideId = responseBody['rideId'] as String?;
+          } else if (responseBody.containsKey('id')) {
+            scheduledRideId = responseBody['id'] as String?;
+          } else if (responseBody.containsKey('scheduledRideId')) {
+            scheduledRideId = responseBody['scheduledRideId'] as String?;
+          } else if (responseBody.keys.isNotEmpty) {
+            // Try to get rideId from first key's value
+            final firstKey = responseBody.keys.first;
+            final firstValue = responseBody[firstKey];
+            if (firstValue is Map<String, dynamic>) {
+              scheduledRideId = firstValue['rideId'] ?? firstValue['id'] ?? firstValue['scheduledRideId'];
+            } else if (firstValue is String) {
+              scheduledRideId = firstValue;
+            }
+          }
+
+          // Set rideId if found
+          if (scheduledRideId != null && scheduledRideId.isNotEmpty) {
+            currentRideId.value = scheduledRideId;
+            print('SAHAr: Scheduled ride ID: $scheduledRideId');
+          }
+
+          // Save held payment info to backend for scheduled rides
+          if (heldPaymentIntentId.value.isNotEmpty && 
+              heldPaymentIntentId.value != 'NO_PAYMENT_REQUIRED') {
+            await _saveHeldPaymentToBackend();
+          }
+
           Get.snackbar(
             'Ride Scheduled Successfully!',
             'Your ride has been scheduled for ${DateFormat('MMM dd, yyyy hh:mm a').format(getScheduledDateTime()!)}',
@@ -2382,6 +2413,291 @@ class RideBookingController extends GetxController {
       }
     } catch (e) {
       print('SAHAr: Error cancelling ride: $e');
+    }
+  }
+
+  /// Cancel ride - releases Stripe payment hold and clears everything back to starting point
+  Future<void> cancelRide() async {
+    try {
+      isLoading.value = true;
+
+      print('SAHAr: Cancelling ride - releasing payment hold and clearing booking');
+
+      // Show loading dialog with animation
+      Get.dialog(
+        WillPopScope(
+          onWillPop: () async => false, // Prevent closing during cancellation
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              builder: (context, fadeValue, child) {
+                return Opacity(
+                  opacity: fadeValue,
+                  child: Transform.scale(
+                    scale: 0.9 + (fadeValue * 0.1),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Animated loading indicator
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 800),
+                            curve: Curves.easeInOut,
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: 0.8 + (value * 0.2),
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.red.withValues(alpha: 0.1),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                      ),
+                                      Icon(
+                                        Icons.cancel,
+                                        color: Colors.red,
+                                        size: 32,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          // Animated text
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOut,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 10 * (1 - value)),
+                                  child: Text(
+                                    'Cancelling ride...',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Please wait',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Small delay for animation to show
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Release Stripe payment hold if payment was held
+      if (heldPaymentIntentId.value.isNotEmpty && 
+          heldPaymentIntentId.value != 'NO_PAYMENT_REQUIRED') {
+        print('SAHAr: Releasing Stripe payment hold...');
+        await PaymentService.cancelHeldPayment(heldPaymentIntentId.value);
+        print('SAHAr: ✅ Payment hold released');
+      }
+
+      // Clear payment data
+      _clearPaymentData();
+
+      // Clear everything back to starting point
+      clearBooking();
+
+      // Close loading dialog
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
+      // Show success animation
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      Get.dialog(
+        Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.elasticOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.green.withValues(alpha: 0.1),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 50,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Ride Cancelled',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Payment hold released',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        barrierDismissible: true,
+      );
+
+      // Auto-close success dialog after 2 seconds
+      await Future.delayed(const Duration(seconds: 2));
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
+    } catch (e) {
+      print('SAHAr: Error cancelling ride: $e');
+      
+      // Close loading dialog if open
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
+      // Show error with animation
+      Get.dialog(
+        Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.scale(
+                  scale: 0.9 + (value * 0.1),
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 50,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Error',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Error cancelling ride: $e',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () => Get.back(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        barrierDismissible: true,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 

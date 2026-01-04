@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -210,12 +212,15 @@ class EditProfileController extends GetxController {
 
   // Update user profile
   Future<void> updateProfile() async {
+    File? tempFileCreated; // Track if we created a temp file for cleanup (declared outside try for finally access)
+    
     try {
       isLoading.value = true;
       final userId = user.value?.userId ?? '';
       final fullName = txtUserName.text.trim();
       final phoneNumber = txtMobile.text.trim();
       final imagePath = selectedImagePath.value;
+      
       // Create FormData manually
       final formData = FormData({});
 
@@ -225,24 +230,66 @@ class EditProfileController extends GetxController {
         MapEntry('PhoneNumber', phoneNumber),
       ]);
 
-      formData.files.add(
-        MapEntry(
-          'ProfileImage',
-          MultipartFile(
-            File(imagePath),
-            filename: 'profile.jpg',
+      // Handle profile image: send new image if selected, otherwise preserve existing
+      File? imageFileToSend;
+      
+      if (imagePath.isNotEmpty) {
+        // User selected a new image - use it
+        final imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          imageFileToSend = imageFile;
+          print(' SAHArSAHAr 📷 New image file selected: $imagePath');
+        } else {
+          print(' SAHArSAHAr ⚠️ Image file does not exist: $imagePath');
+        }
+      } else {
+        // No new image selected - preserve existing image by creating temp file from base64
+        if (user.value != null && user.value!.hasProfilePicture && user.value!.profilePicture != null) {
+          try {
+            final imageBytes = user.value!.getImageBytes();
+            if (imageBytes != null) {
+              // Create temporary file from existing image bytes
+              final tempDir = await getTemporaryDirectory();
+              final tempFile = File(path.join(tempDir.path, 'existing_profile_${DateTime.now().millisecondsSinceEpoch}.jpg'));
+              await tempFile.writeAsBytes(imageBytes);
+              imageFileToSend = tempFile;
+              tempFileCreated = tempFile; // Track for cleanup
+              print(' SAHArSAHAr ℹ️ Preserving existing profile image (created temp file from base64)');
+            }
+          } catch (e) {
+            print(' SAHArSAHAr ❌ Error creating temp file from existing image: $e');
+          }
+        } else {
+          print(' SAHArSAHAr ℹ️ No existing profile image to preserve');
+        }
+      }
+      
+      // Add image file to FormData if we have one
+      if (imageFileToSend != null && await imageFileToSend.exists()) {
+        formData.files.add(
+          MapEntry(
+            'ProfileImage',
+            MultipartFile(
+              imageFileToSend,
+              filename: 'profile.jpg',
+            ),
           ),
-        ),
-      );
+        );
+        print(' SAHArSAHAr 📷 Image file added to FormData');
+      }
 
       // 🔍 SAHAr Debug: Print FormData contents
       print(' SAHArSAHAr ⚠️ FormData Fields:');
       formData.fields.forEach((f) => print(' SAHArSAHAr 🔹 ${f.key} = ${f.value}'));
 
       print(' SAHArSAHAr 📷 FormData Files:');
-      formData.files.forEach((f) {
-        print(' SAHArSAHAr 📷 ${f.key} = ${f.value.filename}');
-      });
+      if (formData.files.isNotEmpty) {
+        formData.files.forEach((f) {
+          print(' SAHArSAHAr 📷 ${f.key} = ${f.value.filename}');
+        });
+      } else {
+        print(' SAHArSAHAr 📷 No files in FormData');
+      }
 
       // Send multipart request using your updated ApiProvider
       final response = await _apiProvider.postData2('/api/User/update-user', formData);
@@ -259,6 +306,8 @@ class EditProfileController extends GetxController {
           backgroundColor: MColor.primaryNavy,
           colorText: Colors.white,
         );
+        // Navigate back and refresh profile
+        Get.back(result: true);
       } else {
         throw Exception(response.statusText ?? 'Failed to update profile');
       }
@@ -273,6 +322,15 @@ class EditProfileController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+      // Clean up temporary file if we created one
+      if (tempFileCreated != null && await tempFileCreated.exists()) {
+        try {
+          await tempFileCreated.delete();
+          print(' SAHArSAHAr 🗑️ Temporary file cleaned up');
+        } catch (e) {
+          print(' SAHArSAHAr ⚠️ Error cleaning up temp file: $e');
+        }
+      }
     }
   }
 

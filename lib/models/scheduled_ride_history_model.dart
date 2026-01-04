@@ -25,6 +25,7 @@ class ScheduledRideHistoryResponse {
 }
 
 class ScheduledRideItem {
+  final String? rideId;
   final DateTime scheduledTime;
   final double fareFinal;
   final String status;
@@ -36,6 +37,7 @@ class ScheduledRideItem {
   final DateTime createdAt;
 
   ScheduledRideItem({
+    this.rideId,
     required this.scheduledTime,
     required this.fareFinal,
     required this.status,
@@ -48,7 +50,14 @@ class ScheduledRideItem {
   });
 
   factory ScheduledRideItem.fromJson(Map<String, dynamic> json) {
+    // Check for rideId in various possible field names
+    String? rideId = json['rideId'] as String?;
+    rideId ??= json['id'] as String?;
+    rideId ??= json['scheduledRideId'] as String?;
+    rideId ??= json['ride_id'] as String?;
+    
     return ScheduledRideItem(
+      rideId: rideId,
       scheduledTime: DateTime.parse(json['scheduledTime']),
       fareFinal: (json['fareFinal'] ?? 0.0).toDouble(),
       status: json['status'] ?? '',
@@ -62,11 +71,11 @@ class ScheduledRideItem {
   }
 
   String get formattedScheduledDate {
-    return DateFormat('dd MMM yyyy, HH:mm').format(scheduledTime);
+    return DateFormat('dd MMM yyyy, hh:mm a').format(scheduledTime);
   }
 
   String get formattedScheduledTime {
-    return DateFormat('HH:mm').format(scheduledTime);
+    return DateFormat('hh:mm a').format(scheduledTime);
   }
 
   Color get statusColor {

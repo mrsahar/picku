@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
-import 'package:pick_u/taxi/ride_booking_page.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
 class NoDriversAvailableWidget extends StatelessWidget {
@@ -136,14 +135,13 @@ class NoDriversAvailableWidget extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                      controller.isScheduled.value = true;
-                      Get.to(() => RideBookingPage());
+                  onPressed: () async {
+                    await controller.cancelRide();
                   },
-                  icon: const Icon(Icons.schedule),
-                  label: const Text('Schedule'),
+                  icon: const Icon(Icons.cancel),
+                  label: const Text('Cancel'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
+                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(

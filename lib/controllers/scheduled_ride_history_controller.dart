@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/models/scheduled_ride_history_model.dart';
@@ -63,6 +64,16 @@ class ScheduledRideHistoryController extends GetxController {
       print(' SAHArSAHAr ScheduledRides: response.body = ${response.body}');
 
       if (response.statusCode == 200) {
+        // Debug: Print the raw response to see all available fields
+        print(' SAHArSAHAr ScheduledRides: Raw response body = ${response.body}');
+        if (response.body is Map && response.body['items'] != null) {
+          final items = response.body['items'] as List;
+          if (items.isNotEmpty) {
+            print(' SAHArSAHAr ScheduledRides: First item keys = ${items[0].keys}');
+            print(' SAHArSAHAr ScheduledRides: First item = ${items[0]}');
+          }
+        }
+        
         final historyResponse = ScheduledRideHistoryResponse.fromJson(response.body);
         _scheduledRideHistory.value = historyResponse;
         print(' SAHArSAHAr ScheduledRides: scheduled ride history loaded successfully');
@@ -81,5 +92,62 @@ class ScheduledRideHistoryController extends GetxController {
 
   Future<void> refreshHistory() async {
     await fetchScheduledRideHistory();
+  }
+
+  Future<void> cancelRide(String rideId) async {
+    try {
+      _isLoading.value = true;
+      _errorMessage.value = '';
+
+      final endpoint = '/api/Ride/cancel-ride?rideId=$rideId';
+      print(' SAHArSAHAr CancelRide: API Request URL = ${_apiProvider.httpClient.baseUrl}$endpoint');
+
+      final response = await _apiProvider.postData(endpoint,{});
+
+      print(' SAHArSAHAr CancelRide: response.statusCode = ${response.statusCode}');
+      print(' SAHArSAHAr CancelRide: response.body = ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseBody = response.body;
+        final message = responseBody['message'] ?? 'Ride cancelled successfully';
+        
+        // Refresh the history to get updated status
+        await fetchScheduledRideHistory();
+        
+        Get.snackbar(
+          'Success',
+          message,
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        final responseBody = response.body;
+        final message = responseBody['message'] ?? 'Failed to cancel ride';
+        _errorMessage.value = message;
+        
+        Get.snackbar(
+          'Error',
+          message,
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      }
+    } catch (e) {
+      _errorMessage.value = 'Error cancelling ride: $e';
+      print(' SAHArSAHAr CancelRide: exception = $e');
+      
+      Get.snackbar(
+        'Error',
+        'Error cancelling ride: $e',
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      _isLoading.value = false;
+      print(' SAHArSAHAr CancelRide: loading finished');
+    }
   }
 }

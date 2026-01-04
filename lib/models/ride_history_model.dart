@@ -23,6 +23,7 @@ class RideHistoryResponse {
 }
 
 class RideItem {
+  final String? rideId;
   final DateTime scheduledTime;
   final double fareFinal;
   final String status;
@@ -34,6 +35,7 @@ class RideItem {
   final DateTime createdAt;
 
   RideItem({
+    this.rideId,
     required this.scheduledTime,
     required this.fareFinal,
     required this.status,
@@ -46,7 +48,13 @@ class RideItem {
   });
 
   factory RideItem.fromJson(Map<String, dynamic> json) {
+    // Check for rideId in various possible field names
+    String? rideId = json['rideId'] as String?;
+    rideId ??= json['id'] as String?;
+    rideId ??= json['ride_id'] as String?;
+    
     return RideItem(
+      rideId: rideId,
       scheduledTime: DateTime.parse(json['scheduledTime']),
       fareFinal: (json['fareFinal'] ?? 0.0).toDouble(),
       status: json['status'] ?? '',
@@ -60,7 +68,7 @@ class RideItem {
   }
 
   String get formattedDate {
-    return DateFormat('dd MMM yyyy, HH:mm').format(scheduledTime);
+    return DateFormat('dd MMM yyyy, hh:mm a').format(scheduledTime);
   }
 
   String get formattedStartTime {

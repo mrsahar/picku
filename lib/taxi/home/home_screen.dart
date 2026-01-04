@@ -7,6 +7,7 @@ import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/services/map_service.dart';
 import 'package:pick_u/taxi/booking/no_drivers_available_widget.dart';
+import 'package:pick_u/taxi/booking/scheduled_ride_widget.dart';
 import 'package:pick_u/taxi/booking/waiting_for_driver_widget.dart';
 import 'package:pick_u/taxi/home/widget/driver_info_widget.dart';
 import 'package:pick_u/taxi/home/widget/location_widget.dart';
@@ -172,6 +173,11 @@ class _HomeScreenState extends State<HomeScreen> {
             print(
               'SAHAr Current ride status: ${bookingController.rideStatus.value}',
             );
+
+            // Check if ride is scheduled - show scheduled widget instead of waiting widget
+            if (bookingController.isScheduled.value && bookingController.rideStatus.value == RideStatus.waiting) {
+              return const ScheduledRideWidget();
+            }
 
             switch (bookingController.rideStatus.value) {
               case RideStatus.waiting:
