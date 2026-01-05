@@ -35,6 +35,8 @@ class ScheduledRideItem {
   final String rideStartTime;
   final String rideEndTime;
   final DateTime createdAt;
+  final String? paymentIntentId;
+  final String? paymentStatus;
 
   ScheduledRideItem({
     this.rideId,
@@ -47,6 +49,8 @@ class ScheduledRideItem {
     required this.rideStartTime,
     required this.rideEndTime,
     required this.createdAt,
+    this.paymentIntentId,
+    this.paymentStatus,
   });
 
   factory ScheduledRideItem.fromJson(Map<String, dynamic> json) {
@@ -67,6 +71,8 @@ class ScheduledRideItem {
       rideStartTime: json['rideStartTime'] ?? '',
       rideEndTime: json['rideEndTime'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),
+      paymentIntentId: json['paymentIntentId'] as String?,
+      paymentStatus: json['paymentStatus'] as String?,
     );
   }
 

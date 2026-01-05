@@ -236,11 +236,34 @@ class LocationService extends GetxService {
         }
       }
     } catch (e) {
-      print(' SAHArError getting address: $e');
+      // Handle PlatformException for network/IO errors gracefully
+      // Don't log common network unavailability errors as they're expected when network is unavailable
+      String errorString = e.toString();
+      bool isNetworkError = errorString.contains('PlatformException') && 
+          (errorString.contains('IO_ERROR') || errorString.contains('UNAVAILABLE'));
+      
+      if (!isNetworkError) {
+        // Log only unexpected errors (not network-related)
+        print(' SAHArError getting address: $e');
+      }
+      // Network errors are silently handled - method returns coordinates as fallback
+    }
+
+    // If geocoding failed but we have a cached address for similar coordinates, use it
+    if (currentAddress.value.isNotEmpty && 
+        currentPosition.value != null &&
+        _areCoordinatesClose(lat, lng, currentPosition.value!.latitude, currentPosition.value!.longitude)) {
+      return currentAddress.value;
     }
 
     // Instead of "Unknown location", return formatted coordinates
     return 'Location: ${lat.toStringAsFixed(4)}°, ${lng.toStringAsFixed(4)}°';
+  }
+
+  /// Check if two coordinates are close (within ~100 meters)
+  bool _areCoordinatesClose(double lat1, double lng1, double lat2, double lng2) {
+    const double threshold = 0.001; // ~100 meters
+    return (lat1 - lat2).abs() < threshold && (lng1 - lng2).abs() < threshold;
   }
 
   Future<List<Location>> searchPlaces(String query) async {

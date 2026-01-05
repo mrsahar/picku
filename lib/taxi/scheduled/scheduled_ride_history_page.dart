@@ -794,6 +794,63 @@ class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
                       ),
                     ),
 
+                    // Note for cancelled or incomplete rides with held payments
+                    if ((ride.status.toLowerCase() == 'cancelled' || 
+                         ride.status.toLowerCase() == 'canceled' ||
+                         ride.status.toLowerCase() == 'incomplete' ||
+                         ride.status.toLowerCase() == 'in-complete') &&
+                        ride.paymentIntentId != null &&
+                        ride.paymentIntentId!.isNotEmpty &&
+                        ride.paymentStatus?.toLowerCase() == 'held') ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.blue.shade200,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 28,
+                              color: Colors.blue.shade700,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Payment Note',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue.shade900,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'If you do not see your held payment in available balance, it will be available in 7 working days.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue.shade900,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 24),
 
                     // Cancel Button (only show for pending/waiting rides)

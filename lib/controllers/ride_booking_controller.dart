@@ -905,19 +905,43 @@ class RideBookingController extends GetxController {
         // Handle scheduled rides differently
         if (isScheduled.value) {
           // Extract rideId from response for scheduled rides
+          // Handle nested structure where rideId might be a Map containing the ride data
           String? scheduledRideId;
+          
           if (responseBody.containsKey('rideId')) {
-            scheduledRideId = responseBody['rideId'] as String?;
+            final rideIdValue = responseBody['rideId'];
+            // Check if rideId is a Map (nested structure)
+            if (rideIdValue is Map<String, dynamic>) {
+              scheduledRideId = rideIdValue['rideId'] as String?;
+              scheduledRideId ??= rideIdValue['id'] as String?;
+              scheduledRideId ??= rideIdValue['scheduledRideId'] as String?;
+            } else if (rideIdValue is String) {
+              scheduledRideId = rideIdValue;
+            }
           } else if (responseBody.containsKey('id')) {
-            scheduledRideId = responseBody['id'] as String?;
+            final idValue = responseBody['id'];
+            if (idValue is Map<String, dynamic>) {
+              scheduledRideId = idValue['rideId'] as String?;
+              scheduledRideId ??= idValue['id'] as String?;
+            } else if (idValue is String) {
+              scheduledRideId = idValue;
+            }
           } else if (responseBody.containsKey('scheduledRideId')) {
-            scheduledRideId = responseBody['scheduledRideId'] as String?;
+            final scheduledRideIdValue = responseBody['scheduledRideId'];
+            if (scheduledRideIdValue is Map<String, dynamic>) {
+              scheduledRideId = scheduledRideIdValue['rideId'] as String?;
+              scheduledRideId ??= scheduledRideIdValue['id'] as String?;
+            } else if (scheduledRideIdValue is String) {
+              scheduledRideId = scheduledRideIdValue;
+            }
           } else if (responseBody.keys.isNotEmpty) {
             // Try to get rideId from first key's value
             final firstKey = responseBody.keys.first;
             final firstValue = responseBody[firstKey];
             if (firstValue is Map<String, dynamic>) {
-              scheduledRideId = firstValue['rideId'] ?? firstValue['id'] ?? firstValue['scheduledRideId'];
+              scheduledRideId = firstValue['rideId'] as String?;
+              scheduledRideId ??= firstValue['id'] as String?;
+              scheduledRideId ??= firstValue['scheduledRideId'] as String?;
             } else if (firstValue is String) {
               scheduledRideId = firstValue;
             }
@@ -935,13 +959,18 @@ class RideBookingController extends GetxController {
             await _saveHeldPaymentToBackend();
           }
 
+          // Show success toast message
           Get.snackbar(
-            'Ride Scheduled Successfully!',
+            'Scheduled Ride Received Successfully!',
             'Your ride has been scheduled for ${DateFormat('MMM dd, yyyy hh:mm a').format(getScheduledDateTime()!)}',
             duration: const Duration(seconds: 5),
             backgroundColor: MColor.primaryNavy.withValues(alpha:0.9),
             colorText: Colors.white,
+            snackPosition: SnackPosition.TOP,
+            margin: const EdgeInsets.all(16),
           );
+          
+          // Clear everything after successful scheduled ride
           clearBooking();
           return;
         }
@@ -2804,14 +2833,7 @@ class RideBookingController extends GetxController {
       return null;
     }
   }
-
-  /// OLD METHOD - Remove or deprecate
-  @Deprecated('Use _holdStripePayment and _completePayment instead')
-  Future<String?> _processStripePayment(double amount) async {
-    // This method is no longer used
-    // Keep for backward compatibility if needed
-    return null;
-  }
+ 
 
   // Getters that delegate to services
   List<AutocompletePrediction> get searchSuggestions => _searchService.searchSuggestions;
