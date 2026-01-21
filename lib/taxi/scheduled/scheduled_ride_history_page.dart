@@ -642,10 +642,14 @@ class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
                         children: [
                           _buildInfoRow('Distance', '${ride.distance.toStringAsFixed(1)} km'),
                           const SizedBox(height: 12),
-                          _buildInfoRow('Start Time', ride.formattedScheduledDate),
+                          _buildInfoRow('Scheduled Time', ride.formattedScheduledDate),
                           const SizedBox(height: 12),
                           _buildInfoRow('Created At', DateFormat('dd MMM yyyy, HH:mm').format(ride.createdAt)),
-                          if (ride.rideEndTime.isNotEmpty) ...[
+                          if (ride.rideStartTime.isNotEmpty && ride.rideStartTime != '00:00:00') ...[
+                            const SizedBox(height: 12),
+                            _buildInfoRow('Start Time', ride.rideStartTime),
+                          ],
+                          if (ride.rideEndTime.isNotEmpty && ride.rideEndTime != '00:00:00') ...[
                             const SizedBox(height: 12),
                             _buildInfoRow('End Time', ride.rideEndTime),
                           ],
@@ -666,48 +670,144 @@ class ScheduledRideHistoryPage extends GetView<ScheduledRideHistoryController> {
                           width: 1,
                         ),
                       ),
-                      child: Row(
+                      child: Column(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: MColor.primaryNavy,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.person_outline_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Driver Assignment',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: MColor.primaryNavy,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                const SizedBox(height: 4),
+                                child: const Icon(
+                                  Icons.person_outline_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Driver Assignment',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      (ride.driverName != null && ride.driverName!.isNotEmpty)
+                                          ? ride.driverName!
+                                          : 'No driver assigned yet',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (ride.driverPhoneNumber != null && ride.driverPhoneNumber!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const SizedBox(width: 42), // Align with icon above
+                                Icon(
+                                  Icons.phone_outlined,
+                                  size: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'No driver assigned yet',
+                                  ride.driverPhoneNumber!,
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
+
+                    // Vehicle Information
+                    if (ride.vehicleName != null && ride.vehicleName!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.green.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade600,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.directions_car_outlined,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Vehicle Information',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    ride.vehicleName!,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (ride.vehicleColor != null && ride.vehicleColor!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      ride.vehicleColor!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 

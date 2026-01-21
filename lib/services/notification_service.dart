@@ -59,7 +59,7 @@ class NotificationService extends GetxService {
   Future<void> _initializePlatformSpecifics() async {
     // Android settings - Enhanced for compatibility across all versions
     const AndroidInitializationSettings androidInitSettings =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+    AndroidInitializationSettings('@drawable/ic_notification');
 
     // iOS settings
     const DarwinInitializationSettings iosInitSettings =
@@ -344,7 +344,7 @@ class NotificationService extends GetxService {
         ledOnMs: 1000,
         ledOffMs: 500,
         showWhen: true,
-        icon: '@mipmap/ic_launcher', // Use app icon for maximum compatibility
+        icon: '@drawable/ic_notification', // Use notification icon
         playSound: true,
         sound: RawResourceAndroidNotificationSound('notification'),
         autoCancel: true,
@@ -396,7 +396,7 @@ class NotificationService extends GetxService {
         chatChannelName,
         importance: Importance.high,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         autoCancel: true,
       );
 
@@ -439,7 +439,7 @@ class NotificationService extends GetxService {
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
         enableVibration: true,
-        icon: '@mipmap/ic_launcher', // Use app icon for compatibility
+        icon: '@drawable/ic_notification', // Use notification icon
         playSound: true,
         autoCancel: true,
         ongoing: false,

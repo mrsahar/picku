@@ -237,7 +237,9 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
+                          color: (ride.driverName != null && ride.driverName!.isNotEmpty)
+                              ? Colors.green.shade50
+                              : Colors.orange.shade50,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -246,15 +248,21 @@ class ScheduledTripHistoryCard extends StatelessWidget {
                             Icon(
                               Icons.person_outline_rounded,
                               size: 14,
-                              color: Colors.orange.shade700,
+                              color: (ride.driverName != null && ride.driverName!.isNotEmpty)
+                                  ? Colors.green.shade700
+                                  : Colors.orange.shade700,
                             ),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                'No driver assigned',
+                                (ride.driverName != null && ride.driverName!.isNotEmpty)
+                                    ? ride.driverName!
+                                    : 'No driver assigned',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.orange.shade700,
+                                  color: (ride.driverName != null && ride.driverName!.isNotEmpty)
+                                      ? Colors.green.shade700
+                                      : Colors.orange.shade700,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 overflow: TextOverflow.ellipsis,
