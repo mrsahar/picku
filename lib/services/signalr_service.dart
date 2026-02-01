@@ -20,7 +20,7 @@ enum SignalRConnectionStatus {
 class SignalRService extends GetxService {
   static SignalRService get to => Get.find<SignalRService>();
 
-  static const String hubUrl = 'http://pickurides.com/ridechathub';
+  static const String hubUrl = 'http://api.pickurides.com/ridechathub';
   static const Duration retryInterval = Duration(seconds: 5);
 
   HubConnection? _connection;

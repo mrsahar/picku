@@ -1,6 +1,6 @@
 // lib/app/services/constants/app_constants.dart
 class AppConstants {
-  static const String API_BASE_URL = 'http://pickurides.com';
+  static const String API_BASE_URL = 'http://api.pickurides.com';
 
   // API Endpoints
   static const String USERS_ENDPOINT = '/users';
