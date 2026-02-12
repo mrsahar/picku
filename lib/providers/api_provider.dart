@@ -12,7 +12,7 @@ class ApiProvider extends GetConnect {
   @override
   void onInit() {
     super.onInit();
-
+    httpClient.timeout = const Duration(seconds: 50);
     // Configure base URL
     httpClient.baseUrl = _globalVars.baseUrl;
 

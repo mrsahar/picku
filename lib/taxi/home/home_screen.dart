@@ -422,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Enhanced method using MapService
   Future<void> _centerMapToLocation(
     LatLng location, {
-    double zoom = 16.0,
+    double zoom = 17.0,
   }) async {
     await mapService.animateToLocation(location, zoom: zoom);
     print(' SAHAr Map centered to: $location with zoom: $zoom');

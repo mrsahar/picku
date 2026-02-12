@@ -37,7 +37,68 @@ class ChatBackgroundService extends GetxService {
   void onInit() {
     super.onInit();
     _setupRideStatusListener();
+    _setupConnectionListener();
     print(' SAHAr 🔧 ChatBackgroundService initialized');
+  }
+
+  /// Setup listener for connection status
+  void _setupConnectionListener() {
+    // Listen to connection status to register handlers when connected
+    ever(_signalRService.connectionStatus, (status) {
+      if (status == SignalRConnectionStatus.connected) {
+        // Reset flag to ensure we register on the new connection instance if it changed
+        _listenersRegistered = false;
+        _registerSignalRListeners();
+      } else {
+        // If disconnected or connecting, mark as not registered so we try again later
+        _listenersRegistered = false;
+      }
+    });
+
+    // Also try immediately if already connected
+    if (_signalRService.isConnected) {
+      _registerSignalRListeners();
+    }
+  }
+
+  bool _listenersRegistered = false;
+
+  /// Register global SignalR listeners
+  void _registerSignalRListeners() {
+    if (_listenersRegistered) return;
+
+    final connection = _signalRService.connection;
+    if (connection == null) return;
+
+    try {
+      // Listen for incoming messages
+      connection.on('ReceiveMessage', (List<Object?>? arguments) {
+        if (arguments != null && arguments.isNotEmpty) {
+          final messageData = arguments[0] as Map<String, dynamic>;
+          _handleReceivedMessage(messageData);
+        }
+      });
+
+      // Listen for chat history
+      connection.on('ReceiveRideChatHistory', (List<Object?>? arguments) {
+        print(' SAHAr 📜 ReceiveRideChatHistory event triggered');
+        if (arguments != null && arguments.isNotEmpty) {
+          final historyData = arguments[0] as List<dynamic>;
+          print(' SAHAr 📜 Chat history data received: ${historyData.length} messages');
+          _handleChatHistory(historyData);
+        }
+      });
+
+      _listenersRegistered = true;
+      print(' SAHAr ✅ Chat event handlers registered on shared SignalR connection');
+
+      // If we have an active ride ID, join the chat group
+      if (rideId.value.isNotEmpty) {
+        _joinRideChat();
+      }
+    } catch (e) {
+      print(' SAHAr ❌ Error registering listeners: $e');
+    }
   }
 
   /// Setup listener for ride status changes
@@ -148,31 +209,6 @@ class ChatBackgroundService extends GetxService {
         await _signalRService.initializeConnection();
       }
 
-      // Register chat-specific event handlers on shared connection
-      final connection = _signalRService.connection;
-      if (connection == null) {
-        throw Exception('SignalR connection not available');
-      }
-
-      // Listen for incoming messages
-      connection.on('ReceiveMessage', (List<Object?>? arguments) {
-        if (arguments != null && arguments.isNotEmpty) {
-          final messageData = arguments[0] as Map<String, dynamic>;
-          _handleReceivedMessage(messageData);
-        }
-      });
-
-      // Listen for chat history
-      connection.on('ReceiveRideChatHistory', (List<Object?>? arguments) {
-        print(' SAHAr 📜 ReceiveRideChatHistory event triggered');
-        if (arguments != null && arguments.isNotEmpty) {
-          final historyData = arguments[0] as List<dynamic>;
-          print(' SAHAr 📜 Chat history data received: ${historyData.length} messages');
-          _handleChatHistory(historyData);
-        }
-      });
-
-      print(' SAHAr ✅ Chat event handlers registered on shared SignalR connection');
 
       // Join ride chat group
       await _joinRideChat();

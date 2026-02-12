@@ -22,11 +22,11 @@ class NotificationService extends GetxService {
   String get currentRoute => _currentRoute.value;
 
   // Notification channels
-  static const String chatChannelId = 'chat_messages';
+  static const String chatChannelId = 'chat_messages_pick_u_v2';
   static const String chatChannelName = 'Chat Messages';
   static const String chatChannelDescription = 'Notifications for new chat messages';
 
-  static const String generalChannelId = 'general_notifications';
+  static const String generalChannelId = 'general_notifications_pick_u_v2';
   static const String generalChannelName = 'General Notifications';
   static const String generalChannelDescription = 'General app notifications';
 
@@ -92,17 +92,24 @@ class NotificationService extends GetxService {
         AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
+      // Clean up old channels to ensure new configuration is applied
+      await androidPlugin.deleteNotificationChannel('chat_messages');
+      await androidPlugin.deleteNotificationChannel('general_notifications');
+      await androidPlugin.deleteNotificationChannel('chat_messages_v1');
+      await androidPlugin.deleteNotificationChannel('general_notifications_v1');
+
       // Chat messages channel - Compatible with all Android versions
       const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
         chatChannelId,
         chatChannelName,
         description: chatChannelDescription,
-        importance: Importance.high,
+        importance: Importance.max, // Increased to Max for Heads-up + Sound
         enableVibration: true,
         enableLights: true,
         ledColor: Colors.blue,
         showBadge: true,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification'),
       );
 
       // General notifications channel - Compatible with all Android versions
@@ -110,10 +117,11 @@ class NotificationService extends GetxService {
         generalChannelId,
         generalChannelName,
         description: generalChannelDescription,
-        importance: Importance.defaultImportance,
+        importance: Importance.high, // Increased to High
         enableVibration: true,
         showBadge: true,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification'),
       );
 
       await androidPlugin.createNotificationChannel(chatChannel);
@@ -358,7 +366,7 @@ class NotificationService extends GetxService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        sound: 'notification.aiff',
+        sound: 'notification.mp3',
         categoryIdentifier: 'chat_message',
       );
 
@@ -441,6 +449,7 @@ class NotificationService extends GetxService {
         enableVibration: true,
         icon: '@drawable/ic_notification', // Use notification icon
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification'),
         autoCancel: true,
         ongoing: false,
         visibility: NotificationVisibility.private,

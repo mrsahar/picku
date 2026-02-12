@@ -18,6 +18,7 @@ import 'package:pick_u/services/signalr_service.dart';
 import 'package:pick_u/models/location_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
+import 'package:pick_u/dialogs/thank_you_dialog.dart';
 
 // Constants
 class ApiEndpoints {
@@ -548,7 +549,7 @@ class RideBookingController extends GetxController {
       address: '',
       latitude: 0,
       longitude: 0,
-      stopOrder: additionalStops.length + 2,
+      stopOrder: additionalStops.length + 1,
     ));
 
     // Force UI update
@@ -557,7 +558,7 @@ class RideBookingController extends GetxController {
     print(' SAHArSAHAr Stop added. Total stops: ${additionalStops.length}');
   }
 
-  void removeStop(int index) {
+  Future<void> removeStop(int index) async {
     if (index >= 0 && index < stopControllers.length) {
       stopControllers[index].dispose();
       stopControllers.removeAt(index);
@@ -566,10 +567,32 @@ class RideBookingController extends GetxController {
         additionalStops.removeAt(index);
       }
 
-      // Force UI update
+      // 1. Re-index remaining stops taake sequence sahi rahe
+      for (int i = 0; i < additionalStops.length; i++) {
+        final oldStop = additionalStops[i];
+        additionalStops[i] = LocationData(
+          address: oldStop.address,
+          latitude: oldStop.latitude,
+          longitude: oldStop.longitude,
+          stopOrder: i + 1, // Pickup (0), Stops (1..N), Dropoff (N+1)
+        );
+      }
+
       stopControllers.refresh();
       additionalStops.refresh();
-      print(' SAHArSAHAr Stop removed at index $index');
+
+      // 2. RE-CALCULATE Everything automatically
+      if (pickupLocation.value != null && dropoffLocation.value != null) {
+        // Map par polylines aur markers update karein
+        await _mapService.createRouteMarkersAndPolylines(
+          pickupLocation: pickupLocation.value,
+          dropoffLocation: dropoffLocation.value,
+          additionalStops: additionalStops,
+        );
+        // Nayi distance ke mutabiq fare update karein
+        await getFareEstimate();
+      }
+      print('SAHAr: Stop removed, Map and Fare updated.');
     }
   }
 
@@ -1032,6 +1055,7 @@ class RideBookingController extends GetxController {
     var responseBody = response.body;
     print(' SAHArSAHAr Processing trip completion response: $responseBody');
 
+
     // Always set the status to completed first
     rideStatus.value = RideStatus.tripCompleted;
 
@@ -1124,9 +1148,6 @@ class RideBookingController extends GetxController {
     required double originalHeldAmount,
     required double heldPaymentDifference,
   }) {
-    // Reset tip amount when payment dialog opens
-    selectedTipAmount.value = 0.0;
-    
     // Reset ride duration display
     rideDurationDisplay.value = 'Calculating...';
     Timer? durationTimer;
@@ -1188,16 +1209,18 @@ class RideBookingController extends GetxController {
     });
 
     Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: MColor.primaryNavy, size: 28),
-            SizedBox(width: 8),
-            Text('Trip Completed!', style: TextStyle(color: MColor.primaryNavy, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Container(
+      PopScope(
+        canPop: false, // Prevent back button dismissal - Payment is mandatory
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: MColor.primaryNavy, size: 28),
+              SizedBox(width: 8),
+              Text('Trip Completed!', style: TextStyle(color: MColor.primaryNavy, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Container(
           width: Get.width * 0.8,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1348,7 +1371,8 @@ class RideBookingController extends GetxController {
             ],
           )),
         ],
-      ),
+        ),
+      ), // End of AlertDialog
       barrierDismissible: false,
     ).then((_) {
       // Clean up timer when dialog is closed
@@ -1570,21 +1594,30 @@ class RideBookingController extends GetxController {
     TextEditingController commentController = TextEditingController();
 
     Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.star, color: MColor.trackingOrange, size: 28),
-            SizedBox(width: 8),
-            Text('Rate Your Rider',
-                style: TextStyle(
-                  color: MColor.primaryNavy,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                )
-            ),
-          ],
-        ),
+      PopScope(
+        canPop: true, // Allow back button dismissal - Review is optional (Uber style)
+        onPopInvokedWithResult: (bool didPop, dynamic result) {
+          if (didPop) {
+            // User pressed back button to skip review
+            print(' SAHArSAHAr ℹ️ User skipped review via back button');
+            clearBooking(); // Reset app to home
+          }
+        },
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.star, color: MColor.trackingOrange, size: 28),
+              SizedBox(width: 8),
+              Text('Rate Your Rider',
+                  style: TextStyle(
+                    color: MColor.primaryNavy,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  )
+              ),
+            ],
+          ),
         content: Container(
           width: Get.width * 0.8,
           child: Column(
@@ -1642,7 +1675,9 @@ class RideBookingController extends GetxController {
         actions: [
           TextButton(
             onPressed: () {
-              Get.back();
+              print(' SAHArSAHAr ℹ️ User clicked Skip button');
+              // Close review dialog and reset app
+              Get.back(closeOverlays: true);
               clearBooking();
             },
             child: Text('Skip', style: TextStyle(color: MColor.mediumGrey)),
@@ -1652,30 +1687,64 @@ class RideBookingController extends GetxController {
               backgroundColor: MColor.primaryNavy,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: selectedRating.value > 0 ? () async {
-              Get.back();
-              await _submitFeedback(
+            onPressed: (selectedRating.value > 0 && !isLoading.value) ? () async {
+              print(' SAHArSAHAr 🔵 Submit Review button clicked');
+
+              // Submit feedback API call
+              final result = await _submitFeedback(
                   selectedRating.value,
                   commentController.text.trim()
               );
+
+              print(' SAHArSAHAr 🔵 Closing dialog with closeOverlays: true');
+              // CRITICAL: Close ALL overlays (dialog + any snackbars)
+              Get.back(closeOverlays: true);
+
+              print(' SAHArSAHAr 🔵 Dialog closed, now showing result snackbar');
+              // Now show the result snackbar (after dialog is closed)
+              if (result['success'] == true) {
+                // Show thank you dialog with confetti animation
+                showThankYouDialog(result['message']);
+              } else {
+                Get.snackbar(
+                  'Error',
+                  result['message'],
+                  backgroundColor: Colors.red.withValues(alpha: 0.8),
+                  colorText: Colors.white,
+                );
+              }
+
+              print(' SAHArSAHAr 🔵 Calling clearBooking to reset app');
+              // Reset app to home screen
               clearBooking();
             } : null,
-            child: Text(
-              'Submit Review',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-              ),
-            ),
+            child: isLoading.value
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    'Submit Review',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold
+                    ),
+                  ),
           )),
         ],
-      ),
+        ),
+      ), // End of AlertDialog
       barrierDismissible: false,
     );
   }
 
   // Submit feedback to API
-  Future<void> _submitFeedback(int rating, String comments) async {
+  // Returns Map with 'success' (bool) and 'message' (String)
+  Future<Map<String, dynamic>> _submitFeedback(int rating, String comments) async {
     print(' SAHArSAHAr 🟡 _submitFeedback() called');
     print(' SAHArSAHAr ⭐ Rating: $rating');
     print(' SAHArSAHAr 💬 Comments: $comments');
@@ -1706,20 +1775,23 @@ class RideBookingController extends GetxController {
 
       if (response.isOk) {
         print(' SAHArSAHAr ✅ Feedback submitted successfully');
-        Get.snackbar(
-          'Thank You!',
-          'Your feedback has been submitted successfully!',
-          duration: Duration(seconds: 3),
-          backgroundColor: MColor.primaryNavy.withValues(alpha:0.8),
-          colorText: Colors.white,
-        );
+        return {
+          'success': true,
+          'message': 'Your feedback has been submitted successfully!'
+        };
       } else {
         print(' SAHArSAHAr ❌ Feedback submission failed: ${response.statusText}');
-        Get.snackbar('Error', 'Failed to submit feedback: ${response.statusText}');
+        return {
+          'success': false,
+          'message': 'Failed to submit feedback: ${response.statusText}'
+        };
       }
     } catch (e) {
       print(' SAHArSAHAr 🔥 Exception during feedback submission: $e');
-      Get.snackbar('Error', 'Failed to submit feedback: $e');
+      return {
+        'success': false,
+        'message': 'Failed to submit feedback: $e'
+      };
     } finally {
       isLoading.value = false;
       print(' SAHArSAHAr ✅ isLoading set to false');
@@ -1822,7 +1894,7 @@ class RideBookingController extends GetxController {
         address: placeDetails.formattedAddress,
         latitude: placeDetails.location.latitude,
         longitude: placeDetails.location.longitude,
-        stopOrder: stopIndex + 2,
+        stopOrder: stopIndex + 1,
       );
 
       if (stopIndex < additionalStops.length) {
@@ -1907,6 +1979,7 @@ class RideBookingController extends GetxController {
   void clearBooking() {
     _mapService.clearMap();
     isRideBooked.value = false;
+    rideStatus.value = RideStatus.pending;
     resetForm();
     _locationService.getCurrentLocation();
 
@@ -2169,6 +2242,10 @@ class RideBookingController extends GetxController {
         Get.back();
 
         _showRideCompletedMessage(0, 0, paidFromBalance: true);
+
+        // Wait a moment to ensure payment dialog is fully closed before showing review dialog
+        await Future.delayed(Duration(milliseconds: 300));
+
         _showReviewDialog();
         return;
       }
@@ -2214,18 +2291,22 @@ class RideBookingController extends GetxController {
         additionalPaymentInfo = await _createAdditionalPaymentIntent(additionalAmountNeeded);
         
         if (additionalPaymentInfo == null || additionalPaymentInfo['chargeId'] == null || additionalPaymentInfo['chargeId']!.isEmpty) {
-          print('SAHAr: ❌ Failed to create additional payment intent');
-          Get.snackbar('Payment Error', 'Failed to process additional payment for tip. Please try again.');
-          return;
+          print('SAHAr: ❌ Failed to process extra tip. Fallback to held amount.');
+          Get.snackbar('Tip Info', 'Could not process extra tip. Only authorized amount will be charged.');
+
+          // Fallback: Charge only what was held (fare + partial tip)
+          amountToCaptureFromHeld = heldAmountCents;
+          tipInHeldPayment = heldAmountCents - fareOnlyCents;
+          if (tipInHeldPayment < 0) tipInHeldPayment = 0;
+        } else {
+          // Both payments successful
+          amountToCaptureFromHeld = heldAmountCents;
+          tipInHeldPayment = heldAmountCents - fareOnlyCents; // Tip that fits in held amount
+          if (tipInHeldPayment < 0) tipInHeldPayment = 0;
+
+          print('SAHAr: 💡 Capturing held payment: \$${(amountToCaptureFromHeld/100).toStringAsFixed(2)}');
+          print('SAHAr: 💡 Additional payment created: ${additionalPaymentInfo['paymentIntentId']} for \$${(additionalAmountNeeded/100).toStringAsFixed(2)}');
         }
-        
-        // Capture full held amount (fare + any tip that fits)
-        amountToCaptureFromHeld = heldAmountCents;
-        tipInHeldPayment = heldAmountCents - fareOnlyCents; // Tip that fits in held amount
-        if (tipInHeldPayment < 0) tipInHeldPayment = 0;
-        
-        print('SAHAr: 💡 Capturing held payment: \$${(amountToCaptureFromHeld/100).toStringAsFixed(2)}');
-        print('SAHAr: 💡 Additional payment created: ${additionalPaymentInfo['paymentIntentId']} for \$${(additionalAmountNeeded/100).toStringAsFixed(2)}');
       } else {
         // Normal case: everything fits in held amount
         amountToCaptureFromHeld = actualChargeWithTipCents;
@@ -2275,8 +2356,14 @@ class RideBookingController extends GetxController {
         totalTipProcessed += (additionalAmountNeeded / 100.0);
       }
 
-      // Save transaction to backend
-      await _saveCompletedTransaction(result, userId, totalTipProcessed, balanceUsed: balanceUsed);
+      // Save transaction to backend (including additional tip info if exists)
+      bool transactionSaved = await _saveCompletedTransaction(
+        result,
+        userId,
+        totalTipProcessed,
+        balanceUsed: balanceUsed,
+        additionalResult: additionalResult
+      );
 
       // Call tip API AFTER successful payment (only if tip > 0)
       if (tipAmount > 0) {
@@ -2284,8 +2371,13 @@ class RideBookingController extends GetxController {
         await _submitTip(tipAmount, fareAfterBalance, totalAmountWithTip);
       }
 
-      // Close the payment dialog now that payment is successful
-      Get.back();
+      // Reset tip amount after successful payment completion
+      selectedTipAmount.value = 0.0;
+
+      // Close the payment dialog now that transaction is saved
+      if (transactionSaved) {
+        Get.back();
+      }
 
       // Show success message
       double driverAmount = result['driver_amount'] / 100;
@@ -2297,6 +2389,9 @@ class RideBookingController extends GetxController {
       }
 
       _showRideCompletedMessage(driverAmount, platformFee, balanceUsed: balanceUsed);
+
+      // Wait a moment to ensure payment dialog is fully closed before showing review dialog
+      await Future.delayed(Duration(milliseconds: 300));
 
       // Show review dialog
       _showReviewDialog();
@@ -2313,11 +2408,12 @@ class RideBookingController extends GetxController {
   }
 
   /// Save completed transaction to backend
-  Future<void> _saveCompletedTransaction(
+  Future<bool> _saveCompletedTransaction(
       Map<String, dynamic> result,
       String userId,
       double tipAmount,
-      {double balanceUsed = 0.0}
+      {double balanceUsed = 0.0,
+      Map<String, dynamic>? additionalResult}
       ) async {
     try {
       Map<String, dynamic> paymentData = {
@@ -2337,6 +2433,13 @@ class RideBookingController extends GetxController {
         "completedAt": DateTime.now().toIso8601String(),
       };
 
+      // Add additional tip transaction info if it exists
+      if (additionalResult != null && additionalResult['success'] == true) {
+        paymentData['additionalTipChargeId'] = additionalResult['charge_id'];
+        paymentData['additionalTipTransferId'] = additionalResult['transfer_id'];
+        paymentData['additionalTipAmount'] = additionalResult['tip_amount'] / 100;
+      }
+
       print('SAHAr: Saving completed transaction: $paymentData');
 
       Response response = await _apiProvider.postData(
@@ -2346,11 +2449,14 @@ class RideBookingController extends GetxController {
 
       if (response.isOk) {
         print('SAHAr: ✅ Transaction saved successfully');
+        return true;
       } else {
         print('SAHAr: ⚠️ Failed to save transaction: ${response.statusText}');
+        return false;
       }
     } catch (e) {
       print('SAHAr: ❌ Error saving transaction: $e');
+      return false;
     }
   }
 

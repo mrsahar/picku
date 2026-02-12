@@ -47,6 +47,16 @@ class _MyAppState extends State<MyApp> {
 
   void initialState() async{
     await Future.delayed(const Duration(seconds: 3));
+
+    // Ensure notification permissions are requested at app launch
+    try {
+      final notificationService = Get.find<NotificationService>();
+      await notificationService.checkAndRequestPermissions();
+      print('🔔 Startup permission check completed');
+    } catch (e) {
+      print('❌ Startup permission check failed: $e');
+    }
+
     FlutterNativeSplash.remove();
   }
 

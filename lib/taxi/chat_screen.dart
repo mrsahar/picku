@@ -13,7 +13,6 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     // Initialize notification service when chat screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeNotifications();
       _cancelRideNotifications();
     });
 
@@ -42,46 +41,6 @@ class ChatScreen extends GetView<ChatController> with WidgetsBindingObserver {
     }
   }
 
-  /// Initialize notification permissions
-  void _initializeNotifications() async {
-    final notificationService = NotificationService.to;
-    if (!notificationService.notificationsEnabled) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      _showNotificationPermissionDialog();
-    }
-  }
-
-  /// Show notification permission dialog
-  void _showNotificationPermissionDialog() {
-    Get.dialog(
-      AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.chat_bubble, color: MColor.primaryNavy),
-            const SizedBox(width: 8),
-            const Text('Enable Chat Notifications'),
-          ],
-        ),
-        content: const Text(
-          'Get notified when your driver sends you messages. This helps you stay connected during your ride.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Maybe Later'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: MColor.primaryNavy),
-            onPressed: () async {
-              Get.back();
-              await NotificationService.to.checkAndRequestPermissions();
-            },
-            child: const Text('Enable', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Build notification status banner
   Widget _buildNotificationStatus() {

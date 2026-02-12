@@ -218,6 +218,13 @@ class SignalRService extends GetxService {
           case 'pending':
             status = RideStatus.pending;
             break;
+          case 'arrived':
+            status = RideStatus.driverArrived;
+            controller.rideStatus.value = status;
+            Get.snackbar('Driver Arrived', 'Your driver has arrived at the pickup location',
+                backgroundColor: Colors.green.withValues(alpha: 0.8),
+                colorText: Colors.white);
+            break;
           case 'in-progress':
           case 'inprogress':
           case 'started':
