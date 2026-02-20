@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(43.6532, -79.3832), // Toronto, CN Tower area
-    zoom: 14,
+    zoom: 17,
   );
 
   bool isShowingLocationWidget = true;

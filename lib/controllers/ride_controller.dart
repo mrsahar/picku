@@ -88,7 +88,7 @@ class RideController extends GetxController {
               currentPosition.value!.latitude,
               currentPosition.value!.longitude,
             ),
-            zoom: 15,
+            zoom: 17,
           ),
         ),
       );

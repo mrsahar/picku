@@ -15,6 +15,7 @@ import 'package:pick_u/services/payment_service.dart';
 import 'package:pick_u/services/search_location_service.dart';
 import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/services/signalr_service.dart';
+import 'package:pick_u/services/chat_background_service.dart';
 import 'package:pick_u/models/location_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
@@ -134,6 +135,10 @@ class RideBookingController extends GetxController {
   // Distance-based notifications
   final hasShownApproachingNotification = false.obs;
   final hasShownArrivedNotification = false.obs;
+
+  // Local ride duration tracking
+  var localRideStartTime = Rx<DateTime?>(null);
+  var localRideEndTime = Rx<DateTime?>(null);
 
   // SignalR Service
   late SignalRService signalRService;
@@ -779,6 +784,10 @@ class RideBookingController extends GetxController {
       if (response.isOk) {
         rideStatus.value = RideStatus.tripStarted;
 
+        // Add this line to start the timer locally!
+        localRideStartTime.value = DateTime.now();
+        localRideEndTime.value = null; // Reset end time just in case
+
         // Enable destination tracking when trip starts
         isTrackingDestination.value = true;
         _updateDistanceToDestination(); // Calculate initial distance
@@ -813,6 +822,10 @@ class RideBookingController extends GetxController {
       if (response.isOk) {
         print(' SAHArSAHAr Trip ended successfully: ${response.body}');
         prevRideId.value = currentRideId.value;
+
+        // Add this line to stop the timer locally!
+        localRideEndTime.value = DateTime.now();
+
         _handleTripCompletion(response);
       } else {
         print(' SAHArSAHAr Failed to end trip: ${response.statusText}');
@@ -1152,51 +1165,35 @@ class RideBookingController extends GetxController {
     rideDurationDisplay.value = 'Calculating...';
     Timer? durationTimer;
 
-    // Function to calculate and format duration
+    // Function to calculate and format duration locally
     String calculateRideDuration() {
       try {
-        if (rideStartTime.isEmpty || rideEndTime.isEmpty) {
-          return 'N/A';
-        }
+        // Use our manual local start time if we have it
+        if (localRideStartTime.value != null) {
+          DateTime startTime = localRideStartTime.value!;
+          // If the ride ended, use the end time. Otherwise, keep ticking with DateTime.now()
+          DateTime endTime = localRideEndTime.value ?? DateTime.now();
 
-        // Try to parse the datetime strings
-        DateTime startTime;
-        DateTime endTime;
+          Duration difference = endTime.difference(startTime);
+          int hours = difference.inHours;
+          int minutes = difference.inMinutes.remainder(60);
+          int seconds = difference.inSeconds.remainder(60);
 
-        // Try ISO 8601 format first
-        try {
-          startTime = DateTime.parse(rideStartTime);
-          endTime = DateTime.parse(rideEndTime);
-        } catch (e) {
-          // Try other common formats
-          try {
-            startTime = DateFormat("yyyy-MM-ddTHH:mm:ss").parse(rideStartTime);
-            endTime = DateFormat("yyyy-MM-ddTHH:mm:ss").parse(rideEndTime);
-          } catch (e2) {
-            try {
-              startTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(rideStartTime);
-              endTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(rideEndTime);
-            } catch (e3) {
-              return 'N/A';
-            }
+          // Format with double digits
+          if (hours > 0) {
+            return '${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
+          } else if (minutes > 0) {
+            return '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
+          } else {
+            return '${seconds.toString().padLeft(2, '0')}s';
           }
         }
 
-        Duration difference = endTime.difference(startTime);
-        int hours = difference.inHours;
-        int minutes = difference.inMinutes.remainder(60);
-        int seconds = difference.inSeconds.remainder(60);
-
-        if (hours > 0) {
-          return '${hours}h ${minutes}m ${seconds}s';
-        } else if (minutes > 0) {
-          return '${minutes}m ${seconds}s';
-        } else {
-          return '${seconds}s';
-        }
+        // Fallback just in case local variables are null
+        return duration.isNotEmpty ? duration : '0s';
       } catch (e) {
         print('Error calculating ride duration: $e');
-        return 'N/A';
+        return '0s';
       }
     }
 
@@ -1974,6 +1971,10 @@ class RideBookingController extends GetxController {
     // Reset destination tracking
     isTrackingDestination.value = false;
     distanceToDestination.value = 0.0;
+
+    // Add these two lines at the end of resetForm():
+    localRideStartTime.value = null;
+    localRideEndTime.value = null;
   }
 
   void clearBooking() {
@@ -2200,6 +2201,24 @@ class RideBookingController extends GetxController {
 
     if (driverStripeAccountId. value.isEmpty) {
       print('SAHAr: ⚠️ WARNING: Driver does not have Stripe account! ');
+    }
+
+    // CRITICAL FIX: Initialize chat background service immediately when driver is assigned
+    try {
+      SharedPrefsService.getUserId().then((userId) {
+        if (userId != null && currentRideId.value.isNotEmpty) {
+          Get.find<ChatBackgroundService>().updateRideInfo(
+            rideId: currentRideId.value,
+            driverId: driverId.value,
+            driverName: driverName.value,
+            currentUserId: userId,
+            status: RideStatus.driverAssigned,
+          );
+          print('SAHAr: ✅ Chat background service initialized for ride ${currentRideId.value}');
+        }
+      });
+    } catch (e) {
+      print('SAHAr: ⚠️ Failed to initialize chat background service: $e');
     }
   }
 
@@ -2502,9 +2521,7 @@ class RideBookingController extends GetxController {
         message += "Balance Used: \$${balanceUsed.toStringAsFixed(2)}\n";
       }
 
-      message += "Card Charged: \$${cardCharged.toStringAsFixed(2)}\n"
-          "Driver received: \$${driverAmount.toStringAsFixed(2)}\n"
-          "Service fee: \$${platformFee.toStringAsFixed(2)}";
+      message += "Payment completed successfully!\n";
     }
 
     Get.snackbar(

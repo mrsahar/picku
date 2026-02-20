@@ -375,7 +375,7 @@ class SignalRService extends GetxService {
   Future<void> centerOnDriverLocation() async {
     LatLng? driverLocation = getCurrentDriverLocation();
     if (driverLocation != null) {
-      await _mapService.animateToLocation(driverLocation, zoom: 16.0);
+      await _mapService.animateToLocation(driverLocation, zoom: 17.0);
       Get.snackbar(
         'Centered',
         'Map centered on driver location',

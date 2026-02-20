@@ -282,7 +282,7 @@ class MapService extends GetxService {
       // Force center map on first driver location
       if (centerMap) {
         Future.delayed(const Duration(milliseconds: 500), () {
-          animateToLocation(newLocation, zoom: 16.0);
+          animateToLocation(newLocation, zoom: 17.0);
         });
       }
 
@@ -293,7 +293,7 @@ class MapService extends GetxService {
     // For subsequent updates, animate if location changed
     if (_previousDriverLocation != newLocation) {
       if (centerMap) {
-        animateToLocation(newLocation, zoom: 16.0);
+        animateToLocation(newLocation, zoom: 17.0);
       }
 
       // Use route-following animation for movement
@@ -642,7 +642,7 @@ class MapService extends GetxService {
 
     try {
       if (locations.length == 1) {
-        await animateToLocation(locations.first, zoom: 15);
+        await animateToLocation(locations.first, zoom: 17);
         return;
       }
 
