@@ -86,6 +86,7 @@ class RideBookingController extends GetxController {
   var estimatedFare = 0.0.obs;
   var fareMessage = ''.obs;
   var fareCurrency = 'CAD'.obs;
+  var adminPercentage = 0.0.obs; // Admin share percentage from fare API
   var isLoadingFare = false.obs;
   String _lastFareEstimateKey = ''; // Track last fare estimate request
   bool _hasShownServiceUnavailable = false; // Prevent duplicate snackbars
@@ -791,8 +792,6 @@ class RideBookingController extends GetxController {
         // Enable destination tracking when trip starts
         isTrackingDestination.value = true;
         _updateDistanceToDestination(); // Calculate initial distance
-
-        Get.snackbar('Trip Started', 'Your trip has started successfully!');
         print(' SAHAr Trip started - destination tracking enabled');
       } else {
         Get.snackbar('Error', 'Failed to Start Ride: ${response.statusText}');
@@ -912,7 +911,9 @@ class RideBookingController extends GetxController {
           // Delay update until after build (safe for Obx)
           WidgetsBinding.instance.addPostFrameCallback((_) {
             estimatedFare.value = (fareData['EstimatedFare'] ?? 0.0).toDouble();
+            adminPercentage.value = (fareData['AdminPercentage'] ?? adminPercentage.value).toDouble();
             print('SAHArSAHAr Fare updated: ${estimatedFare.value}');
+            print('SAHArSAHAr Admin percentage updated: ${adminPercentage.value}');
           });
         } else {
           print('SAHArSAHAr No fare data in response');
@@ -2339,6 +2340,9 @@ class RideBookingController extends GetxController {
         driverStripeAccountId: driverStripeAccountId.value,
         totalAmountCents: amountToCaptureFromHeld,
         tipAmountCents: tipInHeldPayment,
+        platformFeePercentOverride: adminPercentage.value > 0
+            ? adminPercentage.value / 100.0
+            : null,
       );
 
       if (result == null || result['success'] != true) {
@@ -2448,6 +2452,7 @@ class RideBookingController extends GetxController {
         "tipAmount": tipAmount,
         "driverAmount": result['driver_amount'] / 100,
         "platformFee": result['platform_fee'] / 100,
+        "adminPercentage": adminPercentage.value,
         "status": "completed",
         "completedAt": DateTime.now().toIso8601String(),
       };
@@ -2513,15 +2518,8 @@ class RideBookingController extends GetxController {
         message = "Ride completed successfully!\nNo payment required.";
       }
     } else {
-      double cardCharged = driverAmount + platformFee;
       message = "Payment completed successfully!\n"
           "Total Fare: \$${actualFareBeforeBalance.value.toStringAsFixed(2)}\n";
-
-      if (balanceUsed > 0) {
-        message += "Balance Used: \$${balanceUsed.toStringAsFixed(2)}\n";
-      }
-
-      message += "Payment completed successfully!\n";
     }
 
     Get.snackbar(

@@ -134,6 +134,7 @@ class PaymentService {
     required String driverStripeAccountId, // Driver's connected account ID (acct_xxx)
     required int totalAmountCents,
     int? tipAmountCents,
+    double? platformFeePercentOverride,
   }) async {
     try {
       print('=== Starting Capture and Transfer ===');
@@ -204,14 +205,15 @@ class PaymentService {
       int rideAmount = totalAmountCents - tipAmount;
 
       // Platform fee is only on ride amount, not on tip
-      int platformFee = (rideAmount * platformFeePercent).round();
+      double feePercent = platformFeePercentOverride ?? platformFeePercent;
+      int platformFee = (rideAmount * feePercent).round();
 
       // Driver gets:  ride amount - platform fee + full tip
       int driverAmount = rideAmount - platformFee + tipAmount;
 
       print('=== Payment Split ===');
       print('Ride Amount: $rideAmount cents');
-      print('Platform Fee (${(platformFeePercent * 100).toInt()}%): $platformFee cents');
+      print('Platform Fee (${(feePercent * 100).toStringAsFixed(2)}%): $platformFee cents');
       print('Tip (100% to driver): $tipAmount cents');
       print('Driver Total: $driverAmount cents');
 

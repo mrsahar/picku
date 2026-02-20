@@ -89,7 +89,15 @@ class _ThankYouDialogState extends State<ThankYouDialog>
                 borderRadius: BorderRadius.circular(20),
               ),
               elevation: 16,
-              child: Container(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
@@ -102,7 +110,8 @@ class _ThankYouDialogState extends State<ThankYouDialog>
                     ],
                   ),
                 ),
-                child: Column(
+                child: SingleChildScrollView(
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Success icon with animation
@@ -213,8 +222,10 @@ class _ThankYouDialogState extends State<ThankYouDialog>
                       ),
                     ),
                   ],
-                ),
-              ),
+                  ), // Column
+                ), // SingleChildScrollView
+                ), // Container
+              ), // ConstrainedBox
             ),
           ),
         ),

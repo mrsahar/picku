@@ -22,11 +22,11 @@ class NotificationService extends GetxService {
   String get currentRoute => _currentRoute.value;
 
   // Notification channels
-  static const String chatChannelId = 'chat_messages_pick_u_v2';
+  static const String chatChannelId = 'chat_messages_pick_u_v3';
   static const String chatChannelName = 'Chat Messages';
   static const String chatChannelDescription = 'Notifications for new chat messages';
 
-  static const String generalChannelId = 'general_notifications_pick_u_v2';
+  static const String generalChannelId = 'general_notifications_pick_u_v3';
   static const String generalChannelName = 'General Notifications';
   static const String generalChannelDescription = 'General app notifications';
 
@@ -97,6 +97,10 @@ class NotificationService extends GetxService {
       await androidPlugin.deleteNotificationChannel('general_notifications');
       await androidPlugin.deleteNotificationChannel('chat_messages_v1');
       await androidPlugin.deleteNotificationChannel('general_notifications_v1');
+      await androidPlugin.deleteNotificationChannel('chat_messages_pick_u_v2');
+      await androidPlugin.deleteNotificationChannel('general_notifications_pick_u_v2');
+      await androidPlugin.deleteNotificationChannel(chatChannelId);
+      await androidPlugin.deleteNotificationChannel(generalChannelId);
 
       // Chat messages channel - Compatible with all Android versions
       const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
