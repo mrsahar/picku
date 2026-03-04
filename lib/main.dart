@@ -20,6 +20,8 @@ import 'services/global_variables.dart';
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
   await Stripe.instance.applySettings();
 
+  // Pick U ride background service is initialized when user reaches MainMap (see MainMapBinding)
+
   // Initialize services early
   Get.put(NotificationService(), permanent: true);
   Get.put(AuthController(), permanent: true);
@@ -45,18 +47,9 @@ class _MyAppState extends State<MyApp> {
     _loadThemeMode();
   }
 
-  void initialState() async{
+  void initialState() async {
     await Future.delayed(const Duration(seconds: 3));
-
-    // Ensure notification permissions are requested at app launch
-    try {
-      final notificationService = Get.find<NotificationService>();
-      await notificationService.checkAndRequestPermissions();
-      print('🔔 Startup permission check completed');
-    } catch (e) {
-      print('❌ Startup permission check failed: $e');
-    }
-
+    // Notification permission is requested on MainMap screen, not at app launch
     FlutterNativeSplash.remove();
   }
 

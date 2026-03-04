@@ -211,7 +211,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
 
               case RideStatus.cancelled:
-                return const NoDriversAvailableWidget();
+                // Show normal home/destination widget so user can book again (no driver bottom sheet)
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder: (child, animation) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.0, 1.0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    );
+                  },
+                  child: widgets[isWidget],
+                );
 
               case RideStatus.booked:
                 if (bookingController.isRideBooked.value) {

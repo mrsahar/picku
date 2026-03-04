@@ -168,8 +168,7 @@ class RideBookingController extends GetxController {
   }
 
   Future<void> _initializeServices() async {
-    signalRService = Get.put(SignalRService());
-    await signalRService.initializeConnection();
+    signalRService = Get.find<SignalRService>();
   }
 
   void _setupLocationListener() {
@@ -400,6 +399,33 @@ class RideBookingController extends GetxController {
   }
 
 
+  /// Call this when driver arrived status is received from SignalR (or elsewhere).
+  /// Shows the same "Driver Has Arrived!" dialog and prevents duplicate show from distance logic.
+  void showDriverArrivedDialogFromSignalR() {
+    if (hasShownArrivedNotification.value) return;
+    hasShownArrivedNotification.value = true;
+    _playNotificationSound();
+    _showDriverArrivedDialog();
+  }
+
+  /// Call when ride status Cancelled is received from SignalR.
+  /// Runs: complete payment (or release hold) → show review popup → user dismisses review triggers reset via clearBooking.
+  Future<void> handleRideCancelledFromSignalR() async {
+    try {
+      double finalFare = actualFareBeforeBalance.value > 0
+          ? actualFareBeforeBalance.value
+          : 0.0;
+      double tip = selectedTipAmount.value;
+      await _completePayment(finalFare, tipAmount: tip);
+      // _completePayment shows review dialog; Skip/Submit in review call clearBooking()
+    } catch (e) {
+      print('SAHAr: handleRideCancelledFromSignalR payment error: $e');
+      // Still show review and reset so user is not stuck
+      clearPaymentData();
+      _showReviewDialog();
+    }
+  }
+
   // Show driver arrived notification (10m or less)
   void _showDriverArrivedDialog() {
     Get.dialog(
@@ -446,43 +472,20 @@ class RideBookingController extends GetxController {
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         actions: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: MColor.primaryNavy,
-                    side: BorderSide(color: MColor.primaryNavy),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () => {
-                    Get.back(),
-                  },
-                  child: const Text('Not Yet'),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MColor.primaryNavy,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MColor.primaryNavy,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () {
-                    Get.back();
-                    startTrip();
-                  },
-                  child: const Text('Start Ride'),
-                ),
-              ),
-            ],
+              onPressed: () => Get.back(),
+              child: const Text('Got It'),
+            ),
           ),
         ],
       ),
@@ -811,6 +814,48 @@ class RideBookingController extends GetxController {
       return;
     }
 
+    // Show loading payment popup while ending trip and preparing payment
+    Get.dialog(
+      WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 44,
+                width: 44,
+                child: CircularProgressIndicator(
+                  color: MColor.primaryNavy,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Ride completed',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: MColor.primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Loading payment...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
     try {
       isLoading.value = true;
       print(' SAHArSAHAr Ending trip with ride ID: ${currentRideId.value}');
@@ -827,10 +872,12 @@ class RideBookingController extends GetxController {
 
         _handleTripCompletion(response);
       } else {
+        if (Get.isDialogOpen == true) Get.back();
         print(' SAHArSAHAr Failed to end trip: ${response.statusText}');
         Get.snackbar('Error', 'Failed to End Ride: ${response.statusText}');
       }
     } catch (e) {
+      if (Get.isDialogOpen == true) Get.back();
       print(' SAHArSAHAr Error ending trip: $e');
       Get.snackbar('Error', 'Failed to End Ride: $e');
     } finally {
@@ -1069,6 +1116,8 @@ class RideBookingController extends GetxController {
     var responseBody = response.body;
     print(' SAHArSAHAr Processing trip completion response: $responseBody');
 
+    // Dismiss loading payment popup before showing payment dialog
+    if (Get.isDialogOpen == true) Get.back();
 
     // Always set the status to completed first
     rideStatus.value = RideStatus.tripCompleted;
@@ -2258,8 +2307,8 @@ class RideBookingController extends GetxController {
         // Record as balance-paid ride (with actual fare amount)
         await _recordNoPaymentRide(fareAmount: actualFareBeforeBalance.value);
 
-        // Close the payment dialog
-        Get.back();
+        // Close the payment dialog only if it is open (e.g. not when called from SignalR cancelled)
+        if (Get.isDialogOpen == true) Get.back();
 
         _showRideCompletedMessage(0, 0, paidFromBalance: true);
 
@@ -2397,8 +2446,8 @@ class RideBookingController extends GetxController {
       // Reset tip amount after successful payment completion
       selectedTipAmount.value = 0.0;
 
-      // Close the payment dialog now that transaction is saved
-      if (transactionSaved) {
+      // Close the payment dialog now that transaction is saved (only if open)
+      if (transactionSaved && Get.isDialogOpen == true) {
         Get.back();
       }
 
@@ -2868,7 +2917,12 @@ class RideBookingController extends GetxController {
     }
   }
 
-  /// Clear payment data
+  /// Clear payment data (public for use from SignalR cancelled flow).
+  void clearPaymentData() {
+    _clearPaymentData();
+  }
+
+  /// Clear payment data (internal).
   void _clearPaymentData() {
     heldPaymentIntentId.value = '';
     driverStripeAccountId.value = '';

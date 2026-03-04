@@ -340,62 +340,28 @@ Widget _buildCompactRideActionButton(
 ) {
   switch (controller.rideStatus.value) {
     case RideStatus.tripStarted:
-      return SizedBox(
+      return Container(
         width: double.infinity,
-        height: 44,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: MColor.primaryNavy,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.drive_eta, color: Colors.blue, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Trip in Progress',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue,
+              ),
             ),
-          ),
-          onPressed: controller.isLoading.value
-              ? null
-              : () async {
-                  bool confirm =
-                      await Get.dialog<bool>(
-                        AlertDialog(
-                          title: const Text('End Ride'),
-                          content: const Text(
-                            'Are you sure you want to end this ride?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Get.back(result: false),
-                              child: const Text('Cancel'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Get.back(result: true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: MColor.primaryNavy,
-                              ),
-                              child: const Text(
-                                'End Ride',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ) ??
-                      false;
-
-                  if (confirm) {
-                    await controller.endTrip();
-                  }
-                },
-          child: controller.isLoading.value
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : const Text("End Ride"),
+          ],
         ),
       );
 
@@ -427,34 +393,54 @@ Widget _buildCompactRideActionButton(
 
     case RideStatus.driverAssigned:
     case RideStatus.driverNear:
-    case RideStatus.driverArrived:
-      return SizedBox(
+      return Container(
         width: double.infinity,
-        height: 44,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: MColor.primaryNavy,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: MColor.warning.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MColor.warning.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.directions_car, color: MColor.warning, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Driver is on the way',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: MColor.warning,
+              ),
             ),
-          ),
-          onPressed: controller.isLoading.value
-              ? null
-              : () async {
-                  await controller.startTrip();
-                },
-          child: controller.isLoading.value
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : const Text("Start Ride"),
+          ],
+        ),
+      );
+
+    case RideStatus.driverArrived:
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: MColor.primaryNavy.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MColor.primaryNavy.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_pin_circle, color: MColor.primaryNavy, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Driver has arrived',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: MColor.primaryNavy,
+              ),
+            ),
+          ],
         ),
       );
 

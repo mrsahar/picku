@@ -35,7 +35,11 @@ class LocationService extends GetxService {
     super.onClose();
   }
 
+  /// Only fetch location if permission is already granted. Do not request permission here
+  /// so the app can show its own rationale first (Google location permission policy).
   Future<void> _initializeLocation() async {
+    final status = await Permission.location.status;
+    if (!status.isGranted) return;
     await getCurrentLocation();
   }
 
@@ -75,11 +79,15 @@ class LocationService extends GetxService {
     }
   }
 
-  /// Trigger location listener setup in home screen when GPS is enabled
+  /// Trigger location listener setup in home screen when GPS is enabled.
+  /// Only fetches location if permission is already granted (no system popup).
   void _triggerLocationListenerSetup() {
     try {
-      getCurrentLocation().then((_) {
-        print('LocationService: GPS enabled - location updated and listeners notified');
+      Permission.location.status.then((status) {
+        if (!status.isGranted) return;
+        getCurrentLocation().then((_) {
+          print('LocationService: GPS enabled - location updated and listeners notified');
+        });
       });
     } catch (e) {
       print('LocationService: Error triggering location listener setup: $e');
@@ -155,12 +163,9 @@ class LocationService extends GetxService {
       }
 
       geo.LocationPermission permission = await geo.Geolocator.checkPermission();
-      if (permission == geo.LocationPermission.denied) {
-        permission = await geo.Geolocator.requestPermission();
-        if (permission == geo.LocationPermission.denied) {
-          Get.snackbar('Error', 'Location permission denied');
-          return null;
-        }
+      if (permission == geo.LocationPermission.denied ||
+          permission == geo.LocationPermission.deniedForever) {
+        return null;
       }
 
       return await geo.Geolocator.getCurrentPosition(
@@ -172,13 +177,14 @@ class LocationService extends GetxService {
     }
   }
 
-  /// Get current location and update reactive variables
+  /// Get current location and update reactive variables.
+  /// Only uses location if permission is already granted - never requests permission here.
   Future<void> getCurrentLocation() async {
     isLocationLoading.value = true;
     try {
-      bool hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        Get.snackbar('Permission Required', 'Location permission is required');
+      final status = await Permission.location.status;
+      if (!status.isGranted) {
+        isLocationLoading.value = false;
         return;
       }
 

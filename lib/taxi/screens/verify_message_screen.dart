@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
-import 'package:pick_u/taxi/main_map.dart';
+import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/utils/theme/mcolors.dart';
 
 class VerifyMessageScreen extends StatefulWidget {
@@ -48,7 +48,7 @@ class _VerifyMessageScreenState extends State<VerifyMessageScreen> {
               const Spacer(),
               OutlinedButton(
                 onPressed: () {
-                   Get.to(() => const MainMap());
+                   Get.offAllNamed(AppRoutes.mainMap);
                 },
                 child: const Icon(LineAwesomeIcons.arrow_right_solid),
               ),

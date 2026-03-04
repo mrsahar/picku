@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/models/ride_models.dart';
 import 'package:pick_u/providers/api_provider.dart';
@@ -27,7 +28,10 @@ class RideController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    getCurrentLocation();
+    // Only fetch location if permission already granted (Google policy: no system popup before in-app rationale).
+    Permission.location.status.then((status) {
+      if (status.isGranted) getCurrentLocation();
+    });
   }
 
   void setMapController(GoogleMapController controller) {

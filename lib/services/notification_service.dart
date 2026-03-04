@@ -43,11 +43,11 @@ class NotificationService extends GetxService {
     print('🧭 Route updated to: $route');
   }
 
-  /// Initialize notification service
+  /// Initialize notification service (channels + plugin only; permission is requested on MainMap, not at startup).
   Future<void> initializeNotifications() async {
     try {
       await _initializePlatformSpecifics();
-      await checkAndRequestPermissions();
+      // Do NOT call checkAndRequestPermissions() here - requested only when user reaches MainMap
       _isInitialized.value = true;
       print('🔔 Notifications initialized successfully');
     } catch (e) {
@@ -56,10 +56,11 @@ class NotificationService extends GetxService {
   }
 
   /// Initialize platform-specific notification settings
+  /// All status bar notification icons use Pick U logo: res/drawable/ic_notification.png (from assets/images/ic_notification.png)
   Future<void> _initializePlatformSpecifics() async {
-    // Android settings - Enhanced for compatibility across all versions
+    // Android settings - Use Pick U logo for all notifications (ic_notification)
     const AndroidInitializationSettings androidInitSettings =
-    AndroidInitializationSettings('@drawable/ic_notification');
+        AndroidInitializationSettings('@drawable/ic_notification');
 
     // iOS settings
     const DarwinInitializationSettings iosInitSettings =
@@ -356,7 +357,7 @@ class NotificationService extends GetxService {
         ledOnMs: 1000,
         ledOffMs: 500,
         showWhen: true,
-        icon: '@drawable/ic_notification', // Use notification icon
+        icon: '@drawable/ic_notification', // Pick U logo - status bar icon
         playSound: true,
         sound: RawResourceAndroidNotificationSound('notification'),
         autoCancel: true,
@@ -408,7 +409,7 @@ class NotificationService extends GetxService {
         chatChannelName,
         importance: Importance.high,
         priority: Priority.high,
-        icon: '@drawable/ic_notification',
+        icon: '@drawable/ic_notification', // Pick U logo
         autoCancel: true,
       );
 
@@ -451,7 +452,7 @@ class NotificationService extends GetxService {
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
         enableVibration: true,
-        icon: '@drawable/ic_notification', // Use notification icon
+        icon: '@drawable/ic_notification', // Pick U logo - status bar icon
         playSound: true,
         sound: RawResourceAndroidNotificationSound('notification'),
         autoCancel: true,
@@ -495,6 +496,12 @@ class NotificationService extends GetxService {
     final notificationId = rideId.hashCode.abs();
     await _flutterLocalNotificationsPlugin.cancel(notificationId);
     print('🔔 Cancelled notification for ride: $rideId');
+  }
+
+  /// Cancel notification by id (e.g. foreground service notification).
+  Future<void> cancelNotificationById(int notificationId) async {
+    await _flutterLocalNotificationsPlugin.cancel(notificationId);
+    print('🔔 Cancelled notification id: $notificationId');
   }
 
   /// Check if notifications are enabled

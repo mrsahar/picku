@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:pick_u/routes/app_routes.dart';
+import 'package:pick_u/services/location_service.dart';
+import 'package:pick_u/services/notification_service.dart';
 import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/services/global_variables.dart';
 
@@ -16,6 +19,269 @@ class MainMap extends StatefulWidget {
 }
 
 class _MainMapState extends State<MainMap> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkLocationPermission();
+      _requestNotificationPermission();
+    });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    try {
+      final notificationService = Get.find<NotificationService>();
+      await notificationService.checkAndRequestPermissions();
+    } catch (_) {}
+  }
+
+  /// Check if location is granted. If not, show our custom rationale dialog first.
+  Future<void> _checkLocationPermission() async {
+    final status = await Permission.location.status;
+    if (status.isGranted) {
+      // Already granted - trigger location fetch silently
+      try {
+        Get.find<LocationService>().getCurrentLocation();
+      } catch (_) {}
+      return;
+    }
+    // Not granted yet - show our custom rationale dialog
+    _showLocationRationaleDialog();
+  }
+
+  void _showLocationRationaleDialog() {
+    Get.dialog(
+      barrierDismissible: false,
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: MColor.trackingOrange.withValues(alpha: 0.12),
+                ),
+                child: Icon(
+                  Icons.location_on_rounded,
+                  size: 34,
+                  color: MColor.trackingOrange,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Location Access Required',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: MColor.primaryNavy,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Pick U needs your location to connect you with nearby drivers, set your pickup point, and track your ride in real time.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Get.back();
+                    await _requestSystemLocationPermission();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MColor.primaryNavy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Grant Permission',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Get.back();
+                    _showCannotRunWithoutLocationDialog();
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    'Not Now',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _requestSystemLocationPermission() async {
+    final status = await Permission.location.request();
+    if (status.isGranted) {
+      // Permission granted - fetch location now
+      try {
+        Get.find<LocationService>().getCurrentLocation();
+      } catch (_) {}
+    } else if (status.isPermanentlyDenied) {
+      _showOpenSettingsDialog();
+    } else {
+      // Denied (not permanently) - show our "can't run" message
+      _showCannotRunWithoutLocationDialog();
+    }
+  }
+
+  void _showCannotRunWithoutLocationDialog() {
+    Get.dialog(
+      barrierDismissible: false,
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red.withValues(alpha: 0.1),
+                ),
+                child: const Icon(
+                  Icons.location_off_rounded,
+                  size: 34,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Location is Required',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: MColor.primaryNavy,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'The app cannot work without location permission. We use it only to connect you with your driver and track your ride.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Get.back();
+                    _showLocationRationaleDialog();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MColor.primaryNavy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Allow Location',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () async {
+                    Get.back();
+                    await openAppSettings();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: MColor.primaryNavy),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Open Settings',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: MColor.primaryNavy,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showOpenSettingsDialog() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Permission Permanently Denied'),
+        content: const Text(
+          'Location permission was permanently denied. Please enable it in app settings to use Pick U.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await openAppSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MColor.primaryNavy,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
