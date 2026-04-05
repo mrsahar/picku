@@ -478,26 +478,135 @@ class RideBookingPage extends StatelessWidget {
                           controller.getFareEstimate();
                         });
 
-                        return Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('✓ Distance: $currentDistance'),
-                                    Text('✓ Duration: ${_mapService.routeDuration.value}'),
-                                    Text('✓ Estimated Fare: \$${controller.estimatedFare.value}'),
-                                  ],
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('✓ Distance: $currentDistance'),
+                                      Text('✓ Duration: ${_mapService.routeDuration.value}'),
+                                      Obx(() {
+                                        if (controller.fareBreakdownAvailable.value) {
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '✓ Subtotal: ${controller.fareCurrency.value} ${controller.fareSubtotal.value.toStringAsFixed(2)}',
+                                              ),
+                                              if (controller.fareDiscount.value > 0)
+                                                Text(
+                                                  '✓ Discount: -${controller.fareCurrency.value} ${controller.fareDiscount.value.toStringAsFixed(2)}',
+                                                ),
+                                              Text(
+                                                '✓ Total: ${controller.fareCurrency.value} ${controller.estimatedFare.value.toStringAsFixed(2)}',
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                        return Text(
+                                          '✓ Estimated fare: ${controller.fareCurrency.value} ${controller.estimatedFare.value.toStringAsFixed(2)}',
+                                        );
+                                      }),
+                                    ],
+                                  ),
                                 ),
+                                if (_mapService.isLoadingRoute.value)
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Promo code (optional)',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
-                              if (_mapService.isLoadingRoute.value)
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: controller.promoCodeController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter code',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                    textCapitalization: TextCapitalization.characters,
+                                  ),
                                 ),
-                            ],
-                          );
+                                const SizedBox(width: 8),
+                                Obx(
+                                  () => Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: FilledButton(
+                                      onPressed: controller.isVerifyingPromo.value
+                                          ? null
+                                          : () async {
+                                              await controller.verifyPromoCode();
+                                            },
+                                      child: controller.isVerifyingPromo.value
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text('Apply'),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Obx(() {
+                              if (controller.promoError.value.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  controller.promoError.value,
+                                  style: TextStyle(
+                                    color: Colors.red[700],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            }),
+                            Obx(() {
+                              if (controller.fareMessage.value.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  controller.fareMessage.value,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        );
                       }
                       return const SizedBox.shrink();
                     })

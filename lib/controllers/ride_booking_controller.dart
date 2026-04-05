@@ -33,6 +33,7 @@ class ApiEndpoints {
   static const String saveHeldPayment = '/api/Payment/held-payments';
   static const String completeTransaction = '/api/Payment/complete-transaction';
   static const String cancelRide = '/api/Payment/cancel-ride';
+  static const String verifyPromo = '/api/user/verify-promo';
 }
 
 class AppConstants {
@@ -78,16 +79,28 @@ class RideBookingController extends GetxController {
   var additionalStops = <LocationData>[].obs;
   var passengerCount = 1.obs;
   var rideType = 'standard'.obs;
-  var fareEstimate = 0.0.obs;
   var isMultiStopRide = false.obs;
 
   // Scheduling variables
   // Fare estimation variables
   var estimatedFare = 0.0.obs;
+  var fareSubtotal = 0.0.obs;
+  var fareDiscount = 0.0.obs;
+  /// True when last fare-estimate used the flat `total` / `subtotal` / `discount` shape.
+  var fareBreakdownAvailable = false.obs;
   var fareMessage = ''.obs;
   var fareCurrency = 'CAD'.obs;
   var adminPercentage = 0.0.obs; // Admin share percentage from fare API
   var isLoadingFare = false.obs;
+
+  final promoCodeController = TextEditingController();
+  var appliedPromoCode = ''.obs;
+  /// From verify-promo; required by fare-estimate POST body for server-side discount.
+  var appliedPromoCodeId = ''.obs;
+  var appliedPromoFlatAmount = 0.0.obs;
+  var appliedPromoMinFare = 0.0.obs;
+  var promoError = ''.obs;
+  var isVerifyingPromo = false.obs;
   String _lastFareEstimateKey = ''; // Track last fare estimate request
   bool _hasShownServiceUnavailable = false; // Prevent duplicate snackbars
 
@@ -199,10 +212,152 @@ class RideBookingController extends GetxController {
   void onClose() {
     pickupController.dispose();
     dropoffController.dispose();
+    promoCodeController.dispose();
     for (var controller in stopControllers) {
       controller.dispose();
     }
     super.onClose();
+  }
+
+  double _parseFareNumber(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
+  }
+
+  String _formatPromoMoney(double amount) {
+    final c = fareCurrency.value;
+    if (c == 'CAD' || c == 'USD') {
+      return '\$${amount.toStringAsFixed(2)}';
+    }
+    return '$c ${amount.toStringAsFixed(2)}';
+  }
+
+  /// When fare-estimate still returns discount 0, apply verify-promo flatAmount / minFare locally.
+  void _syncFareWithVerifiedFlatPromoIfNeeded() {
+    if (appliedPromoCode.value.isEmpty || appliedPromoFlatAmount.value <= 0) {
+      return;
+    }
+    if (fareDiscount.value > 0) return;
+
+    final base = estimatedFare.value;
+    if (base <= 0) return;
+
+    var discount = appliedPromoFlatAmount.value.clamp(0.0, base);
+    var total = base - discount;
+    final minF = appliedPromoMinFare.value;
+    if (minF > 0 && total < minF) {
+      total = minF;
+      discount = (base - total).clamp(0.0, base);
+    }
+
+    fareBreakdownAvailable.value = true;
+    fareSubtotal.value = base;
+    fareDiscount.value = discount;
+    estimatedFare.value = total;
+  }
+
+  void _clearAppliedPromo() {
+    appliedPromoCode.value = '';
+    appliedPromoCodeId.value = '';
+    appliedPromoFlatAmount.value = 0.0;
+    appliedPromoMinFare.value = 0.0;
+  }
+
+  /// Verifies promo via API; clears promo when input is empty. Refreshes fare on success or clear.
+  ///
+  /// verify-promo returns `code`, `promoCodeId`, `flatAmount`, `minFare`, `isActive`.
+  /// fare-estimate expects `promoCodeId` + `distance` in the POST body.
+  Future<void> verifyPromoCode() async {
+    final raw = promoCodeController.text.trim();
+    promoError.value = '';
+
+    if (raw.isEmpty) {
+      _clearAppliedPromo();
+      await getFareEstimate();
+      Get.snackbar('Promo', 'Promo code removed');
+      return;
+    }
+
+    isVerifyingPromo.value = true;
+    try {
+      final response =
+          await _apiProvider.postData(ApiEndpoints.verifyPromo, {'promoCode': raw});
+      final body = response.body;
+
+      if (!response.isOk) {
+        final msg = body is Map<String, dynamic>
+            ? (body['message']?.toString() ??
+                body['error']?.toString() ??
+                response.statusText)
+            : response.statusText;
+        promoError.value = msg ?? 'Could not verify promo code';
+        Get.snackbar('Promo', promoError.value);
+        return;
+      }
+
+      if (body is! Map<String, dynamic>) {
+        promoError.value = 'Invalid response';
+        Get.snackbar('Promo', promoError.value);
+        return;
+      }
+
+      if (body['isActive'] == false) {
+        promoError.value = 'This promo code is no longer active';
+        _clearAppliedPromo();
+        await getFareEstimate();
+        Get.snackbar('Promo', promoError.value);
+        return;
+      }
+
+      final code = body['code']?.toString().trim() ?? '';
+      final returnedLegacy = body['promoCode']?.toString().trim() ?? '';
+      final promoCodeId = body['promoCodeId']?.toString().trim() ?? '';
+      final valid = body['valid'] == true ||
+          body['isValid'] == true ||
+          body['success'] == true;
+
+      final accepted = valid ||
+          promoCodeId.isNotEmpty ||
+          code.isNotEmpty ||
+          returnedLegacy.isNotEmpty;
+
+      if (accepted) {
+        appliedPromoCode.value = code.isNotEmpty
+            ? code
+            : (returnedLegacy.isNotEmpty ? returnedLegacy : raw);
+        appliedPromoCodeId.value = promoCodeId;
+        appliedPromoFlatAmount.value = _parseFareNumber(body['flatAmount']);
+        appliedPromoMinFare.value = _parseFareNumber(body['minFare']);
+
+        await getFareEstimate();
+        // Discount sync runs inside getFareEstimate after Rx updates (post-frame).
+
+        final off = appliedPromoFlatAmount.value;
+        final label = appliedPromoCode.value;
+        final minF = appliedPromoMinFare.value;
+        final subtitle = off > 0
+            ? '${_formatPromoMoney(off)} off'
+                '${minF > 0 ? ' · min ${_formatPromoMoney(minF)}' : ''}'
+            : 'Applied to your estimate';
+        Get.snackbar(
+          'Promo applied',
+          '$label · $subtitle',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+        );
+      } else {
+        final msg = body['message']?.toString().trim() ?? '';
+        promoError.value =
+            msg.isNotEmpty ? msg : 'Invalid or expired promo code';
+        _clearAppliedPromo();
+        await getFareEstimate();
+        Get.snackbar('Promo', promoError.value);
+      }
+    } finally {
+      isVerifyingPromo.value = false;
+    }
   }
 
   // Update driver location from SignalR
@@ -743,10 +898,14 @@ class RideBookingController extends GetxController {
         "isScheduled": isScheduled.value,
         "scheduledTime": scheduledDateTime.toIso8601String(),
         "passengerCount": passengerCount.value,
-        "fareEstimate": fareEstimate.value,
-        "paymentToken": paymentToken,
+        "fareEstimate": estimatedFare.value,
+        "promoCode": appliedPromoCode.value,
+        "paymentToken": paymentToken ?? '',
         "stops": allStops,
       };
+      if (appliedPromoCodeId.value.isNotEmpty) {
+        requestData["promoCodeId"] = appliedPromoCodeId.value;
+      }
 
       print(' SAHArSAHAr Request payload: $requestData');
 
@@ -916,24 +1075,62 @@ class RideBookingController extends GetxController {
       // Duration (static for now)
       String duration = "0.0";
 
-      // Build full query string
-      String endpoint =
+      // Query: Address + distance + duration. Body: promo (and optional distance for APIs that read POST only).
+      final String endpoint =
           "${ApiEndpoints.fareEstimate}?Address=${Uri.encodeComponent(address)}&distance=$distance&duration=$duration";
 
-      print('SAHArSAHAr Calling fareEstimate API: $endpoint');
+      final Map<String, dynamic> fareEstimateBody = {
+        'distance': distance,
+        'duration': double.tryParse(duration) ?? 0.0,
+      };
+      if (appliedPromoCodeId.value.isNotEmpty) {
+        fareEstimateBody['promoCodeId'] = appliedPromoCodeId.value;
+      } else if (appliedPromoCode.value.isNotEmpty) {
+        fareEstimateBody['promoCode'] = appliedPromoCode.value;
+      }
 
-      Response response = await _apiProvider.postData(endpoint,{});
+      print('SAHArSAHAr Calling fareEstimate API: $endpoint body=$fareEstimateBody');
+
+      Response response = await _apiProvider.postData(endpoint, fareEstimateBody);
 
       if (response.isOk) {
         print('SAHArSAHAr Fare estimate response: ${response.body}');
 
         var responseBody = response.body;
+        if (responseBody is! Map<String, dynamic>) {
+          print('SAHArSAHAr Unexpected fare response shape');
+          return;
+        }
+
+        // New flat shape: subtotal, discount, total, currency, adminPercentage, message
+        if (responseBody.containsKey('total')) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            fareBreakdownAvailable.value = true;
+            fareSubtotal.value = _parseFareNumber(responseBody['subtotal']);
+            fareDiscount.value = _parseFareNumber(responseBody['discount']);
+            estimatedFare.value = _parseFareNumber(responseBody['total']);
+            fareCurrency.value =
+                responseBody['currency']?.toString() ?? fareCurrency.value;
+            adminPercentage.value =
+                _parseFareNumber(responseBody['adminPercentage']);
+            fareMessage.value = responseBody['message']?.toString() ?? '';
+            print(
+                'SAHArSAHAr Fare (flat): total=${estimatedFare.value} discount=${fareDiscount.value}');
+            _syncFareWithVerifiedFlatPromoIfNeeded();
+          });
+          return;
+        }
 
         // Check if fare contains error message
         if (responseBody['fare'] is String &&
             responseBody['fare'].toString().contains('Fare settings not found')) {
           print('SAHArSAHAr Fare settings not found for this location');
-          estimatedFare.value = 0.0;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            estimatedFare.value = 0.0;
+            fareSubtotal.value = 0.0;
+            fareDiscount.value = 0.0;
+            fareBreakdownAvailable.value = false;
+          });
 
           // Only show snackbar if we haven't shown it for this location
           if (!_hasShownServiceUnavailable) {
@@ -951,16 +1148,21 @@ class RideBookingController extends GetxController {
         }
 
         var fareData = responseBody['fare'] is String
-            ? json.decode(responseBody['fare'])
+            ? json.decode(responseBody['fare'] as String)
             : responseBody['fare'];
 
         if (fareData != null && fareData['EstimatedFare'] != null) {
-          // Delay update until after build (safe for Obx)
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            fareBreakdownAvailable.value = false;
             estimatedFare.value = (fareData['EstimatedFare'] ?? 0.0).toDouble();
-            adminPercentage.value = (fareData['AdminPercentage'] ?? adminPercentage.value).toDouble();
+            adminPercentage.value =
+                (fareData['AdminPercentage'] ?? adminPercentage.value)
+                    .toDouble();
+            fareSubtotal.value = 0.0;
+            fareDiscount.value = 0.0;
             print('SAHArSAHAr Fare updated: ${estimatedFare.value}');
             print('SAHArSAHAr Admin percentage updated: ${adminPercentage.value}');
+            _syncFareWithVerifiedFlatPromoIfNeeded();
           });
         } else {
           print('SAHArSAHAr No fare data in response');
@@ -2025,6 +2227,17 @@ class RideBookingController extends GetxController {
     // Add these two lines at the end of resetForm():
     localRideStartTime.value = null;
     localRideEndTime.value = null;
+
+    promoCodeController.clear();
+    _clearAppliedPromo();
+    promoError.value = '';
+    estimatedFare.value = 0.0;
+    fareSubtotal.value = 0.0;
+    fareDiscount.value = 0.0;
+    fareBreakdownAvailable.value = false;
+    fareMessage.value = '';
+    fareCurrency.value = 'CAD';
+    adminPercentage.value = 0.0;
   }
 
   void clearBooking() {
