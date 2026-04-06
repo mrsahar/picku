@@ -124,17 +124,31 @@ class TripHistoryCard extends StatelessWidget {
                 ),
               ],
             ),
-            // Fare
+            // Fare + tip summary
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  '\$${ride.fareFinal.toStringAsFixed(2)}',
-                  style: theme.textTheme.titleMedium!.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (ride.tipAmount > 0) ...[
+                      Text(
+                        'Fare \$${ride.fareFinal.toStringAsFixed(2)} · Tip \$${ride.tipAmount.toStringAsFixed(2)}',
+                        style: theme.textTheme.labelSmall!.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      '\$${ride.totalWithTip.toStringAsFixed(2)}',
+                      style: theme.textTheme.titleMedium!.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -689,6 +689,59 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                       ),
                       child: Column(
                         children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Ride fare',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '\$${ride.fareFinal.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.volunteer_activism_outlined,
+                                    size: 18,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Tip',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '\$${ride.tipAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Divider(
@@ -700,7 +753,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'Total Fare',
+                                'Total',
                                 style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.white,
@@ -708,7 +761,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                                 ),
                               ),
                               Text(
-                                '\$${ride.fareFinal.toStringAsFixed(2)}',
+                                '\$${ride.totalWithTip.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 24,
                                   color: Colors.white,

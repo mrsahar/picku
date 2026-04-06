@@ -343,7 +343,7 @@ class RideBookingController extends GetxController {
         Get.snackbar(
           'Promo applied',
           '$label · $subtitle',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           duration: const Duration(seconds: 3),
           margin: const EdgeInsets.all(16),
         );

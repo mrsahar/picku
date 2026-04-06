@@ -124,7 +124,7 @@ class ChatController extends GetxController {
         Get.snackbar(
           'Error',
           'Failed to send message. Please check your connection.',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
         );
       }
     } catch (e, stackTrace) {
@@ -133,7 +133,7 @@ class ChatController extends GetxController {
       Get.snackbar(
         'Error',
         'Error sending message: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     } finally {
       isSending.value = false;

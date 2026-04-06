@@ -80,7 +80,9 @@ class DriverAdminChatController extends GetxController {
         throw Exception('SignalR connection not available');
       }
 
-      // Register event handlers for driver-admin chat
+      // Clear old handlers on same hub connection (reconnect / retryConnection).
+      connection.off('ReceiveDriverAdminMessage');
+      connection.off('ReceiveDriverAdminChatHistory');
       connection.on('ReceiveDriverAdminMessage', _handleNewMessage);
       connection.on('ReceiveDriverAdminChatHistory', _handleChatHistory);
 
@@ -94,11 +96,11 @@ class DriverAdminChatController extends GetxController {
     }
   }
 
-  void _handleNewMessage(List<Object?>? args) {
+  void _handleNewMessage(List<dynamic>? args) {
     if (args == null || args.isEmpty) return;
 
     try {
-      final messageData = args[0] as Map<String, dynamic>;
+      final messageData = Map<String, dynamic>.from(args[0] as Map);
       final newMessage = ChatMessage.fromJson(messageData);
 
       // Mark if message is from current driver
@@ -113,11 +115,11 @@ class DriverAdminChatController extends GetxController {
     }
   }
 
-  void _handleChatHistory(List<Object?>? args) {
+  void _handleChatHistory(List<dynamic>? args) {
     if (args == null || args.isEmpty) return;
 
     try {
-      final historyList = args[0] as List<dynamic>;
+      final historyList = List<dynamic>.from(args[0] as List);
       messages.clear();
 
       for (var item in historyList) {

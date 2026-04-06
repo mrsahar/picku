@@ -26,6 +26,8 @@ class RideItem {
   final String? rideId;
   final DateTime scheduledTime;
   final double fareFinal;
+  /// Driver tip for this ride (from API `tipAmount`).
+  final double tipAmount;
   final String status;
   final double distance;
   final String pickupLocation;
@@ -38,6 +40,7 @@ class RideItem {
     this.rideId,
     required this.scheduledTime,
     required this.fareFinal,
+    this.tipAmount = 0.0,
     required this.status,
     required this.distance,
     required this.pickupLocation,
@@ -46,6 +49,8 @@ class RideItem {
     required this.rideEndTime,
     required this.createdAt,
   });
+
+  double get totalWithTip => fareFinal + tipAmount;
 
   factory RideItem.fromJson(Map<String, dynamic> json) {
     // Check for rideId in various possible field names
@@ -57,6 +62,7 @@ class RideItem {
       rideId: rideId,
       scheduledTime: DateTime.parse(json['scheduledTime']),
       fareFinal: (json['fareFinal'] ?? 0.0).toDouble(),
+      tipAmount: (json['tipAmount'] ?? json['tip'] ?? 0.0).toDouble(),
       status: json['status'] ?? '',
       distance: (json['distance'] ?? 0.0).toDouble(),
       pickupLocation: json['pickupLocation'] ?? '',

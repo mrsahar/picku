@@ -9,6 +9,7 @@ import 'package:pick_u/services/map_service.dart';
 import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/services/notification_service.dart';
 import 'package:pick_u/services/picku_background_service.dart';
+import 'package:pick_u/services/share_pref.dart';
 import 'package:signalr_core/signalr_core.dart';
 
 enum SignalRConnectionStatus {
@@ -28,6 +29,9 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
   HubConnection? _connection;
   bool _isConnected = false;
   String? _currentRideId;
+  /// Remember subscription when [subscribeToRide] runs before the socket is up.
+  String? _pendingRideSubscription;
+  final List<Future<void> Function()> _afterReconnectCallbacks = [];
   Timer? _retryTimer;
   int _retryAttempts = 0;
   static const int maxRetryAttempts = 10;
@@ -89,12 +93,44 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
     }
   }
 
-  void _onAppResumed() {
-    if (!_isConnected && _currentRideId != null) {
-      print(' SAHAr SignalR: Reconnecting after app resume...');
-      _retryAttempts = 0;
-      initializeConnection();
+  void registerAfterReconnect(Future<void> Function() callback) {
+    if (!_afterReconnectCallbacks.contains(callback)) {
+      _afterReconnectCallbacks.add(callback);
     }
+  }
+
+  void unregisterAfterReconnect(Future<void> Function() callback) {
+    _afterReconnectCallbacks.remove(callback);
+  }
+
+  Future<void> _runAfterReconnectCallbacks() async {
+    final copy = List<Future<void> Function()>.from(_afterReconnectCallbacks);
+    for (final cb in copy) {
+      try {
+        await cb();
+      } catch (e) {
+        print(' SAHAr SignalR: after-reconnect callback error: $e');
+      }
+    }
+  }
+
+  /// Re-applies ride group + notifies chat (and other) listeners after resume/reconnect.
+  Future<void> resyncRideAndChat() async {
+    if (!_isConnected || _connection == null) return;
+    await _applyPendingRideSubscription();
+    await _runAfterReconnectCallbacks();
+  }
+
+  void _onAppResumed() {
+    Future.microtask(() async {
+      if (!_isConnected || _connection == null) {
+        print(' SAHAr SignalR: Reconnecting after app resume...');
+        _retryAttempts = 0;
+        await initializeConnection();
+        return;
+      }
+      await resyncRideAndChat();
+    });
   }
 
   // ─── Foreground Service ───────────────────────────────────────────
@@ -149,12 +185,27 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
   Future<void> initializeConnection() async {
     try {
       connectionStatus.value = SignalRConnectionStatus.connecting;
+      _retryTimer?.cancel();
+
+      if (_connection != null) {
+        try {
+          await _connection!.stop();
+        } catch (_) {}
+        _connection = null;
+        _isConnected = false;
+      }
 
       final token = _globalVars.userToken;
+      final userId = await SharedPrefsService.getUserId();
+      final hubUri = Uri.parse(hubUrl);
+      final resolvedHubUrl = hubUri.replace(queryParameters: {
+        ...hubUri.queryParameters,
+        if (userId != null && userId.isNotEmpty) 'userId': userId,
+      }).toString();
 
       _connection = HubConnectionBuilder()
           .withUrl(
-            hubUrl,
+            resolvedHubUrl,
             HttpConnectionOptions(
               accessTokenFactory: () async => token,
             ),
@@ -196,17 +247,18 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
         }
       });
 
-      _connection!.onreconnected((connectionId) {
+      _connection!.onreconnected((connectionId) async {
         print(' SAHAr SignalR: Reconnected with ID: $connectionId');
         _isConnected = true;
         connectionStatus.value = SignalRConnectionStatus.connected;
         _retryAttempts = 0;
         _retryTimer?.cancel();
 
+        await _applyPendingRideSubscription();
         if (_currentRideId != null) {
-          subscribeToRide(_currentRideId!);
           _updateForegroundNotification('Connected — Tracking your ride');
         }
+        await _runAfterReconnectCallbacks();
       });
 
       await _connection!.start();
@@ -215,6 +267,8 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
       _retryAttempts = 0;
       print(' SAHAr SignalR: Successfully connected to RideHub');
 
+      await _applyPendingRideSubscription();
+      await _runAfterReconnectCallbacks();
     } catch (e) {
       print(' SAHAr SignalR: Failed to connect: $e');
       _isConnected = false;
@@ -251,8 +305,15 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
   // ─── Ride Subscription ───────────────────────────────────────────
 
   Future<void> subscribeToRide(String rideId) async {
+    _pendingRideSubscription = rideId;
+    await _applyPendingRideSubscription();
+  }
+
+  Future<void> _applyPendingRideSubscription() async {
+    final rideId = _pendingRideSubscription;
+    if (rideId == null || rideId.isEmpty) return;
     if (!_isConnected || _connection == null) {
-      print(' SAHAr SignalR: Cannot subscribe - not connected');
+      print(' SAHAr SignalR: Ride subscription queued until connected: $rideId');
       return;
     }
 
@@ -269,8 +330,11 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
   }
 
   Future<void> unsubscribeFromRide() async {
+    _pendingRideSubscription = null;
+
     if (!_isConnected || _connection == null || _currentRideId == null) {
       _currentRideId = null;
+      isDriverLocationActive.value = false;
       await _stopForegroundService();
       return;
     }
@@ -387,6 +451,7 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
               double.tryParse(locationData['longitude'].toString()) ?? 0.0;
 
           if (lat != 0.0 && lng != 0.0) {
+            final wasInactive = !isDriverLocationActive.value;
             driverLatitude.value = lat;
             driverLongitude.value = lng;
             driverLastUpdate.value = DateTime.now();
@@ -396,15 +461,13 @@ class SignalRService extends GetxService with WidgetsBindingObserver {
 
             _updateDriverLocationWithAnimation(lat, lng);
 
-            if (!isDriverLocationActive.value) {
-              if (_isAppInForeground) {
-                Get.snackbar(
-                  'Driver Located',
-                  'Driver is now visible on the map',
-                  snackPosition: SnackPosition.TOP,
-                  duration: const Duration(seconds: 5),
-                );
-              }
+            if (wasInactive && _isAppInForeground) {
+              Get.snackbar(
+                'Driver Located',
+                'Driver is now visible on the map',
+                snackPosition: SnackPosition.TOP,
+                duration: const Duration(seconds: 5),
+              );
             }
           } else {
             print(

@@ -38,6 +38,7 @@ class ChatBackgroundService extends GetxService {
     super.onInit();
     _setupRideStatusListener();
     _setupConnectionListener();
+    _signalRService.registerAfterReconnect(_resyncChatAfterHubReconnect);
     print(' SAHAr 🔧 ChatBackgroundService initialized');
   }
 
@@ -46,12 +47,9 @@ class ChatBackgroundService extends GetxService {
     // Listen to connection status to register handlers when connected
     ever(_signalRService.connectionStatus, (status) {
       if (status == SignalRConnectionStatus.connected) {
-        // Reset flag to ensure we register on the new connection instance if it changed
-        _listenersRegistered = false;
+        // Re-bind handlers: automatic reconnect reuses the hub but [ever] runs again;
+        // without [off] first, stacked anonymous handlers would duplicate messages.
         _registerSignalRListeners();
-      } else {
-        // If disconnected or connecting, mark as not registered so we try again later
-        _listenersRegistered = false;
       }
     });
 
@@ -61,40 +59,59 @@ class ChatBackgroundService extends GetxService {
     }
   }
 
-  bool _listenersRegistered = false;
+  /// Last identical payload from hub (multiple stacked handlers / hub echo).
+  String? _lastInboundDedupeKey;
+
+  /// Stable handler refs for SignalR — must match [MethodInvocationFunc].
+  void _onReceiveMessage(List<dynamic>? arguments) {
+    if (arguments == null || arguments.isEmpty) return;
+    final first = arguments[0];
+    if (first is! Map) return;
+    _handleReceivedMessage(Map<String, dynamic>.from(first));
+  }
+
+  void _onReceiveRideChatHistory(List<dynamic>? arguments) {
+    print(' SAHAr 📜 ReceiveRideChatHistory event triggered');
+    if (arguments == null || arguments.isEmpty) return;
+    final first = arguments[0];
+    if (first is! List) return;
+    final historyData = List<dynamic>.from(first);
+    print(' SAHAr 📜 Chat history data received: ${historyData.length} messages');
+    _handleChatHistory(historyData);
+  }
+
+  void _onReceiveMessageReplay(List<dynamic>? arguments) {
+    if (arguments == null || arguments.isEmpty) return;
+    final first = arguments[0];
+    if (first is! List) return;
+    for (final item in first) {
+      if (item is Map) {
+        _handleReceivedMessage(Map<String, dynamic>.from(item));
+      }
+    }
+  }
 
   /// Register global SignalR listeners
   void _registerSignalRListeners() {
-    if (_listenersRegistered) return;
-
     final connection = _signalRService.connection;
     if (connection == null) return;
 
     try {
-      // Listen for incoming messages
-      connection.on('ReceiveMessage', (List<Object?>? arguments) {
-        if (arguments != null && arguments.isNotEmpty) {
-          final messageData = arguments[0] as Map<String, dynamic>;
-          _handleReceivedMessage(messageData);
-        }
-      });
+      // Automatic reconnect sets status to "connected" again; anonymous closures
+      // stack because signalr_core only dedupes identical function references.
+      connection.off('ReceiveMessage');
+      connection.off('ReceiveRideChatHistory');
+      connection.off('ReceiveMessageReplay');
 
-      // Listen for chat history
-      connection.on('ReceiveRideChatHistory', (List<Object?>? arguments) {
-        print(' SAHAr 📜 ReceiveRideChatHistory event triggered');
-        if (arguments != null && arguments.isNotEmpty) {
-          final historyData = arguments[0] as List<dynamic>;
-          print(' SAHAr 📜 Chat history data received: ${historyData.length} messages');
-          _handleChatHistory(historyData);
-        }
-      });
+      connection.on('ReceiveMessage', _onReceiveMessage);
+      connection.on('ReceiveRideChatHistory', _onReceiveRideChatHistory);
+      connection.on('ReceiveMessageReplay', _onReceiveMessageReplay);
 
-      _listenersRegistered = true;
       print(' SAHAr ✅ Chat event handlers registered on shared SignalR connection');
 
       // If we have an active ride ID, join the chat group
-      if (rideId.value.isNotEmpty) {
-        _joinRideChat();
+      if (rideId.value.isNotEmpty && isServiceActive.value) {
+        Future.microtask(() => _joinRideChat());
       }
     } catch (e) {
       print(' SAHAr ❌ Error registering listeners: $e');
@@ -237,12 +254,28 @@ class ChatBackgroundService extends GetxService {
     }
   }
 
-  /// Join ride chat room
+  int get _maxKnownChatSequence {
+    var m = 0;
+    for (final msg in messages) {
+      final s = msg.sequence;
+      if (s != null && s > m) m = s;
+    }
+    return m;
+  }
+
+  Future<void> _resyncChatAfterHubReconnect() async {
+    if (!isServiceActive.value || rideId.value.isEmpty) return;
+    if (!_signalRService.isConnected) return;
+    await _joinRideChat();
+  }
+
+  /// Join ride chat room (sends last hub [Sequence] so server replays missed rows).
   Future<void> _joinRideChat() async {
     if (hubConnection != null && rideId.value.isNotEmpty) {
       try {
-        await hubConnection?.invoke('JoinRideChat', args: [rideId.value]);
-        print(' SAHAr 📌 Joined ride chat for: ${rideId.value}');
+        final lastSeq = _maxKnownChatSequence;
+        await hubConnection?.invoke('JoinRideChat', args: [rideId.value, lastSeq]);
+        print(' SAHAr 📌 Joined ride chat for: ${rideId.value} (afterSequence=$lastSeq)');
       } catch (e) {
         print(' SAHAr ❌ Failed to join ride chat: $e');
       }
@@ -261,6 +294,15 @@ class ChatBackgroundService extends GetxService {
   void _handleReceivedMessage(Map<String, dynamic> messageData) {
     try {
       print(' SAHAr 📨 Raw message data: $messageData');
+
+      final dedupeKey =
+          '${messageData['senderId']}|${messageData['dateTime']}|${messageData['message']}';
+      if (_lastInboundDedupeKey == dedupeKey) {
+        print(' SAHAr 📨 Skipping duplicate chat payload');
+        return;
+      }
+      _lastInboundDedupeKey = dedupeKey;
+
       final chatMessage = ChatMessage.fromJson(messageData);
       final isFromCurrentUser = chatMessage.senderId == currentUserId.value;
 
@@ -462,8 +504,7 @@ class ChatBackgroundService extends GetxService {
 
   @override
   void onClose() {
-    // Don't stop the shared SignalR connection
-    // Just clear local chat data
+    _signalRService.unregisterAfterReconnect(_resyncChatAfterHubReconnect);
     messages.clear();
     super.onClose();
   }
