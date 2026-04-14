@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:pick_u/routes/app_routes.dart';
 import 'package:pick_u/services/location_service.dart';
 import 'package:pick_u/services/notification_service.dart';
+import 'package:pick_u/services/push_service.dart';
 import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/services/global_variables.dart';
 
@@ -32,6 +33,7 @@ class _MainMapState extends State<MainMap> {
     try {
       final notificationService = Get.find<NotificationService>();
       await notificationService.checkAndRequestPermissions();
+      await PushService.to.ensurePermissions();
     } catch (_) {}
   }
 

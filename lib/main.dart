@@ -3,10 +3,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:pick_u/utils/theme/app_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/bindings/initial_binding.dart';
 import 'package:pick_u/routes/app_pages.dart';
 import 'package:pick_u/services/notification_service.dart';
+import 'package:pick_u/services/push_service.dart';
 import 'package:pick_u/controllers/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +19,9 @@ import 'services/global_variables.dart';
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await dotenv.load(fileName: "assets/.env");
+
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
   await Stripe.instance.applySettings();

@@ -10,7 +10,7 @@ import 'package:pick_u/services/global_variables.dart';
 import 'package:pick_u/services/notification_service.dart';
 import 'package:pick_u/services/picku_background_service.dart';
 import 'package:pick_u/services/share_pref.dart';
-import 'package:signalr_core/signalr_core.dart';
+import 'package:signalr_core_new/signalr_core_new.dart';
 
 enum SignalRConnectionStatus {
   disconnected,

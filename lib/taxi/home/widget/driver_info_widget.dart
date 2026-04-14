@@ -184,7 +184,7 @@ Widget driverInfoWidget(BuildContext context) {
               Icon(Icons.payments_outlined, size: 18, color: theme.primaryColor),
               const SizedBox(width: 8),
               Text(
-                '\$${controller.estimatedPrice.value.toStringAsFixed(0)}',
+                '\$${controller.estimatedPrice.value.toStringAsFixed(2)}',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: controller.rideStatus.value == RideStatus.tripCompleted

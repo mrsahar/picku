@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pick_u/services/global_variables.dart';
+import 'package:pick_u/services/push_service.dart';
 import 'package:pick_u/services/share_pref.dart';
 import 'package:pick_u/models/login_model.dart';
 import 'package:pick_u/providers/api_provider.dart';
@@ -89,7 +90,7 @@ class LoginController extends GetxController {
       final loginRequest = LoginRequest(
         email: emailController.text.trim(),
         password: passwordController.text,
-        deviceToken:'',
+        deviceToken: PushService.to.currentToken,
       );
 
       print(' SAHArSAHAr 📤 Login: Sending request for email: ${emailController.text}');

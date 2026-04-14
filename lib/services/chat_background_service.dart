@@ -5,7 +5,7 @@ import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/models/message_screen_model.dart';
 import 'package:pick_u/services/notification_service.dart';
 import 'package:pick_u/services/signalr_service.dart';
-import 'package:signalr_core/signalr_core.dart';
+import 'package:signalr_core_new/signalr_core_new.dart';
 
 class ChatBackgroundService extends GetxService {
   static ChatBackgroundService get to => Get.find();
@@ -123,9 +123,12 @@ class ChatBackgroundService extends GetxService {
     ever(currentRideStatus, (RideStatus status) {
       print(' SAHAr 📊 Ride status changed to: $status');
 
-      if (status == RideStatus.driverAssigned && !isServiceActive.value) {
+      // Start for ANY active ride state so chat notifications work even when user
+      // is not on the chat screen (or when ride is resumed mid-trip).
+      final isRideActive = status != RideStatus.tripCompleted && status != RideStatus.cancelled;
+      if (isRideActive && !isServiceActive.value) {
         _checkAndStartService();
-      } else if (status == RideStatus.tripCompleted && isServiceActive.value) {
+      } else if (!isRideActive && isServiceActive.value) {
         stopService();
       }
     });

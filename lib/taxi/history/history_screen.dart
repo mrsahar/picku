@@ -168,7 +168,7 @@ class RideHistoryPage extends GetView<RideHistoryController> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildStatCard(
-                              'Earning',
+                              'Spending',
                               '\$${controller.totalFare.toStringAsFixed(2)}',
                               Icons.account_balance_wallet_rounded,
                             ),

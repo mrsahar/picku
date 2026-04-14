@@ -120,6 +120,22 @@ class ApiProvider extends GetConnect {
     }
   }
 
+  /// POST without toggling global loading (e.g. background resume checks).
+  Future<Response> postDataSilent(String endpoint, dynamic data) async {
+    try {
+      print(' SAHArSAHAr MRSAHAr: POST (silent) $endpoint');
+      final response = await post(endpoint, data);
+      print(' SAHArSAHAr MRSAHAr: POST (silent) Response = ${response.bodyString}');
+      return response;
+    } catch (e) {
+      print(' SAHArSAHAr MRSAHAr: Exception during silent POST: $e');
+      return Response(
+        statusCode: 500,
+        statusText: 'Network Error: $e',
+      );
+    }
+  }
+
   // Specific method for FormData POST requests
   Future<Response> postFormData(String endpoint, FormData formData) async {
     try {
@@ -402,6 +418,16 @@ class ApiProvider extends GetConnect {
         success: false,
         message: 'Network error. Please check your connection.',
       );
+    }
+  }
+
+  Future<Response> updateFcmToken(String fcmToken) async {
+    try {
+      print(' SAHArSAHAr 🚀 ApiProvider: Updating FCM token');
+      return await postDataSilent('/api/User/fcm-token', {'fcmToken': fcmToken});
+    } catch (e) {
+      print(' SAHArSAHAr 💥 ApiProvider: updateFcmToken exception: $e');
+      return Response(statusCode: 500, statusText: 'Network Error: $e');
     }
   }
 

@@ -2,6 +2,7 @@
 import 'package:get/get.dart';
 import 'package:pick_u/controllers/ride_booking_controller.dart';
 import 'package:pick_u/services/global_variables.dart';
+import 'package:pick_u/services/push_service.dart';
 import 'package:pick_u/providers/api_provider.dart';
 
 class InitialBinding extends Bindings {
@@ -10,6 +11,7 @@ class InitialBinding extends Bindings {
     // Minimal deps for login/splash. Location, map, SignalR, ride services are in MainMapBinding (no location permission on login).
     Get.put(GlobalVariables(), permanent: true);
     Get.put<ApiProvider>(ApiProvider(), permanent: true);
+    Get.put(PushService(), permanent: true);
     Get.lazyPut<RideBookingController>(() => RideBookingController());
   }
 }

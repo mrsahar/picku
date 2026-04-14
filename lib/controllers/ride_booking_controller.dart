@@ -34,6 +34,10 @@ class ApiEndpoints {
   static const String completeTransaction = '/api/Payment/complete-transaction';
   static const String cancelRide = '/api/Payment/cancel-ride';
   static const String verifyPromo = '/api/user/verify-promo';
+  /// POST `?userId=` — latest ride for resume / held-payment recovery (see [RideBookingController.checkLastRideOnHomeOpen]).
+  static const String getUserLastRide = '/api/Ride/get-user-last-ride';
+  /// POST — passenger app can load Stripe Connect id when missing (same as [DriverDto.StripeAccountId]).
+  static String getDriverById(String driverId) => '/api/Drivers/$driverId';
 }
 
 class AppConstants {
@@ -56,6 +60,15 @@ enum RideStatus {
   noDriver
 }
 
+/// Post–trip-end UI after capturing fare (see [_completePayment]).
+enum RidePaymentCompletionStyle {
+  /// Success banner + review (default; SignalR / in-app trip completion).
+  standard,
+  /// Capture fare without the full payment sheet; then optional tip + review
+  /// (FCM when SignalR is down, or resumed completed ride with held auth).
+  autoFareThenOptionalTip,
+}
+
 class RideBookingController extends GetxController {
   final ApiProvider _apiProvider = Get.find<ApiProvider>();
 
@@ -63,6 +76,9 @@ class RideBookingController extends GetxController {
   final LocationService _locationService = Get.find<LocationService>();
   final SearchService _searchService = Get.find<SearchService>();
   final MapService _mapService = Get.find<MapService>();
+
+  // Audio player for **in-app** alerts only (NOT OS notifications).
+  final AudioPlayer _inAppAlertPlayer = AudioPlayer();
 
   // Text Controllers
   final pickupController = TextEditingController();
@@ -101,7 +117,6 @@ class RideBookingController extends GetxController {
   var appliedPromoMinFare = 0.0.obs;
   var promoError = ''.obs;
   var isVerifyingPromo = false.obs;
-  String _lastFareEstimateKey = ''; // Track last fare estimate request
   bool _hasShownServiceUnavailable = false; // Prevent duplicate snackbars
 
   var isScheduled = false.obs;
@@ -132,13 +147,20 @@ class RideBookingController extends GetxController {
   final isDriverLocationActive = false.obs;
 
   // Store payment intent ID when ride is booked
-  RxString heldPaymentIntentId = ''. obs;
+  RxString heldPaymentIntentId = ''.obs;
+
+  /// Ensures we only run last-ride resume / held-payment logic once per app session.
+  bool _lastRideResumeCheckDone = false;
+  /// Monotonic token to ignore stale async last-ride responses after navigation.
+  int _lastRideResumeCheckSeq = 0;
   // Store the amount that was held for payment
   double _heldAmount = 0.0;
   // Store selected tip amount
   var selectedTipAmount = 0.0.obs;
   // Store payment dialog data for re-opening
   Map<String, dynamic>? _paymentDialogData;
+  /// Set after a successful fare capture so FCM / API duplicate "complete" events are ignored.
+  String _fareCaptureCompletedRideId = '';
   // Ride duration display for payment popup
   var rideDurationDisplay = 'Calculating...'.obs;
 
@@ -156,9 +178,6 @@ class RideBookingController extends GetxController {
 
   // SignalR Service
   late SignalRService signalRService;
-
-  // Audio player for notifications
-  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void onInit() {
@@ -225,6 +244,34 @@ class RideBookingController extends GetxController {
     return double.tryParse(v.toString()) ?? 0.0;
   }
 
+  double _roundMoney2(double x) => (x * 100).round() / 100;
+
+  /// When backend **fareEstimate** and **fareFinal** match what the user saw, but the
+  /// persisted [_heldAmount] is slightly lower (rounding / save drift), align the hold to
+  /// the final fare so we do not show a misleading "Pay \$0.10" on an \$8.90 trip.
+  void _reconcileHeldAmountWhenQuoteMatchesFinal(
+    double finalFare,
+    double quotedFare, {
+    double quoteMatchEps = 0.06,
+    double maxShortfall = 0.30,
+  }) {
+    if (finalFare <= 0 || quotedFare <= 0 || _heldAmount <= 0) return;
+    final f = _roundMoney2(finalFare);
+    final q = _roundMoney2(quotedFare);
+    if ((q - f).abs() > quoteMatchEps) return;
+    final held = _roundMoney2(_heldAmount);
+    final shortfall = f - held;
+    if (shortfall > 0 && shortfall <= maxShortfall) {
+      print(
+          'SAHAr: held amount reconciled \$${held.toStringAsFixed(2)} → \$${f.toStringAsFixed(2)} '
+          '(quoted \$${q.toStringAsFixed(2)} matches final \$${f.toStringAsFixed(2)})');
+      _heldAmount = f;
+      if (estimatedPrice.value + 0.001 < _heldAmount) {
+        estimatedPrice.value = _heldAmount;
+      }
+    }
+  }
+
   String _formatPromoMoney(double amount) {
     final c = fareCurrency.value;
     if (c == 'CAD' || c == 'USD') {
@@ -233,23 +280,37 @@ class RideBookingController extends GetxController {
     return '$c ${amount.toStringAsFixed(2)}';
   }
 
-  /// When fare-estimate still returns discount 0, apply verify-promo flatAmount / minFare locally.
+  /// When fare-estimate still returns discount 0, apply verify-promo [flatAmount] locally.
+  ///
+  /// [minFare] from verify-promo is treated as the **minimum pre-discount ride total** required
+  /// for the promo to apply — not a floor on the price after discount (which incorrectly capped
+  /// discounts and could inflate cheap rides up to [minFare]).
   void _syncFareWithVerifiedFlatPromoIfNeeded() {
     if (appliedPromoCode.value.isEmpty || appliedPromoFlatAmount.value <= 0) {
       return;
     }
     if (fareDiscount.value > 0) return;
 
-    final base = estimatedFare.value;
+    final double base = (fareBreakdownAvailable.value && fareSubtotal.value > 0)
+        ? fareSubtotal.value
+        : estimatedFare.value;
     if (base <= 0) return;
 
-    var discount = appliedPromoFlatAmount.value.clamp(0.0, base);
-    var total = base - discount;
     final minF = appliedPromoMinFare.value;
-    if (minF > 0 && total < minF) {
-      total = minF;
-      discount = (base - total).clamp(0.0, base);
+    if (minF > 0 && base < minF) {
+      fareBreakdownAvailable.value = true;
+      fareSubtotal.value = base;
+      fareDiscount.value = 0.0;
+      estimatedFare.value = base;
+      promoError.value =
+          'This promo needs a ride total of at least ${_formatPromoMoney(minF)} (before discount)';
+      return;
     }
+
+    promoError.value = '';
+    final double discount =
+        appliedPromoFlatAmount.value.clamp(0.0, base);
+    final double total = base - discount;
 
     fareBreakdownAvailable.value = true;
     fareSubtotal.value = base;
@@ -266,7 +327,8 @@ class RideBookingController extends GetxController {
 
   /// Verifies promo via API; clears promo when input is empty. Refreshes fare on success or clear.
   ///
-  /// verify-promo returns `code`, `promoCodeId`, `flatAmount`, `minFare`, `isActive`.
+  /// verify-promo returns `code`, `promoCodeId`, `flatAmount`, `minFare` (min **pre-discount**
+  /// ride total to qualify), `isActive`.
   /// fare-estimate expects `promoCodeId` + `distance` in the POST body.
   Future<void> verifyPromoCode() async {
     final raw = promoCodeController.text.trim();
@@ -338,7 +400,7 @@ class RideBookingController extends GetxController {
         final minF = appliedPromoMinFare.value;
         final subtitle = off > 0
             ? '${_formatPromoMoney(off)} off'
-                '${minF > 0 ? ' · min ${_formatPromoMoney(minF)}' : ''}'
+                '${minF > 0 ? ' · ride ≥ ${_formatPromoMoney(minF)} before discount' : ''}'
             : 'Applied to your estimate';
         Get.snackbar(
           'Promo applied',
@@ -411,7 +473,7 @@ class RideBookingController extends GetxController {
       hasShownArrivedNotification.value = true;
       rideStatus.value = RideStatus.driverArrived; // Update ride status
       _showDriverArrivedDialog();
-      _playNotificationSound(); // Play sound on arrival
+      _playInAppAlertSound(); // In-app custom sound
     }
     // Show "Driver is approaching" notification (75m or less, but more than 10m)
     else if (distance <= 75 && distance > 10 && !hasShownApproachingNotification.value) {
@@ -419,23 +481,22 @@ class RideBookingController extends GetxController {
       hasShownApproachingNotification.value = true;
       rideStatus.value = RideStatus.driverNear; // Update ride status
       _showDriverApproachingDialog();
-      _playNotificationSound(); // Play sound on approach
+      _playInAppAlertSound(); // In-app custom sound
     }
   }
 
-  // Play notification sound
-
-  Future<void> _playNotificationSound() async {
+  /// In-app alert sound + vibration. This does NOT affect system notifications.
+  Future<void> _playInAppAlertSound() async {
     try {
-      // Play a short sound for notifications
-      await _audioPlayer.setSource(AssetSource('sounds/notification.mp3'));
-      await _audioPlayer.setVolume(1.0);
-      await _audioPlayer.resume();
-      _startVibration();
+      await _inAppAlertPlayer.stop();
+      await _inAppAlertPlayer.play(AssetSource('sounds/notification.mp3'), volume: 1.0);
     } catch (e) {
-      print('SAHAr Error playing notification sound: $e');
+      print('SAHAr Error playing in-app alert sound: $e');
+    } finally {
+      _startVibration();
     }
   }
+
   Future<void> _startVibration() async {
     try {
       for (int i = 0; i < 6; i++) {
@@ -559,7 +620,7 @@ class RideBookingController extends GetxController {
   void showDriverArrivedDialogFromSignalR() {
     if (hasShownArrivedNotification.value) return;
     hasShownArrivedNotification.value = true;
-    _playNotificationSound();
+    _playInAppAlertSound(); // In-app custom sound
     _showDriverArrivedDialog();
   }
 
@@ -774,8 +835,6 @@ class RideBookingController extends GetxController {
         pickupController.text = currentLocationData.address;
         pickupLocation.value = currentLocationData;
 
-        // Reset fare estimation tracking when pickup location changes
-        _lastFareEstimateKey = '';
         _hasShownServiceUnavailable = false;
       } else {
         //Get.snackbar('Error', 'Could not get current location');
@@ -1117,6 +1176,10 @@ class RideBookingController extends GetxController {
             print(
                 'SAHArSAHAr Fare (flat): total=${estimatedFare.value} discount=${fareDiscount.value}');
             _syncFareWithVerifiedFlatPromoIfNeeded();
+            // Keep [estimatedPrice] aligned with the estimate the user saw. Booking APIs often
+            // return a higher `estimatedPrice` (e.g. regional minimum fare) which wrongly
+            // replaced this and made $5 estimates show/charge as $15 in the UI.
+            estimatedPrice.value = estimatedFare.value;
           });
           return;
         }
@@ -1163,6 +1226,7 @@ class RideBookingController extends GetxController {
             print('SAHArSAHAr Fare updated: ${estimatedFare.value}');
             print('SAHArSAHAr Admin percentage updated: ${adminPercentage.value}');
             _syncFareWithVerifiedFlatPromoIfNeeded();
+            estimatedPrice.value = estimatedFare.value;
           });
         } else {
           print('SAHArSAHAr No fare data in response');
@@ -1273,7 +1337,20 @@ class RideBookingController extends GetxController {
           driverPhone.value = rideData['driverPhone'] ?? '';
           vehicleColor.value = rideData['vehicle'] ?? '';
           vehicle.value = rideData['vehicleColor'] ?? '';
-          estimatedPrice.value = (rideData['estimatedPrice'] ?? 0.0).toDouble();
+          final serverEst = (rideData['estimatedPrice'] ?? 0.0).toDouble();
+          // Prefer the in-app fare-estimate total when we have a flat breakdown, so a backend
+          // minimum-fare bump does not override the $total the user already saw (e.g. $5 vs $15).
+          if (fareBreakdownAvailable.value && estimatedFare.value > 0) {
+            estimatedPrice.value = estimatedFare.value;
+            if ((serverEst - estimatedFare.value).abs() > 0.02) {
+              print(
+                  ' SAHArSAHAr Fare: using client estimate \$${estimatedFare.value.toStringAsFixed(2)} '
+                  '(server estimatedPrice \$${serverEst.toStringAsFixed(2)})');
+            }
+          } else {
+            estimatedPrice.value =
+                serverEst > 0 ? serverEst : estimatedFare.value;
+          }
           rideStatus.value = RideStatus.driverAssigned;
           rating.value = (rideData['driverAverageRating'] ?? 0.0).toDouble();
 
@@ -1292,6 +1369,25 @@ class RideBookingController extends GetxController {
           // Set up SignalR subscription for ride updates
           if (currentRideId.value.isNotEmpty) {
             signalRService.subscribeToRide(currentRideId.value);
+          }
+
+          // Keep chat notifications working even if user never opens ChatScreen.
+          // This ensures ChatBackgroundService knows the active ride + participants.
+          try {
+            final userId = await SharedPrefsService.getUserId();
+            if (userId != null &&
+                currentRideId.value.isNotEmpty &&
+                driverId.value.isNotEmpty) {
+              ChatBackgroundService.to.updateRideInfo(
+                rideId: currentRideId.value,
+                driverId: driverId.value,
+                driverName: driverName.value,
+                currentUserId: userId,
+                status: rideStatus.value,
+              );
+            }
+          } catch (e) {
+            print('⚠️ SAHAr Failed to sync ride info to ChatBackgroundService: $e');
           }
 
           // Save held payment info to backend now that we have rideId and driverId
@@ -1320,6 +1416,24 @@ class RideBookingController extends GetxController {
 
     // Dismiss loading payment popup before showing payment dialog
     if (Get.isDialogOpen == true) Get.back();
+
+    String? completionRid;
+    if (responseBody is Map<String, dynamic>) {
+      final msg = responseBody['message'];
+      if (msg is Map<String, dynamic>) {
+        completionRid = msg['rideId']?.toString();
+      }
+      completionRid ??= responseBody['rideId']?.toString();
+    }
+    completionRid ??= currentRideId.value;
+    if (completionRid.isNotEmpty &&
+        _fareCaptureCompletedRideId.isNotEmpty &&
+        _fareCaptureCompletedRideId == completionRid) {
+      print(
+          'SAHAr: trip completion skipped — fare already settled for ride $completionRid (e.g. FCM auto-pay)');
+      rideStatus.value = RideStatus.tripCompleted;
+      return;
+    }
 
     // Always set the status to completed first
     rideStatus.value = RideStatus.tripCompleted;
@@ -1350,6 +1464,7 @@ class RideBookingController extends GetxController {
     prevRideId.value = tripData['rideId'];
     String rideId = tripData['rideId'] ?? currentRideId.value;
     double finalFare = (tripData['finalFare'] ?? tripData['totalFare'] ?? estimatedPrice.value).toDouble();
+    finalFare = _roundMoney2(finalFare);
     double distance = (tripData['distance'] ?? 0.0).toDouble();
     String rideStartTime = tripData['rideStartTime'] ?? '';
     String rideEndTime = tripData['rideEndTime'] ?? '';
@@ -1358,8 +1473,16 @@ class RideBookingController extends GetxController {
     // Store actual fare before balance deduction
     actualFareBeforeBalance.value = finalFare;
 
-    // Store the original held payment amount before updating
-    double originalHeldAmount = estimatedPrice.value;
+    final quotedFromTrip = _parseFareNumber(
+        tripData['fareEstimate'] ?? tripData['estimatedFare']);
+    final quoted = quotedFromTrip > 0
+        ? _roundMoney2(quotedFromTrip)
+        : _roundMoney2(estimatedFare.value);
+    _reconcileHeldAmountWhenQuoteMatchesFinal(finalFare, quoted);
+
+    // Amount pre-authorized on the card (Stripe hold), not [estimatedPrice] which may differ.
+    double originalHeldAmount =
+        _heldAmount > 0 ? _heldAmount : estimatedPrice.value;
 
     // Update estimated price with actual final fare from API
     estimatedPrice.value = finalFare;
@@ -1368,7 +1491,9 @@ class RideBookingController extends GetxController {
     double heldPaymentDifference = originalHeldAmount - finalFare;
 
     print(' SAHArSAHAr 💰 Actual Fare: \$${finalFare.toStringAsFixed(2)}');
-    print(' SAHArSAHAr 💳 Held Payment Amount: \$${heldPaymentDifference.toStringAsFixed(2)}');
+    print(
+        ' SAHArSAHAr 💳 Pre-authorized: \$${originalHeldAmount.toStringAsFixed(2)} · '
+        'Difference (held − fare): \$${heldPaymentDifference.toStringAsFixed(2)}');
 
     // Store payment dialog data for potential re-opening
     _paymentDialogData = {
@@ -1381,6 +1506,8 @@ class RideBookingController extends GetxController {
       'originalHeldAmount': originalHeldAmount,
       'heldPaymentDifference': heldPaymentDifference,
     };
+
+    await _persistPendingPaymentState();
 
     _showPaymentPopup(
       rideId: rideId,
@@ -1469,59 +1596,64 @@ class RideBookingController extends GetxController {
               Text('Trip Completed!', style: TextStyle(color: MColor.primaryNavy, fontWeight: FontWeight.bold)),
             ],
           ),
-          content: Container(
-          width: Get.width * 0.8,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Trip Summary Card
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    SizedBox(height: 8),
-                    _buildSummaryRow('Distance', distance > 0 ? '${distance.toStringAsFixed(2)} km' : 'N/A'),
-                    SizedBox(height: 8),
-                    Obx(() => _buildSummaryRow('Duration', rideDurationDisplay.value)),
-                    SizedBox(height: 8),
-                    _buildSummaryRow('Already Paid', originalHeldAmount > 0 ? '\$${originalHeldAmount.toStringAsFixed(2)}' : '\$0.00'),
-                    SizedBox(height: 8),
-                    _buildSummaryRow('Fare', finalFare <= 0 ? '\$0.00' : '\$${finalFare.toStringAsFixed(2)}'),
-                    Obx(() => selectedTipAmount.value > 0 
-                      ? Padding(
-                          padding: EdgeInsets.only(top: 8),
-                          child: _buildSummaryRow('Tip', '\$${selectedTipAmount.value.toStringAsFixed(2)}'),
-                        )
-                      : SizedBox.shrink()),
-                    SizedBox(height: 12),
-                    Divider(),
-                    SizedBox(height: 8),
-                    Obx(() {
-                      double totalAmount = finalFare + selectedTipAmount.value;
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text(
-                              totalAmount <= 0
-                                  ? "\$0.00"
-                                  : "\$${totalAmount.toStringAsFixed(2)}",
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy)),
-                        ],
-                      );
-                    }),
-                  ],
-                ),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              // Bound the dialog content height so it can scroll instead of overflowing
+              maxHeight: Get.height * 0.55,
+              maxWidth: Get.width * 0.8,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Trip Summary Card
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 8),
+                        _buildSummaryRow('Distance', distance > 0 ? '${distance.toStringAsFixed(2)} km' : 'N/A'),
+                        SizedBox(height: 8),
+                        Obx(() => _buildSummaryRow('Duration', rideDurationDisplay.value)),
+                        SizedBox(height: 8),
+                        _buildSummaryRow('Already Paid', originalHeldAmount > 0 ? '\$${originalHeldAmount.toStringAsFixed(2)}' : '\$0.00'),
+                        SizedBox(height: 8),
+                        _buildSummaryRow('Fare', finalFare <= 0 ? '\$0.00' : '\$${finalFare.toStringAsFixed(2)}'),
+                        Obx(() => selectedTipAmount.value > 0
+                            ? Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: _buildSummaryRow('Tip', '\$${selectedTipAmount.value.toStringAsFixed(2)}'),
+                              )
+                            : SizedBox.shrink()),
+                        SizedBox(height: 12),
+                        Divider(),
+                        SizedBox(height: 8),
+                        Obx(() {
+                          double totalAmount = finalFare + selectedTipAmount.value;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(
+                                totalAmount <= 0 ? "\$0.00" : "\$${totalAmount.toStringAsFixed(2)}",
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MColor.primaryNavy),
+                              ),
+                            ],
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                ],
               ),
-              SizedBox(height: 16),
-            ],
+            ),
           ),
-        ),
         actions: [
           // Payment buttons
           Obx(() => Column(
@@ -1567,10 +1699,12 @@ class RideBookingController extends GetxController {
                     child: Obx(() {
                       double totalWithTip = finalFare + selectedTipAmount.value;
                       double amountToPay = totalWithTip - originalHeldAmount;
-                      
+                      // Float noise only (reconciliation fixes real \$0.10 hold drift).
+                      if (amountToPay.abs() < 0.02) amountToPay = 0;
+
                       String buttonText;
                       if (amountToPay <= 0) {
-                        buttonText = amountToPay == 0 ? "Complete Ride" : "Complete Ride";
+                        buttonText = 'Complete Ride';
                       } else {
                         buttonText = "Pay \$${amountToPay.toStringAsFixed(2)}";
                       }
@@ -2119,8 +2253,6 @@ class RideBookingController extends GetxController {
       stopOrder: 0,
     );
 
-    // Reset fare estimation tracking when pickup location changes
-    _lastFareEstimateKey = '';
     _hasShownServiceUnavailable = false;
   }
 
@@ -2231,6 +2363,7 @@ class RideBookingController extends GetxController {
     promoCodeController.clear();
     _clearAppliedPromo();
     promoError.value = '';
+    _fareCaptureCompletedRideId = '';
     estimatedFare.value = 0.0;
     fareSubtotal.value = 0.0;
     fareDiscount.value = 0.0;
@@ -2485,8 +2618,33 @@ class RideBookingController extends GetxController {
     }
   }
 
+  /// Fills [driverStripeAccountId] via `POST /api/Drivers/{driverId}` when it was lost (resume, held-payment restore).
+  Future<void> _tryLoadDriverStripeAccountFromApi() async {
+    if (driverStripeAccountId.value.trim().isNotEmpty) return;
+    final id = driverId.value.trim();
+    if (id.isEmpty) return;
+    try {
+      final r = await _apiProvider.postDataSilent(ApiEndpoints.getDriverById(id), {});
+      if (!r.isOk || r.body is! Map<String, dynamic>) return;
+      final m = r.body as Map<String, dynamic>;
+      final acct = (m['stripeAccountId'] ?? m['StripeAccountId'])?.toString().trim() ?? '';
+      if (acct.isNotEmpty) {
+        driverStripeAccountId.value = acct;
+        print('SAHAr: ✅ Driver Stripe account loaded from Drivers API');
+      }
+    } catch (e) {
+      print('SAHAr: ⚠️ Drivers API lookup failed: $e');
+    }
+  }
+
   /// STEP 3: Complete payment when ride ends (capture + transfer)
-  Future<void> _completePayment(double fareAfterBalance, {double tipAmount = 0.0}) async {
+  ///
+  /// Returns whether fare capture / balance path completed successfully (tip-only flow may follow).
+  Future<bool> _completePayment(
+    double fareAfterBalance, {
+    double tipAmount = 0.0,
+    RidePaymentCompletionStyle completionStyle = RidePaymentCompletionStyle.standard,
+  }) async {
     double totalAmountWithTip = fareAfterBalance + tipAmount;
 
     try {
@@ -2523,13 +2681,16 @@ class RideBookingController extends GetxController {
         // Close the payment dialog only if it is open (e.g. not when called from SignalR cancelled)
         if (Get.isDialogOpen == true) Get.back();
 
-        _showRideCompletedMessage(0, 0, paidFromBalance: true);
+        _fareCaptureCompletedRideId = prevRideId.value;
 
-        // Wait a moment to ensure payment dialog is fully closed before showing review dialog
-        await Future.delayed(Duration(milliseconds: 300));
-
-        _showReviewDialog();
-        return;
+        if (completionStyle == RidePaymentCompletionStyle.standard) {
+          _showRideCompletedMessage(0, 0, paidFromBalance: true);
+          await Future.delayed(Duration(milliseconds: 300));
+          _showReviewDialog();
+        } else {
+          await _presentOptionalTipAfterFarePaid(actualFareBeforeBalance.value);
+        }
+        return true;
       }
 
       // Check if we have held payment for card charge
@@ -2537,14 +2698,19 @@ class RideBookingController extends GetxController {
           heldPaymentIntentId.value == 'NO_PAYMENT_REQUIRED') {
         Get.snackbar('Error', 'No held payment found');
         print('SAHAr: ❌ No held payment intent available');
-        return;
+        return false;
       }
 
-      // Check driver's Stripe account
+      await _tryLoadDriverStripeAccountFromApi();
+
+      // Check driver's Stripe account (Stripe Connect destination for capture/transfer)
       if (driverStripeAccountId.value.isEmpty) {
-        Get.snackbar('Error', 'Driver payment details not available');
+        Get.snackbar(
+          'Payment setup',
+          'Driver payout account is not available. If this continues, contact support.',
+        );
         print('SAHAr: ⚠️ Driver Stripe account missing!');
-        return;
+        return false;
       }
 
       // CRITICAL: Calculate the actual amount to capture
@@ -2610,7 +2776,7 @@ class RideBookingController extends GetxController {
       if (result == null || result['success'] != true) {
         print('SAHAr: ❌ Failed to capture held payment');
         Get.snackbar('Payment Failed', 'Failed to complete payment. Please try again or contact support.');
-        return;
+        return false;
       }
 
       // If we have additional payment, transfer it to driver too
@@ -2664,10 +2830,18 @@ class RideBookingController extends GetxController {
         Get.back();
       }
 
+      _fareCaptureCompletedRideId = prevRideId.value;
+
+      if (completionStyle == RidePaymentCompletionStyle.autoFareThenOptionalTip &&
+          tipAmount <= 0) {
+        await _presentOptionalTipAfterFarePaid(fareAfterBalance);
+        return true;
+      }
+
       // Show success message
       double driverAmount = result['driver_amount'] / 100;
       double platformFee = result['platform_fee'] / 100;
-      
+
       // Add additional driver amount if additional payment was processed
       if (additionalResult != null && additionalResult['success'] == true) {
         driverAmount += (additionalAmountNeeded / 100.0); // Full tip goes to driver
@@ -2683,12 +2857,261 @@ class RideBookingController extends GetxController {
 
       // Clear payment data
       _clearPaymentData();
-
+      return true;
     } catch (e) {
       print('SAHAr: ❌ Error in _completePayment: $e');
       Get.snackbar('Payment Error', 'Failed to process payment: $e');
+      return false;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// After fare is captured (FCM / resume auto-flow), only ask for an optional tip, then review.
+  Future<void> _presentOptionalTipAfterFarePaid(double finalFare) async {
+    final safeFare = finalFare < 0 ? 0.0 : finalFare;
+    final driverLabel =
+        driverName.value.isNotEmpty ? driverName.value : 'your driver';
+    final RxDouble selectedTip = 0.0.obs;
+    final tipOptions = AppConstants.tipPercentages;
+
+    await Get.dialog<void>(
+      PopScope(
+        canPop: true,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: MColor.primaryNavy, size: 28),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Fare paid',
+                  style: TextStyle(
+                    color: MColor.primaryNavy,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: Get.width * 0.8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trip total: \$${safeFare.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Optional tip for $driverLabel?',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 16),
+                Text('Quick amounts', style: TextStyle(fontWeight: FontWeight.w500)),
+                const SizedBox(height: 8),
+                Obx(() => Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: tipOptions
+                          .map(
+                            (t) => ChoiceChip(
+                              label: Text('\$${t.toStringAsFixed(0)}'),
+                              selected: selectedTip.value == t,
+                              onSelected: (sel) {
+                                if (sel) selectedTip.value = t;
+                              },
+                              selectedColor: MColor.primaryNavy.withValues(alpha: 0.25),
+                            ),
+                          )
+                          .toList(),
+                    )),
+                const SizedBox(height: 12),
+                TextField(
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Custom tip',
+                    prefixText: '\$ ',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onChanged: (v) {
+                    final c = double.tryParse(v);
+                    if (c != null && c >= 0) selectedTip.value = c;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.back();
+                _clearPaymentData();
+                Future.delayed(const Duration(milliseconds: 200), _showReviewDialog);
+              },
+              child: Text('Skip', style: TextStyle(color: MColor.primaryNavy)),
+            ),
+            Obx(() => ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MColor.primaryNavy,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    final tip = selectedTip.value;
+                    Get.back();
+                    if (tip > 0) {
+                      await _chargePostFareTip(tip, safeFare);
+                    } else {
+                      _clearPaymentData();
+                      Future.delayed(const Duration(milliseconds: 200), _showReviewDialog);
+                    }
+                  },
+                  child: Text(selectedTip.value > 0 ? 'Pay tip' : 'Done'),
+                )),
+          ],
+        ),
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  /// Charge tip after the held payment was already captured for the fare only.
+  Future<void> _chargePostFareTip(double tipAmount, double finalFare) async {
+    if (tipAmount <= 0) return;
+    try {
+      isLoading.value = true;
+      await _tryLoadDriverStripeAccountFromApi();
+      if (driverStripeAccountId.value.isEmpty) {
+        Get.snackbar(
+          'Tip',
+          'Driver payout is unavailable. Tip could not be charged.',
+        );
+        await _submitTip(tipAmount, finalFare, finalFare + tipAmount);
+        _clearPaymentData();
+        Future.delayed(const Duration(milliseconds: 200), _showReviewDialog);
+        return;
+      }
+
+      final cents = (tipAmount * 100).round();
+      final info = await _createAdditionalPaymentIntent(cents);
+      if (info == null ||
+          info['chargeId'] == null ||
+          info['chargeId']!.isEmpty) {
+        Get.snackbar('Tip', 'Could not process tip payment.');
+        _clearPaymentData();
+        Future.delayed(const Duration(milliseconds: 200), _showReviewDialog);
+        return;
+      }
+
+      final transfer = await PaymentService.transferAdditionalAmount(
+        chargeId: info['chargeId']!,
+        driverStripeAccountId: driverStripeAccountId.value,
+        amountCents: cents,
+        tipAmountCents: cents,
+      );
+
+      if (transfer == null || transfer['success'] != true) {
+        print('SAHAr: ⚠️ Tip charge ok but transfer failed');
+      }
+
+      await _submitTip(tipAmount, finalFare, finalFare + tipAmount);
+    } catch (e) {
+      print('SAHAr: _chargePostFareTip error: $e');
+      Get.snackbar('Tip', 'Failed to process tip: $e');
+    } finally {
+      isLoading.value = false;
+      _clearPaymentData();
+      Future.delayed(const Duration(milliseconds: 200), _showReviewDialog);
+    }
+  }
+
+  /// FCM (or cold start) when SignalR missed trip completion: capture fare automatically, then tip-only UI.
+  ///
+  /// Expects [data] keys: `rideId`, and `finalFare` / `fareFinal` / `totalFare` when possible.
+  Future<void> handleRideCompletedFromPush(Map<String, dynamic> data) async {
+    try {
+      if (!await SharedPrefsService.isUserLoggedIn()) return;
+
+      final rideId = (data['rideId'] ?? '').toString().trim();
+      if (rideId.isEmpty) return;
+
+      if (_fareCaptureCompletedRideId.isNotEmpty &&
+          _fareCaptureCompletedRideId == rideId) {
+        print('SAHAr: FCM ride_completed ignored — already captured for $rideId');
+        return;
+      }
+
+      final srConnected = Get.isRegistered<SignalRService>() &&
+          Get.find<SignalRService>().connectionStatus.value ==
+              SignalRConnectionStatus.connected;
+      if (srConnected) {
+        print(
+            'SAHAr: FCM ride_completed ignored for auto-pay — SignalR connected (in-app completion handles UI)');
+        return;
+      }
+
+      if (currentRideId.value.isNotEmpty && currentRideId.value != rideId) {
+        print(
+            'SAHAr: FCM ride_completed rideId mismatch (current=${currentRideId.value} fcm=$rideId)');
+        return;
+      }
+
+      double finalFare = _parseFareNumber(
+          data['finalFare'] ?? data['fareFinal'] ?? data['totalFare']);
+      if (finalFare <= 0) {
+        final userId = await SharedPrefsService.getUserId();
+        if (userId == null || userId.isEmpty) return;
+        final r = await _apiProvider.postDataSilent(
+          '${ApiEndpoints.getUserLastRide}?userId=$userId',
+          {},
+        );
+        if (r.isOk && r.body is Map) {
+          final m = _asStringKeyedMap(r.body);
+          if (m != null && (m['rideId']?.toString() ?? '') == rideId) {
+            finalFare = _parseFareNumber(m['fareFinal']);
+            if (finalFare <= 0) {
+              finalFare = _parseFareNumber(m['fareEstimate']);
+            }
+          }
+        }
+      }
+      if (finalFare <= 0) {
+        print('SAHAr: FCM ride_completed — could not resolve finalFare');
+        return;
+      }
+
+      if (heldPaymentIntentId.value.isEmpty ||
+          heldPaymentIntentId.value == 'NO_PAYMENT_REQUIRED') {
+        print(
+            'SAHAr: FCM ride_completed — no held PI in memory; user may need resume flow');
+        return;
+      }
+
+      if (currentRideId.value.isEmpty) {
+        currentRideId.value = rideId;
+      }
+      prevRideId.value = rideId;
+      actualFareBeforeBalance.value = finalFare;
+      rideStatus.value = RideStatus.tripCompleted;
+
+      if (!(await _waitForDialogSlot())) return;
+
+      final ok = await _completePayment(
+        finalFare,
+        tipAmount: 0,
+        completionStyle: RidePaymentCompletionStyle.autoFareThenOptionalTip,
+      );
+      if (!ok) {
+        Get.snackbar(
+          'Payment',
+          'Could not complete payment automatically. Open the app to finish.',
+        );
+      }
+    } catch (e) {
+      print('SAHAr: handleRideCompletedFromPush error: $e');
     }
   }
 
@@ -3142,7 +3565,535 @@ class RideBookingController extends GetxController {
     _heldAmount = 0.0;
     selectedTipAmount.value = 0.0;
     _paymentDialogData = null;
+    SharedPrefsService.clearPendingPaymentState();
     print('SAHAr: Payment data cleared');
+  }
+
+  Future<void> _persistPendingPaymentState() async {
+    if (_paymentDialogData == null) return;
+    try {
+      final map = <String, dynamic>{
+        ..._paymentDialogData!,
+        'heldPaymentIntentId': heldPaymentIntentId.value,
+        'heldAmount': _heldAmount,
+        'driverStripeAccountId': driverStripeAccountId.value,
+        'driverId': driverId.value,
+        'driverName': driverName.value,
+        'actualFareBeforeBalance': actualFareBeforeBalance.value,
+        'adminPercentage': adminPercentage.value,
+        'savedAt': DateTime.now().toIso8601String(),
+      };
+      await SharedPrefsService.savePendingPaymentState(jsonEncode(map));
+    } catch (e) {
+      print('SAHAr: Failed to persist pending payment: $e');
+    }
+  }
+
+  /// GetConnect may return `Map<dynamic, dynamic>`; normalize so resume / payment logic always runs.
+  Map<String, dynamic>? _asStringKeyedMap(dynamic body) {
+    if (body == null) return null;
+    if (body is Map<String, dynamic>) return body;
+    if (body is Map) {
+      try {
+        return Map<String, dynamic>.from(
+          body.map((k, v) => MapEntry(k.toString(), v)),
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Called after login when the map home is shown (Uber-style resume + held-payment).
+  Future<void> checkLastRideOnHomeOpen() async {
+    if (_lastRideResumeCheckDone) return;
+    try {
+      if (!await SharedPrefsService.isUserLoggedIn()) return;
+
+      // This check is meant to run on the MainMap (HomeScreen). If user navigated away,
+      // skip any resume/payment UI so it doesn't appear on other pages (e.g. RideBookingPage).
+      if (Get.currentRoute != '/mainMap') return;
+
+      final int seq = ++_lastRideResumeCheckSeq;
+      final userId = await SharedPrefsService.getUserId();
+      if (userId == null || userId.isEmpty) return;
+
+      final response = await _apiProvider.postDataSilent(
+        '${ApiEndpoints.getUserLastRide}?userId=$userId',
+        {},
+      );
+
+      // If another check started, or user navigated away while awaiting, ignore this result.
+      if (seq != _lastRideResumeCheckSeq) return;
+      if (Get.currentRoute != '/mainMap') return;
+
+      if (!response.isOk) {
+        print('SAHAr: get-user-last-ride failed: ${response.statusCode} ${response.statusText}');
+        return;
+      }
+
+      final body = response.body;
+      if (body == null) {
+        await SharedPrefsService.clearPendingPaymentState();
+        _lastRideResumeCheckDone = true;
+        return;
+      }
+
+      final map = _asStringKeyedMap(body);
+      if (map == null) {
+        print('SAHAr: get-user-last-ride: body is not a JSON object: ${body.runtimeType}');
+        _lastRideResumeCheckDone = true;
+        return;
+      }
+
+      final status = (map['status'] ?? '').toString();
+      final normalized = status.trim().toLowerCase();
+      final rideIdStr = (map['rideId'] ?? '').toString().trim();
+
+      if (normalized == 'cancelled') {
+        await SharedPrefsService.clearPendingPaymentState();
+        _lastRideResumeCheckDone = true;
+        return;
+      }
+
+      if (normalized == 'completed') {
+        final paymentStatus = (map['paymentStatus'] ?? '').toString().trim().toLowerCase();
+        // Backend may send `paymentIntentId` and/or `paymentToken` (often identical).
+        // Treat `paymentToken` as a fallback so resume/payment UI works across versions.
+        final paymentIntentId = (map['paymentIntentId'] ?? map['paymentToken'] ?? '')
+            .toString()
+            .trim();
+        // Resume trip is only for non-completed rides.
+        // Completed + (held or pending) should surface the payment UI.
+        //
+        // Some backends send `paymentStatus: Pending` and omit `paymentIntentId` from this endpoint,
+        // but we can still restore from locally persisted pending payment state (or fetch details by rideId).
+        final prefsJson = await SharedPrefsService.getPendingPaymentState();
+        bool hasPrefsForRide = false;
+        if (prefsJson != null && prefsJson.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(prefsJson);
+            if (decoded is Map) {
+              final rideIdFromPrefs = (decoded['rideId'] ?? '').toString().trim();
+              hasPrefsForRide = rideIdFromPrefs.isNotEmpty && rideIdFromPrefs == rideIdStr;
+            }
+          } catch (_) {}
+        }
+
+        final needsPaymentUi = paymentStatus == 'held' || paymentStatus == 'pending';
+
+        if (needsPaymentUi) {
+          print(
+            'SAHAr: Last ride Completed with pending/held payment — showing payment UI '
+            '(status="$paymentStatus" piLen=${paymentIntentId.length} prefs=$hasPrefsForRide)',
+          );
+          await Future.delayed(const Duration(milliseconds: 400));
+          if (seq != _lastRideResumeCheckSeq) return;
+          if (Get.currentRoute != '/mainMap') return;
+          if (!(await _waitForDialogSlot())) {
+            return;
+          }
+          await _restoreCompletedHeldPaymentFromLastRide(map);
+        } else {
+          print(
+            'SAHAr: Last ride is Completed — no resume popup. '
+            'Payment UI only when paymentStatus is held/pending; '
+            'got paymentStatus="$paymentStatus" intentEmpty=${paymentIntentId.isEmpty} prefsForRide=$hasPrefsForRide',
+          );
+          // Only clear persisted state when backend clearly indicates there's nothing to pay.
+          if (!needsPaymentUi) {
+            await SharedPrefsService.clearPendingPaymentState();
+          }
+        }
+        _lastRideResumeCheckDone = true;
+        return;
+      }
+
+      // Unknown / missing status: still offer resume if we have a ride id (backend quirks).
+      if (normalized.isEmpty && rideIdStr.isEmpty) {
+        _lastRideResumeCheckDone = true;
+        return;
+      }
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (seq != _lastRideResumeCheckSeq) return;
+      if (Get.currentRoute != '/mainMap') return;
+      if (!(await _waitForDialogSlot())) {
+        return;
+      }
+      _showResumeRideDialog(map);
+      _lastRideResumeCheckDone = true;
+    } catch (e) {
+      print('SAHAr: checkLastRideOnHomeOpen error: $e');
+    }
+  }
+
+  /// Waits until no GetX dialog is covering the screen (or times out). Returns false if still blocked.
+  Future<bool> _waitForDialogSlot() async {
+    if (Get.isDialogOpen != true) return true;
+    for (var i = 0; i < 15; i++) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (Get.isDialogOpen != true) return true;
+    }
+    print('SAHAr: resume/payment UI skipped — another dialog stayed open');
+    return false;
+  }
+
+  void _showResumeRideDialog(Map<String, dynamic> lastRide) {
+    final status = (lastRide['status'] ?? '').toString();
+    final pickup = (lastRide['pickupLocation'] ?? '').toString();
+    final dropoff = (lastRide['dropOffLocation'] ?? '').toString();
+
+    Get.dialog(
+      barrierDismissible: false,
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.directions_car_rounded, color: MColor.primaryNavy, size: 28),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Resume your trip?',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: MColor.primaryNavy,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'You have a ride in progress. Continue where you left off?',
+                style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+              ),
+              if (pickup.isNotEmpty || dropoff.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                if (pickup.isNotEmpty)
+                  Text('Pickup: $pickup', style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+                if (dropoff.isNotEmpty)
+                  Text('Drop-off: $dropoff', style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+              ],
+              if (status.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Status: $status',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Get.back(),
+                      child: const Text('Not now'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MColor.primaryNavy,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
+                        Get.back();
+                        await _resumeActiveRideFromLastRideMap(lastRide);
+                      },
+                      child: const Text('Resume'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _resumeActiveRideFromLastRideMap(Map<String, dynamic> lastRide) async {
+    final rideId = (lastRide['rideId'] ?? '').toString();
+    if (rideId.isEmpty) return;
+
+    final response = await _apiProvider.postDataSilent('/api/Ride/$rideId', {});
+    Map<String, dynamic>? detail;
+    if (response.isOk && response.body is Map<String, dynamic>) {
+      detail = response.body as Map<String, dynamic>;
+    }
+
+    _hydrateLocationsFromLastRide(lastRide);
+    currentRideId.value = rideId;
+    prevRideId.value = rideId;
+    isRideBooked.value = true;
+
+    if (detail != null) {
+      driverId.value = (detail['driverId'] ?? lastRide['driverId'] ?? '').toString();
+      driverName.value = (detail['driverName'] ?? '').toString();
+      final vehicle = (detail['vehicle'] ?? '').toString();
+      final vehicleColor = (detail['vehicleColor'] ?? '').toString();
+      this.vehicle.value = vehicle;
+      this.vehicleColor.value = vehicleColor;
+      rating.value = 0.0;
+      driverPhone.value = '';
+      estimatedPrice.value = _parseFareNumber(detail['fareEstimate'] ?? lastRide['fareEstimate']);
+      final fareFinal = (detail['fareFinal'] != null) ? _parseFareNumber(detail['fareFinal']) : 0.0;
+      if (fareFinal > 0) estimatedPrice.value = fareFinal;
+    } else {
+      driverId.value = (lastRide['driverId'] ?? '').toString();
+      driverName.value = '';
+      estimatedPrice.value = _parseFareNumber(lastRide['fareEstimate'] ?? lastRide['fareFinal']);
+    }
+
+    final paymentIntent = (lastRide['paymentIntentId'] ?? '').toString();
+    if (paymentIntent.isNotEmpty) {
+      heldPaymentIntentId.value = paymentIntent;
+    }
+
+    final stripe = (detail?['driverPayment'] ?? detail?['driverStripeAccount'])?.toString() ?? '';
+    if (stripe.isNotEmpty && stripe.startsWith('acct_')) {
+      driverStripeAccountId.value = stripe;
+    }
+    await _tryLoadDriverStripeAccountFromApi();
+
+    rideStatus.value = _mapServerRideStatusToEnum(
+      (detail?['status'] ?? lastRide['status'] ?? '').toString(),
+    );
+
+    if (currentRideId.value.isNotEmpty) {
+      signalRService.subscribeToRide(currentRideId.value);
+    }
+
+    try {
+      final uid = await SharedPrefsService.getUserId();
+      if (uid != null && currentRideId.value.isNotEmpty) {
+        Get.find<ChatBackgroundService>().updateRideInfo(
+          rideId: currentRideId.value,
+          driverId: driverId.value,
+          driverName: driverName.value,
+          currentUserId: uid,
+          status: rideStatus.value,
+        );
+      }
+    } catch (_) {}
+
+    if (pickupLocation.value != null && dropoffLocation.value != null) {
+      await _mapService.createRouteMarkersAndPolylines(
+        pickupLocation: pickupLocation.value,
+        dropoffLocation: dropoffLocation.value,
+        additionalStops: additionalStops,
+      );
+    }
+
+    Get.snackbar(
+      'Ride resumed',
+      'Your trip is active again.',
+      backgroundColor: MColor.primaryNavy.withValues(alpha: 0.8),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 4),
+    );
+  }
+
+  void _hydrateLocationsFromLastRide(Map<String, dynamic> lastRide) {
+    final pickupAddr = (lastRide['pickupLocation'] ?? '').toString();
+    final dropAddr = (lastRide['dropOffLocation'] ?? '').toString();
+    final pickupLat = _parseFareNumber(lastRide['pickupLat']);
+    final pickupLng = _parseFareNumber(lastRide['pickupLng']);
+    final dropLat = _parseFareNumber(lastRide['dropOffLat']);
+    final dropLng = _parseFareNumber(lastRide['dropOffLng']);
+
+    pickupLocation.value = LocationData(
+      address: pickupAddr,
+      latitude: pickupLat,
+      longitude: pickupLng,
+      stopOrder: 0,
+    );
+    pickupController.text = pickupAddr;
+    dropoffLocation.value = LocationData(
+      address: dropAddr,
+      latitude: dropLat,
+      longitude: dropLng,
+      stopOrder: 1,
+    );
+    dropoffController.text = dropAddr;
+
+    additionalStops.clear();
+    for (var c in stopControllers) {
+      c.dispose();
+    }
+    stopControllers.clear();
+
+    final stops = lastRide['rideStops'];
+    if (stops is List && stops.length > 2) {
+      final raw = <Map<String, dynamic>>[];
+      for (final e in stops) {
+        if (e is Map<String, dynamic>) {
+          raw.add(e);
+        } else if (e is Map) {
+          raw.add(Map<String, dynamic>.from(e));
+        }
+      }
+      raw.sort((a, b) => _parseFareNumber(a['stopOrder']).compareTo(_parseFareNumber(b['stopOrder'])));
+
+      for (var i = 1; i < raw.length - 1; i++) {
+        final s = raw[i];
+        final addr = (s['location'] ?? '').toString();
+        final lat = _parseFareNumber(s['latitude']);
+        final lng = _parseFareNumber(s['longitude']);
+        final tc = TextEditingController(text: addr);
+        stopControllers.add(tc);
+        additionalStops.add(
+          LocationData(address: addr, latitude: lat, longitude: lng, stopOrder: i),
+        );
+      }
+    }
+  }
+
+  RideStatus _mapServerRideStatusToEnum(String status) {
+    switch (status.trim().toLowerCase()) {
+      case 'pending':
+        return RideStatus.waiting;
+      case 'waiting':
+        return RideStatus.waiting;
+      case 'driver assigned':
+        return RideStatus.driverAssigned;
+      case 'arrived':
+        return RideStatus.driverArrived;
+      case 'in-progress':
+      case 'inprogress':
+      case 'ongoing':
+        return RideStatus.tripStarted;
+      case 'completed':
+        return RideStatus.tripCompleted;
+      case 'cancelled':
+        return RideStatus.cancelled;
+      default:
+        return RideStatus.driverAssigned;
+    }
+  }
+
+  Future<void> _restoreCompletedHeldPaymentFromLastRide(Map<String, dynamic> lastRide) async {
+    final rideId = (lastRide['rideId'] ?? '').toString();
+    if (rideId.isEmpty) return;
+
+    final prefsJson = await SharedPrefsService.getPendingPaymentState();
+    Map<String, dynamic>? prefsMap;
+    if (prefsJson != null && prefsJson.isNotEmpty) {
+      try {
+        prefsMap = jsonDecode(prefsJson) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    if (prefsMap != null && (prefsMap['rideId']?.toString() ?? '') != rideId) {
+      prefsMap = null;
+    }
+
+    final fareFinal = _parseFareNumber(lastRide['fareFinal']);
+    final fareEstimate = _parseFareNumber(lastRide['fareEstimate']);
+    final distance = _parseFareNumber(lastRide['distance']);
+
+    if (prefsMap != null) {
+      heldPaymentIntentId.value =
+          prefsMap['heldPaymentIntentId']?.toString() ??
+              (lastRide['paymentIntentId'] ?? lastRide['paymentToken'] ?? '').toString();
+      driverStripeAccountId.value = prefsMap['driverStripeAccountId']?.toString() ?? '';
+      driverId.value = prefsMap['driverId']?.toString() ?? (lastRide['driverId'] ?? '').toString();
+      driverName.value = prefsMap['driverName']?.toString() ?? '';
+      _heldAmount = _parseFareNumber(prefsMap['heldAmount']);
+      actualFareBeforeBalance.value = _parseFareNumber(prefsMap['actualFareBeforeBalance']);
+      if (actualFareBeforeBalance.value <= 0) {
+        actualFareBeforeBalance.value = fareFinal > 0 ? fareFinal : fareEstimate;
+      }
+      adminPercentage.value = _parseFareNumber(prefsMap['adminPercentage']);
+      final origHeld = _parseFareNumber(prefsMap['originalHeldAmount']);
+      if (origHeld > 0) {
+        estimatedPrice.value = origHeld;
+      }
+    } else {
+      heldPaymentIntentId.value =
+          (lastRide['paymentIntentId'] ?? lastRide['paymentToken'] ?? '').toString();
+      driverId.value = (lastRide['driverId'] ?? '').toString();
+      driverName.value = '';
+      _heldAmount = fareEstimate > 0 ? fareEstimate : fareFinal;
+      actualFareBeforeBalance.value = fareFinal > 0 ? fareFinal : fareEstimate;
+      final r = await _apiProvider.postDataSilent('/api/Ride/$rideId', {});
+      if (r.isOk && r.body is Map<String, dynamic>) {
+        final m = r.body as Map<String, dynamic>;
+        driverName.value = m['driverName']?.toString() ?? '';
+        final stripe = (m['driverPayment'] ?? '').toString();
+        if (stripe.startsWith('acct_')) {
+          driverStripeAccountId.value = stripe;
+        }
+        // Some endpoints omit paymentIntentId — try to recover it from the ride details.
+        if (heldPaymentIntentId.value.trim().isEmpty) {
+          final pi = (m['paymentIntentId'] ??
+                  m['PaymentIntentId'] ??
+                  m['paymentToken'] ??
+                  m['PaymentToken'] ??
+                  '')
+              .toString()
+              .trim();
+          if (pi.isNotEmpty) {
+            heldPaymentIntentId.value = pi;
+          }
+        }
+      }
+    }
+
+    if (fareFinal > 0) {
+      actualFareBeforeBalance.value = _roundMoney2(fareFinal);
+    } else if (actualFareBeforeBalance.value > 0) {
+      actualFareBeforeBalance.value = _roundMoney2(actualFareBeforeBalance.value);
+    }
+
+    // `_showPaymentDialog` reads `estimatedPrice` as the pre-auth hold before replacing with final fare.
+    if (estimatedPrice.value <= 0) {
+      estimatedPrice.value = _heldAmount > 0 ? _heldAmount : actualFareBeforeBalance.value;
+    }
+
+    final apiFinal = fareFinal > 0 ? _roundMoney2(fareFinal) : _roundMoney2(fareEstimate);
+    final apiQuoted = fareEstimate > 0 ? _roundMoney2(fareEstimate) : _roundMoney2(fareFinal);
+    _reconcileHeldAmountWhenQuoteMatchesFinal(
+      _roundMoney2(apiFinal),
+      _roundMoney2(apiQuoted),
+    );
+
+    rideStatus.value = RideStatus.tripCompleted;
+    isRideBooked.value = true;
+    currentRideId.value = rideId;
+    prevRideId.value = rideId;
+
+    final tripData = <String, dynamic>{
+      'rideId': rideId,
+      'finalFare': actualFareBeforeBalance.value,
+      'distance': distance,
+      'totalWaitingTime': (lastRide['totalWaitingTime'] ?? '').toString(),
+      'rideStartTime': (lastRide['rideStartTime'] ?? '').toString(),
+      'rideEndTime': (lastRide['rideEndTime'] ?? '').toString(),
+      'status': 'Completed',
+      'tip': lastRide['tip'] ?? 'No Tip',
+    };
+
+    await _tryLoadDriverStripeAccountFromApi();
+
+    final ok = await _completePayment(
+      actualFareBeforeBalance.value,
+      tipAmount: 0,
+      completionStyle: RidePaymentCompletionStyle.autoFareThenOptionalTip,
+    );
+    if (!ok) {
+      await _showPaymentDialog(tripData);
+    }
   }
 
   /// Create additional payment intent for excess tip amount

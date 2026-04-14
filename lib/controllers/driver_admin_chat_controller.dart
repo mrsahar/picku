@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:signalr_core/signalr_core.dart';
+import 'package:signalr_core_new/signalr_core_new.dart';
 import '../models/message_screen_model.dart';
 import '../services/share_pref.dart';
 import '../services/signalr_service.dart';

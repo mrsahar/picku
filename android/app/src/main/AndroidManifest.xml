@@ -71,6 +71,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- FCM: use the same high-importance channel Flutter creates (see NotificationService.generalChannelId) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="general_notifications_pick_u_v4" />
+
         <!-- Replace with your restricted Google Maps key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"

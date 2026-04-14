@@ -2,14 +2,18 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pick_u/services/share_pref.dart';
 
 class NotificationService extends GetxService {
   static NotificationService get to => Get.find();
 
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
+
+  static const MethodChannel _debugChannel = MethodChannel('picku.notification_debug');
 
   final RxBool _notificationsEnabled = false.obs;
   final RxBool _isInitialized = false.obs;
@@ -22,13 +26,22 @@ class NotificationService extends GetxService {
   String get currentRoute => _currentRoute.value;
 
   // Notification channels
-  static const String chatChannelId = 'chat_messages_pick_u_v3';
+  static const String chatChannelId = 'chat_messages_pick_u_v4';
   static const String chatChannelName = 'Chat Messages';
   static const String chatChannelDescription = 'Notifications for new chat messages';
 
-  static const String generalChannelId = 'general_notifications_pick_u_v3';
+  static const String generalChannelId = 'general_notifications_pick_u_v4';
   static const String generalChannelName = 'General Notifications';
   static const String generalChannelDescription = 'General app notifications';
+
+  /// FCM chat in foreground: same as chat UX but **system default** notification sound (not app raw).
+  static const String chatPushChannelId = 'chat_messages_push_default_pick_u_v2';
+  static const String chatPushChannelName = 'Chat Messages (Push)';
+  static const String chatPushChannelDescription = 'Push chat alerts using the device default sound';
+
+  /// Bump this when changing Android channel properties (sound/importance/etc).
+  /// On Android 8+ channels are sticky; a version bump triggers delete+recreate.
+  static const int kChannelsSchemaVersion = 2;
 
   @override
   Future<void> onInit() async {
@@ -93,15 +106,38 @@ class NotificationService extends GetxService {
         AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
-      // Clean up old channels to ensure new configuration is applied
-      await androidPlugin.deleteNotificationChannel('chat_messages');
-      await androidPlugin.deleteNotificationChannel('general_notifications');
-      await androidPlugin.deleteNotificationChannel('chat_messages_v1');
-      await androidPlugin.deleteNotificationChannel('general_notifications_v1');
-      await androidPlugin.deleteNotificationChannel('chat_messages_pick_u_v2');
-      await androidPlugin.deleteNotificationChannel('general_notifications_pick_u_v2');
-      await androidPlugin.deleteNotificationChannel(chatChannelId);
-      await androidPlugin.deleteNotificationChannel(generalChannelId);
+      final didMigrate =
+          await SharedPrefsService.getDidMigrateNotificationChannelsV4();
+      if (!didMigrate) {
+        // One-time cleanup of legacy channels so new IDs take effect (Android 8+ channels are sticky).
+        await androidPlugin.deleteNotificationChannel('chat_messages');
+        await androidPlugin.deleteNotificationChannel('general_notifications');
+        await androidPlugin.deleteNotificationChannel('chat_messages_v1');
+        await androidPlugin.deleteNotificationChannel('general_notifications_v1');
+        await androidPlugin.deleteNotificationChannel('chat_messages_pick_u_v2');
+        await androidPlugin.deleteNotificationChannel('general_notifications_pick_u_v2');
+        await androidPlugin.deleteNotificationChannel('chat_messages_pick_u_v3');
+        await androidPlugin.deleteNotificationChannel('general_notifications_pick_u_v3');
+        // Legacy FCM default channel used by older AndroidManifest configs.
+        await androidPlugin.deleteNotificationChannel('general_notifications_pick_u_v3');
+
+        // Also delete legacy push-channel id so sound changes take effect.
+        await androidPlugin.deleteNotificationChannel('chat_messages_push_default_pick_u_v1');
+      }
+
+      // Versioned channel migration: delete+recreate current IDs when schema bumps.
+      final storedSchema = await SharedPrefsService.getNotificationChannelsSchemaVersion();
+      final needsSchemaMigration = storedSchema < kChannelsSchemaVersion;
+      if (needsSchemaMigration) {
+        try {
+          // Delete and recreate current IDs so they pick up latest sound/importance again.
+          await androidPlugin.deleteNotificationChannel(chatChannelId);
+          await androidPlugin.deleteNotificationChannel(generalChannelId);
+          await androidPlugin.deleteNotificationChannel(chatPushChannelId);
+        } catch (_) {
+          // Best-effort; channel may not exist yet.
+        }
+      }
 
       // Chat messages channel - Compatible with all Android versions
       const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
@@ -114,25 +150,98 @@ class NotificationService extends GetxService {
         ledColor: Colors.blue,
         showBadge: true,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification'),
       );
 
-      // General notifications channel - Compatible with all Android versions
+      // General / FCM: device default sound (no custom raw asset).
       const AndroidNotificationChannel generalChannel = AndroidNotificationChannel(
         generalChannelId,
         generalChannelName,
         description: generalChannelDescription,
-        importance: Importance.high, // Increased to High
+        importance: Importance.max,
         enableVibration: true,
         showBadge: true,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification'),
+      );
+
+      const AndroidNotificationChannel chatPushChannel = AndroidNotificationChannel(
+        chatPushChannelId,
+        chatPushChannelName,
+        description: chatPushChannelDescription,
+        importance: Importance.max,
+        enableVibration: true,
+        enableLights: true,
+        ledColor: Colors.blue,
+        showBadge: true,
+        playSound: true,
       );
 
       await androidPlugin.createNotificationChannel(chatChannel);
       await androidPlugin.createNotificationChannel(generalChannel);
+      await androidPlugin.createNotificationChannel(chatPushChannel);
+
+      if (!didMigrate) {
+        await SharedPrefsService.setDidMigrateNotificationChannelsV4(true);
+      }
+      if (needsSchemaMigration) {
+        await SharedPrefsService.setNotificationChannelsSchemaVersion(kChannelsSchemaVersion);
+      }
 
       print('📱 Android notification channels created');
+    }
+  }
+
+  Future<void> _debugLogAndroidChannel(String channelId) async {
+    if (!Platform.isAndroid) return;
+    try {
+      final info = await _debugChannel.invokeMethod<Map<dynamic, dynamic>>(
+        'getAndroidNotificationChannelInfo',
+        {'channelId': channelId},
+      );
+      if (info == null) {
+        print('🔇 ChannelDebug($channelId): no info (null)');
+        return;
+      }
+      print('🔇 ChannelDebug($channelId): ${info.map((k, v) => MapEntry(k.toString(), v))}');
+    } catch (e) {
+      print('🔇 ChannelDebug($channelId) failed: $e');
+    }
+  }
+
+  Future<void> debugNotificationSoundState() async {
+    if (!Platform.isAndroid) {
+      print('🔇 debugNotificationSoundState: Android only');
+      return;
+    }
+    try {
+      final enabled = await areNotificationsEnabled();
+      print('🔇 Android notifications enabled: $enabled');
+    } catch (e) {
+      print('🔇 areNotificationsEnabled failed: $e');
+    }
+
+    await _debugLogAndroidChannel(generalChannelId);
+    await _debugLogAndroidChannel(chatPushChannelId);
+    await _debugLogAndroidChannel(chatChannelId);
+  }
+
+  /// After Firebase (or system) prompts for POST_NOTIFICATIONS, keep this flag in sync
+  /// so foreground [showGeneralNotification] / [showChatNotification] are not skipped.
+  Future<void> syncEnabledFromOs() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
+      _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+      final sdk = await _getAndroidVersion();
+      if (sdk >= 33) {
+        final status = await Permission.notification.status;
+        _notificationsEnabled.value = status.isGranted;
+      } else {
+        _notificationsEnabled.value = await androidPlugin?.areNotificationsEnabled() ?? true;
+      }
+    } catch (e) {
+      print('❌ syncEnabledFromOs: $e');
     }
   }
 
@@ -149,19 +258,17 @@ class NotificationService extends GetxService {
   /// Get Android SDK version - Enhanced with better detection
   Future<int> _getAndroidVersion() async {
     try {
-      // For production apps, you should use device_info_plus package
-      // For now, we'll use permission behavior to detect Android version
-
-      // Check if POST_NOTIFICATIONS permission exists (Android 13+)
-      final hasPostNotificationPermission = await Permission.notification.status;
-      if (hasPostNotificationPermission != PermissionStatus.denied &&
-          hasPostNotificationPermission != PermissionStatus.permanentlyDenied) {
-        print('🔔 Detected Android 13+ (has POST_NOTIFICATIONS permission)');
-        return 33; // Android 13+
+      // Avoid extra dependencies: parse SDK from Android OS version string.
+      // Typical format contains "SDK 33" etc.
+      final os = Platform.operatingSystemVersion;
+      final match = RegExp(r'SDK\s+(\d+)').firstMatch(os);
+      final sdk = match == null ? null : int.tryParse(match.group(1) ?? '');
+      if (sdk != null) {
+        print('🔔 Android SDK (operatingSystemVersion): $sdk');
+        return sdk;
       }
     } catch (e) {
-      // If permission check fails, it's likely Android 12 or lower
-      print('🔔 Detected Android 12 or lower (no POST_NOTIFICATIONS permission)');
+      print('🔔 Failed to detect Android SDK: $e');
     }
 
     // Default to Android API 28 (Android 9) for maximum compatibility
@@ -320,6 +427,11 @@ class NotificationService extends GetxService {
         Get.toNamed('/chatScreen', arguments: {'rideId': rideId});
 
         print('🔔 Navigating to chat screen for ride: $rideId');
+      } else if (payload.startsWith('ride_')) {
+        final rideId = payload.replaceFirst('ride_', '');
+        // Best-effort navigation to main map; downstream logic can load ride context if needed.
+        Get.offAllNamed('/mainMap', arguments: {'rideId': rideId});
+        print('🔔 Navigating to main map for ride: $rideId');
       }
     } catch (e) {
       print('❌ Error handling notification navigation: $e');
@@ -327,10 +439,13 @@ class NotificationService extends GetxService {
   }
 
   /// Show chat message notification - Enhanced for all Android versions
+  ///
+  /// [useDeviceDefaultSound] — use for **FCM** chat pushes; in-app/SignalR chat keeps app sound when false.
   Future<void> showChatNotification({
     required String senderName,
     required String message,
     required String rideId,
+    bool useDeviceDefaultSound = false,
   }) async {
     if (!_notificationsEnabled.value || !_isInitialized.value) {
       print('⚠️ Notifications not enabled or not initialized');
@@ -344,44 +459,73 @@ class NotificationService extends GetxService {
     }
 
     try {
-      // Enhanced Android notification details for maximum compatibility
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        chatChannelId,
-        chatChannelName,
-        channelDescription: chatChannelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-        enableVibration: true,
-        enableLights: true,
-        ledColor: Colors.blue,
-        ledOnMs: 1000,
-        ledOffMs: 500,
-        showWhen: true,
-        icon: '@drawable/ic_notification', // Pick U logo - status bar icon
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification'),
-        autoCancel: true,
-        ongoing: false,
-        category: AndroidNotificationCategory.message,
-        visibility: NotificationVisibility.private,
-        // Remove largeIcon and other advanced features for older Android compatibility
-      );
+      // Log channel state before showing (helps diagnose "muted by Android")
+      await _debugLogAndroidChannel(useDeviceDefaultSound ? chatPushChannelId : chatChannelId);
+      final NotificationDetails notificationDetails = useDeviceDefaultSound
+          ? NotificationDetails(
+              android: AndroidNotificationDetails(
+                chatPushChannelId,
+                chatPushChannelName,
+                channelDescription: chatPushChannelDescription,
+                importance: Importance.high,
+                priority: Priority.high,
+                enableVibration: true,
+                enableLights: true,
+                ledColor: Colors.blue,
+                ledOnMs: 1000,
+                ledOffMs: 500,
+                showWhen: true,
+                icon: '@drawable/ic_notification',
+                playSound: true,
+                autoCancel: true,
+                ongoing: false,
+                category: AndroidNotificationCategory.message,
+                visibility: NotificationVisibility.private,
+                groupKey: 'ride_chat_$rideId',
+              ),
+              iOS: const DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                sound: 'default',
+                interruptionLevel: InterruptionLevel.timeSensitive,
+                categoryIdentifier: 'chat_message',
+              ),
+            )
+          : NotificationDetails(
+              android: AndroidNotificationDetails(
+                chatChannelId,
+                chatChannelName,
+                channelDescription: chatChannelDescription,
+                importance: Importance.high,
+                priority: Priority.high,
+                enableVibration: true,
+                enableLights: true,
+                ledColor: Colors.blue,
+                ledOnMs: 1000,
+                ledOffMs: 500,
+                showWhen: true,
+                icon: '@drawable/ic_notification',
+                playSound: true,
+                autoCancel: true,
+                ongoing: false,
+                category: AndroidNotificationCategory.message,
+                visibility: NotificationVisibility.private,
+                groupKey: 'ride_chat_$rideId',
+              ),
+              iOS: const DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                sound: 'default',
+                interruptionLevel: InterruptionLevel.timeSensitive,
+                categoryIdentifier: 'chat_message',
+              ),
+            );
 
-      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-        sound: 'notification.mp3',
-        categoryIdentifier: 'chat_message',
-      );
-
-      const NotificationDetails notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      // Use rideId hash as notification ID so messages from same ride update the same notification
-      final notificationId = rideId.hashCode.abs();
+      // Use a unique id per message so Android alerts (sound) every time.
+      // Grouping is handled via groupKey in the Android notification details.
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(1000000);
 
       await _flutterLocalNotificationsPlugin.show(
         notificationId,
@@ -395,29 +539,36 @@ class NotificationService extends GetxService {
     } catch (e) {
       print('❌ Failed to show chat notification: $e');
       // Fallback: Try with minimal notification details
-      await _showFallbackNotification(senderName, message, rideId);
+      await _showFallbackNotification(senderName, message, rideId, useDeviceDefaultSound: useDeviceDefaultSound);
     }
   }
 
   /// Fallback notification with minimal details for maximum compatibility
-  Future<void> _showFallbackNotification(String senderName, String message, String rideId) async {
+  Future<void> _showFallbackNotification(
+    String senderName,
+    String message,
+    String rideId, {
+    bool useDeviceDefaultSound = false,
+  }) async {
     try {
       print('🔄 Attempting fallback notification...');
 
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        chatChannelId,
-        chatChannelName,
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        useDeviceDefaultSound ? chatPushChannelId : chatChannelId,
+        useDeviceDefaultSound ? chatPushChannelName : chatChannelName,
         importance: Importance.high,
         priority: Priority.high,
         icon: '@drawable/ic_notification', // Pick U logo
         autoCancel: true,
+        playSound: true,
+        groupKey: 'ride_chat_$rideId',
       );
 
-      const NotificationDetails notificationDetails = NotificationDetails(
+      final NotificationDetails notificationDetails = NotificationDetails(
         android: androidDetails,
       );
 
-      final notificationId = rideId.hashCode.abs();
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(1000000);
 
       await _flutterLocalNotificationsPlugin.show(
         notificationId,
@@ -433,7 +584,7 @@ class NotificationService extends GetxService {
     }
   }
 
-  /// Show general notification - Enhanced for all Android versions
+  /// Show general notification (push / FCM foreground) — **device default** sound, not app raw.
   Future<void> showGeneralNotification({
     required String title,
     required String body,
@@ -445,16 +596,17 @@ class NotificationService extends GetxService {
     }
 
     try {
+      // Log channel state before showing (helps diagnose "muted by Android")
+      await _debugLogAndroidChannel(generalChannelId);
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         generalChannelId,
         generalChannelName,
         channelDescription: generalChannelDescription,
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
+        importance: Importance.high,
+        priority: Priority.high,
         enableVibration: true,
         icon: '@drawable/ic_notification', // Pick U logo - status bar icon
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification'),
         autoCancel: true,
         ongoing: false,
         visibility: NotificationVisibility.private,
@@ -464,6 +616,8 @@ class NotificationService extends GetxService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
+        sound: 'default',
+        interruptionLevel: InterruptionLevel.timeSensitive,
       );
 
       const NotificationDetails notificationDetails = NotificationDetails(
