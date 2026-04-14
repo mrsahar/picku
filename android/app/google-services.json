@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "347959918595",
+    "project_id": "picku-2026",
+    "storage_bucket": "picku-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:347959918595:android:e3a2943e906f0490764e36",
+        "android_client_info": {
+          "package_name": "com.aariz.pick_u"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXLo855XoU9-Kwj15tHjYtB7Cb7uhh-8E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
